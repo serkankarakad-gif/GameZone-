@@ -2361,7 +2361,7 @@ window.addEventListener('beforeunload',saveState);
 
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCZ-maUXnCNTHR1BlSwTzjMUaotJduTDQs",
@@ -2376,15 +2376,44 @@ window.addEventListener('beforeunload',saveState);
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // Kanka burası çok önemli: Oyundaki verilerini online'a senkronize eder
-  async function syncToOnline() {
-    // Senin mevcut 'gameState' veya para değişkenlerini buradan okuyup Firebase'e yazacağız
-    // Örnek: setDoc(doc(db, "players", "serkan"), { para: userMoney, xp: userXP });
-    console.log("Veriler buluta senkronize ediliyor...");
+  async function tumVerileriBulutaKaydet() {
+    const userEmail = document.getElementById('userEmailDisplay')?.innerText;
+    if (!userEmail || userEmail === "Misafir" || userEmail.includes("...")) return;
+
+    try {
+      await setDoc(doc(db, "oyuncular", userEmail), {
+        nakit: typeof nakit !== 'undefined' ? nakit : 0,
+        banka: typeof banka !== 'undefined' ? banka : 0,
+        elmas: typeof elmas !== 'undefined' ? elmas : 0,
+        seviye: typeof seviye !== 'undefined' ? seviye : 1,
+        xp: typeof xp !== 'undefined' ? xp : 0,
+        isletmeler: typeof state !== 'undefined' ? state.shops : [], 
+        sonGuncelleme: serverTimestamp()
+      }, { merge: true });
+      console.log("Milyarlar buluta mühürlendi!");
+    } catch (e) {
+      console.error("Kayıt hatası: ", e);
+    }
   }
 
-  // Her 30 saniyede bir otomatik yedek alalım ki veri kaybolmasın
-  setInterval(syncToOnline, 30000);
+  async function verileriBuluttanYukle() {
+    const userEmail = document.getElementById('userEmailDisplay')?.innerText;
+    if (!userEmail || userEmail === "Misafir") return;
+
+    const docSnap = await getDoc(doc(db, "oyuncular", userEmail));
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if(data.nakit !== undefined) nakit = data.nakit;
+      if(data.banka !== undefined) banka = data.banka;
+      if(data.elmas !== undefined) elmas = data.elmas;
+      if(data.seviye !== undefined) seviye = data.seviye;
+      if(typeof renderAll === 'function') renderAll();
+      console.log("İmparatorluk geri yüklendi!");
+    }
+  }
+
+  setInterval(tumVerileriBulutaKaydet, 30000);
+  window.addEventListener('load', verileriBuluttanYukle);
 </script>
 </body>
 </html>
