@@ -2358,5 +2358,33 @@ setInterval(updateLotteryTimer,1000);
 /* auto-save on change */
 window.addEventListener('beforeunload',saveState);
 </script>
+
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCZ-maUXnCNTHR1BlSwTzjMUaotJduTDQs",
+    authDomain: "gamezone-erp.firebaseapp.com",
+    projectId: "gamezone-erp",
+    storageBucket: "gamezone-erp.firebasestorage.app",
+    messagingSenderId: "948726896226",
+    appId: "1:948726896226:web:9057cfe19636874dc2233b",
+    measurementId: "G-FJDDXTYMR6"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Kanka burası çok önemli: Oyundaki verilerini online'a senkronize eder
+  async function syncToOnline() {
+    // Senin mevcut 'gameState' veya para değişkenlerini buradan okuyup Firebase'e yazacağız
+    // Örnek: setDoc(doc(db, "players", "serkan"), { para: userMoney, xp: userXP });
+    console.log("Veriler buluta senkronize ediliyor...");
+  }
+
+  // Her 30 saniyede bir otomatik yedek alalım ki veri kaybolmasın
+  setInterval(syncToOnline, 30000);
+</script>
 </body>
 </html>
