@@ -2042,17 +2042,6 @@ input,select,textarea{
 </div>
 
 <script>
-
-// Acil durum: Bağlantı gecikse bile oyunu aç
-setTimeout(() => {
-  const ls = document.getElementById('loading-screen');
-  if (ls && !ls.classList.contains('hidden')) {
-    console.log("Loading ekranı zorla kapatıldı.");
-    ls.classList.add('hidden');
-    setTimeout(() => ls.style.display = 'none', 500);
-  }
-}, 4000);
-
 /* ============================================
    GAME ZONE ERP - MAIN LOGIC
    ============================================ */
@@ -2218,8 +2207,21 @@ function confetti(){
 }
 
 /* ---- FIREBASE SETUP ---- */
-const FB_CONFIG = { apiKey: "AIzaSyCZ-maUXnCNTHR1BlSwTzjMUaotJduTDQs", authDomain: "gamezone-erp.firebaseapp.com", projectId: "gamezone-erp" };
-let fbApp,fbAuth,fbDb,fbUser=null,fbUnsubscribe=null;
+const FB_CONFIG={
+  apiKey:"AIzaSyCZ-maUXnCNTHR1BlSwTzjMUaotJduTDQs",
+  authDomain:"gamezone-erp.firebaseapp.com",
+  projectId:"gamezone-erp",
+  storageBucket:"gamezone-erp.firebasestorage.app",
+  messagingSenderId:"948726896226",
+  appId:"1:948726896226:web:e417b0f8375f7a4ec2233b",
+  measurementId:"G-VEVMCFM5T8",
+  databaseURL:"https://gamezone-e11b0-default-rtdb.europe-west1.firebasedatabase.app/"
+};
+let fbApp,fbAuth,fbDb,fbRtdb=null,fbUser=null,fbUnsubscribe=null,fbChatUnsub=null;
+// Global erişim değişkenleri (Gemini yapısıyla uyumlu)
+window.fs=null;   // Firestore
+window.db=null;   // Realtime Database
+window.auth=null; // Auth
 let deviceId=localStorage.getItem('gz_deviceId')||(localStorage.setItem('gz_deviceId',Math.random().toString(36).slice(2)),localStorage.getItem('gz_deviceId'));
 
 function showLoadingScreen(msg){
@@ -2247,28 +2249,57 @@ function retryConnection(){
 
 async function initFirebase(){
   try{
-    const [appMod,authMod,dbMod]=await Promise.all([
+    const [appMod,authMod,fsMod,rtMod]=await Promise.all([
       import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'),
       import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js'),
-      import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
+      import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'),
+      import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js')
     ]);
+
+    // App başlat (duplicate önle)
     const existing=appMod.getApps?appMod.getApps():[];
     fbApp=existing.length?existing[0]:appMod.initializeApp(FB_CONFIG);
+
+    // Auth
     fbAuth=authMod.getAuth(fbApp);
-    fbDb=dbMod.getFirestore(fbApp);
+    window.auth=fbAuth;
+
+    // Firestore (oyuncu verileri, bakiye, envanter)
+    fbDb=fsMod.getFirestore(fbApp);
+    window.fs=fbDb;
+
+    // Realtime Database (sohbet, pazar, canlı akış)
+    fbRtdb=rtMod.getDatabase(fbApp);
+    window.db=fbRtdb;
+
+    // Auth kütüphanesi
     window._fbAuthLib={
       createUserWithEmailAndPassword:authMod.createUserWithEmailAndPassword,
       signInWithEmailAndPassword:authMod.signInWithEmailAndPassword,
       sendPasswordResetEmail:authMod.sendPasswordResetEmail,
       onAuthStateChanged:authMod.onAuthStateChanged
     };
+
+    // Firestore kütüphanesi
     window._fbDbLib={
-      doc:dbMod.doc,
-      setDoc:dbMod.setDoc,
-      getDoc:dbMod.getDoc,
-      onSnapshot:dbMod.onSnapshot,
-      updateDoc:dbMod.updateDoc
+      doc:fsMod.doc,
+      setDoc:fsMod.setDoc,
+      getDoc:fsMod.getDoc,
+      onSnapshot:fsMod.onSnapshot,
+      updateDoc:fsMod.updateDoc
     };
+
+    // Realtime Database kütüphanesi
+    window._rtLib={
+      ref:rtMod.ref,
+      push:rtMod.push,
+      onValue:rtMod.onValue,
+      serverTimestamp:rtMod.serverTimestamp,
+      query:rtMod.query,
+      orderByChild:rtMod.orderByChild,
+      limitToLast:rtMod.limitToLast
+    };
+
     authMod.onAuthStateChanged(fbAuth,async user=>{
       if(user){
         fbUser=user;
@@ -2283,6 +2314,7 @@ async function initFirebase(){
         showScreen('welcome');
       }
     });
+
   }catch(err){
     console.warn('Firebase baglanti hatasi:',err);
     showNoInternet();
@@ -2437,6 +2469,8 @@ function showMain(isNew=false){
   const fg=document.getElementById('forgot');if(fg)fg.style.display='none';
   document.getElementById('main').classList.add('active');
   renderAll();
+  // RTDB chat dinleyicisini başlat
+  setTimeout(initRealtimeChat,800);
   if(isNew||(state.user&&state.user.isNew)){
     setTimeout(()=>openModal('welcome-modal'),300);
   }
@@ -2663,6 +2697,7 @@ const _origSave=saveState;
 function saveState(){
   try{localStorage.setItem(LS_KEY,JSON.stringify(state))}catch(e){}
 }
+function checkLevel(){
   // Sınırsız seviye, hızlı ilerleme — her seviye XP eşiği biraz artar
   let cap=state.level*500; // daha az XP gerekli
   while(state.xp>=cap){
@@ -2849,34 +2884,74 @@ function renderNotifications(){
 }
 
 /* ---- CHAT ---- */
-function renderChat(){
-  const msgs=document.getElementById('chat-messages');
-  // Sadece kullanıcının kendi mesajlarını göster, seed mesajları yok
-  const all=[...state.chatHistory];
-  if(!all.length){
-    msgs.innerHTML='<div class="empty"><div class="empty-icon">💬</div><div class="empty-text">Henüz mesaj yok. İlk mesajı sen gönder!</div></div>';
+/* ---- REALTIME CHAT (Firebase RTDB) ---- */
+let _chatInited=false;
+function initRealtimeChat(){
+  if(_chatInited||!window.db||!window._rtLib)return;
+  _chatInited=true;
+  const rt=window._rtLib;
+  const chatRef=rt.query(rt.ref(window.db,'chat'),rt.orderByChild('ts'),rt.limitToLast(60));
+  if(fbChatUnsub)fbChatUnsub();
+  fbChatUnsub=rt.onValue(chatRef,snap=>{
+    const msgs=[];
+    snap.forEach(child=>{msgs.push(child.val());});
+    msgs.reverse();
+    renderChatMessages(msgs);
+  });
+}
+
+function renderChatMessages(msgs){
+  const el=document.getElementById('chat-messages');
+  if(!el)return;
+  if(!msgs||!msgs.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">💬</div><div class="empty-text">Henüz mesaj yok. İlk mesajı sen gönder!</div></div>';
     return;
   }
-  msgs.innerHTML=all.map(m=>`
+  el.innerHTML=msgs.map(m=>`
     <div class="chat-msg">
-      <div class="chat-msg-avatar">${m.av}</div>
+      <div class="chat-msg-avatar">${m.av||'🙂'}</div>
       <div class="chat-msg-body">
         <div class="chat-msg-head">
-          <span class="chat-msg-name">${m.user}</span>
-          <span class="chat-msg-time">· ${m.time}</span>
+          <span class="chat-msg-name">${m.user||'?'}</span>
+          <span class="chat-msg-time">· ${m.time||''}</span>
         </div>
-        <div class="chat-msg-text">${m.text}</div>
+        <div class="chat-msg-text">${m.text||''}</div>
       </div>
     </div>
   `).join('');
 }
+
+function renderChat(){
+  // RTDB bağlıysa canlı dinleme başlat
+  if(window.db&&window._rtLib){
+    initRealtimeChat();
+  } else {
+    // RTDB yoksa yerel geçmiş göster
+    const all=[...state.chatHistory,...CHAT_SEED];
+    renderChatMessages(all);
+  }
+}
+
 function sendChat(){
   const inp=document.getElementById('chat-text');
   const txt=inp.value.trim();
   if(!txt)return;
-  state.chatHistory.unshift({user:state.user?.name||'Sen',av:'🙂',time:'şimdi',text:txt});
+  const name=state.user?.name||'Oyuncu';
+  const av='🙂';
+
+  if(window.db&&window._rtLib){
+    const rt=window._rtLib;
+    const now=new Date();
+    const timeStr=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+    rt.push(rt.ref(window.db,'chat'),{
+      user:name,av,text:txt,time:timeStr,ts:Date.now()
+    }).catch(e=>console.warn('Chat gonderilemedi:',e));
+  } else {
+    state.chatHistory.unshift({user:name,av,time:'şimdi',text:txt});
+    renderChat();
+    saveState();
+  }
   inp.value='';
-  saveState();renderChat();
 }
 
 /* ---- PROFILE ---- */
@@ -3903,16 +3978,27 @@ function checkBanned(){
   }
 }
 
-// Chat ban kontrolü
-const _origSendChat=window.sendChat;
+// Chat ban kontrolü (RTDB üzerinden)
 function sendChat(){
   const inp=document.getElementById('chat-text');
   const txt=inp.value.trim();
   if(!txt)return;
   if(checkBan(txt))return;
-  state.chatHistory.unshift({user:state.user?.name||'Sen',av:'🙂',time:'şimdi',text:txt});
+  const name=state.user?.name||'Oyuncu';
+  const av='🙂';
+  if(window.db&&window._rtLib){
+    const rt=window._rtLib;
+    const now=new Date();
+    const timeStr=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+    rt.push(rt.ref(window.db,'chat'),{
+      user:name,av,text:txt,time:timeStr,ts:Date.now()
+    }).catch(e=>console.warn('Chat gonderilemedi:',e));
+  } else {
+    state.chatHistory.unshift({user:name,av,time:'şimdi',text:txt});
+    renderChat();
+    saveState();
+  }
   inp.value='';
-  saveState();renderChat();
 }
 
 /* ---- PARA KAZANMA ARTIŞI ---- */
@@ -3982,19 +4068,5 @@ setInterval(updateLotteryTimer,1000);
 /* auto-save on change */
 window.addEventListener('beforeunload',saveState);
 </script>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script>
-  const firebaseConfig = {
-    databaseURL: "https://gamezone-e11b0-default-rtdb.europe-west1.firebasedatabase.app/"
-  };
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
-  window.db = firebase.database();
-</script>
-
-
 </body>
 </html>
