@@ -2236,75 +2236,81 @@ function retryConnection(){
 
 async function initFirebase(){
   try{
-    const {initializeApp,getApps}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,onAuthStateChanged}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
-    const {getFirestore,doc,setDoc,getDoc,onSnapshot,updateDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-
-    // Daha önce başlatıldıysa tekrar başlatma
-    if(!fbApp){
-      const existing=getApps();
-      fbApp=existing.length?existing[0]:initializeApp(FB_CONFIG);
-    }
-    fbAuth=getAuth(fbApp);
-    fbDb=getFirestore(fbApp);
-    window._fbAuthLib={createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,onAuthStateChanged};
-    window._fbDbLib={doc,setDoc,getDoc,onSnapshot,updateDoc};
-
-    onAuthStateChanged(fbAuth,async user=>{
+    const [appMod,authMod,dbMod]=await Promise.all([
+      import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js')
+    ]);
+    const existing=appMod.getApps?appMod.getApps():[];
+    fbApp=existing.length?existing[0]:appMod.initializeApp(FB_CONFIG);
+    fbAuth=authMod.getAuth(fbApp);
+    fbDb=dbMod.getFirestore(fbApp);
+    window._fbAuthLib={
+      createUserWithEmailAndPassword:authMod.createUserWithEmailAndPassword,
+      signInWithEmailAndPassword:authMod.signInWithEmailAndPassword,
+      sendPasswordResetEmail:authMod.sendPasswordResetEmail,
+      onAuthStateChanged:authMod.onAuthStateChanged
+    };
+    window._fbDbLib={
+      doc:dbMod.doc,
+      setDoc:dbMod.setDoc,
+      getDoc:dbMod.getDoc,
+      onSnapshot:dbMod.onSnapshot,
+      updateDoc:dbMod.updateDoc
+    };
+    authMod.onAuthStateChanged(fbAuth,async user=>{
       if(user){
         fbUser=user;
         const mainEl=document.getElementById('main');
         const isMainActive=mainEl&&mainEl.classList.contains('active');
         if(!isMainActive){
-          showLoadingScreen('Veriler yükleniyor...');
+          showLoadingScreen('Veriler yukleniyor...');
           await loadFirestoreState();
         }
       } else {
-        // Kullanıcı oturumu yok → welcome ekranı
         hideLoadingScreen();
         showScreen('welcome');
       }
     });
   }catch(err){
-    console.warn('Firebase bağlantı hatası:',err);
+    console.warn('Firebase baglanti hatasi:',err);
     showNoInternet();
   }
 }
 initFirebase();
 
 async function loadFirestoreState(){
-  if(!fbDb||!fbUser){showNoInternet();return;}
+  if(!fbDb||!fbUser||!window._fbDbLib){showNoInternet();return;}
   try{
-    const _db=window._fbDbLib;
-    const ref=_db.doc(fbDb,'players',fbUser.uid);
-    const snap=await _db.getDoc(ref);
+    const _doc=window._fbDbLib.doc;
+    const _getDoc=window._fbDbLib.getDoc;
+    const _onSnapshot=window._fbDbLib.onSnapshot;
+    const ref=_doc(fbDb,'players',fbUser.uid);
+    const snap=await _getDoc(ref);
     if(snap.exists()){
       const data=snap.data();
-      // kick sistemi
-      if(data.deviceId && data.deviceId!==deviceId){
-        alert('⚠️ Hesabınıza başka bir cihazdan giriş yapıldı. Bu cihazda oturum kapatılıyor.');
+      if(data.deviceId&&data.deviceId!==deviceId){
+        alert('Hesabiniza baska bir cihazdan giris yapildi. Bu cihazda oturum kapatiliyor.');
         await fbAuth.signOut();location.reload();return;
       }
       state=Object.assign(state,data.gameState||{});
       state.user=data.user||state.user;
     } else {
-      // ilk kayıt - kaydet
       await saveFirestoreState();
     }
-    // canlı senkronizasyon
     if(fbUnsubscribe)fbUnsubscribe();
-    fbUnsubscribe=_db.onSnapshot(ref,snap2=>{
+    fbUnsubscribe=_onSnapshot(ref,snap2=>{
       if(!snap2.exists())return;
       const d=snap2.data();
-      if(d.deviceId && d.deviceId!==deviceId){
-        alert('⚠️ Hesabınıza başka bir cihazdan giriş yapıldı. Bu cihazda oturum kapatılıyor.');
+      if(d.deviceId&&d.deviceId!==deviceId){
+        alert('Hesabiniza baska bir cihazdan giris yapildi. Bu cihazda oturum kapatiliyor.');
         location.reload();
       }
     });
     hideLoadingScreen();
     showMain();
   }catch(err){
-    console.warn('Firestore yükleme hatası:',err);
+    console.warn('Firestore yukleme hatasi:',err);
     showNoInternet();
   }
 }
