@@ -86,17 +86,21 @@ input,select,textarea{
 .auth-header{
   display:flex;align-items:center;gap:10px;
   padding-top:12px;
-  z-index:2;
+  z-index:10;
+  position:relative;
 }
 .auth-back{
   width:36px;height:36px;border-radius:10px;
   background:rgba(255,255,255,.12);
   display:grid;place-items:center;
   backdrop-filter:blur(10px);
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
 }
 .auth-hero{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
   z-index:2;padding:20px 0;
+  position:relative;
 }
 .auth-illustration{
   width:100%;max-width:280px;margin-bottom:28px;
@@ -121,8 +125,9 @@ input,select,textarea{
   max-width:300px;margin-bottom:8px;
 }
 .auth-form{
-  z-index:2;margin-top:auto;
+  z-index:10;margin-top:auto;
   display:flex;flex-direction:column;gap:12px;
+  position:relative;
 }
 .auth-field{
   background:rgba(255,255,255,.1);
@@ -131,6 +136,7 @@ input,select,textarea{
   padding:14px 16px;
   display:flex;align-items:center;gap:12px;
   backdrop-filter:blur(12px);
+  position:relative;z-index:10;
 }
 .auth-field input{
   flex:1;background:none;border:none;outline:none;
@@ -138,10 +144,10 @@ input,select,textarea{
 }
 .auth-field input::placeholder{color:rgba(255,255,255,.6)}
 .auth-field svg{opacity:.7;flex-shrink:0}
-.auth-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:0 4px}
+.auth-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:0 4px;position:relative;z-index:10;}
 .auth-row label{display:flex;align-items:center;gap:8px;cursor:pointer}
 .auth-row input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
-.auth-row a{color:var(--accent);text-decoration:none;font-weight:600}
+.auth-row a{color:var(--accent);text-decoration:none;font-weight:600;cursor:pointer;touch-action:manipulation}
 .btn-primary{
   background:var(--accent);
   color:#1f2937;
@@ -150,6 +156,9 @@ input,select,textarea{
   letter-spacing:.2px;
   box-shadow:0 8px 20px rgba(251,191,36,.3);
   transition:transform .15s;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  position:relative;z-index:10;
 }
 .btn-primary:active{transform:scale(.98)}
 .btn-ghost{
@@ -158,12 +167,16 @@ input,select,textarea{
   padding:14px;border-radius:14px;
   font-weight:600;
   border:1px solid rgba(255,255,255,.15);
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  position:relative;z-index:10;
 }
 .auth-footer{
   text-align:center;font-size:13px;
   opacity:.85;margin-top:8px;
+  position:relative;z-index:10;
 }
-.auth-footer a{color:var(--accent);font-weight:700;text-decoration:none}
+.auth-footer a{color:var(--accent);font-weight:700;text-decoration:none;cursor:pointer;touch-action:manipulation}
 
 /* ====== MAIN APP SHELL ====== */
 .main-shell{
@@ -1039,6 +1052,56 @@ input,select,textarea{
 }
 #ban-screen.active{display:flex}
 
+/* ====== LOADING SCREEN ====== */
+#loading-screen{
+  position:fixed;inset:0;
+  background:linear-gradient(140deg,#1e3a8a 0%,#1e40af 40%,#3b82f6 100%);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:99999;color:#fff;text-align:center;
+  padding:32px;
+  transition:opacity .4s;
+}
+#loading-screen.hidden{opacity:0;pointer-events:none}
+.loading-logo{
+  font-family:'Space Grotesk';
+  font-size:38px;font-weight:700;
+  letter-spacing:-1px;margin-bottom:8px;
+}
+.loading-logo .yellow{color:#fbbf24}
+.loading-spinner{
+  width:44px;height:44px;
+  border:4px solid rgba(255,255,255,.2);
+  border-top-color:#fbbf24;
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+  margin:24px auto 16px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-sub{font-size:14px;opacity:.75}
+
+/* ====== NO INTERNET SCREEN ====== */
+#no-internet-screen{
+  position:fixed;inset:0;
+  background:linear-gradient(140deg,#111827 0%,#1f2937 100%);
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:99998;color:#fff;text-align:center;
+  padding:32px;
+}
+#no-internet-screen.active{display:flex}
+.no-net-icon{font-size:72px;margin-bottom:20px;animation:shake 2s ease-in-out infinite}
+@keyframes shake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-4px)}20%,40%,60%,80%{transform:translateX(4px)}}
+.no-net-title{font-size:22px;font-weight:800;margin-bottom:10px}
+.no-net-sub{font-size:14px;opacity:.75;line-height:1.6;margin-bottom:28px;max-width:280px}
+.no-net-retry{
+  background:#fbbf24;color:#1f2937;
+  padding:14px 32px;border-radius:14px;
+  font-weight:700;font-size:15px;
+  touch-action:manipulation;
+  box-shadow:0 8px 20px rgba(251,191,36,.3);
+}
+
 @media (max-width:380px){
   .brand{font-size:17px}
   .tb-btn{width:32px;height:32px}
@@ -1048,10 +1111,26 @@ input,select,textarea{
 </style>
 </head>
 <body>
+
+<!-- LOADING SCREEN -->
+<div id="loading-screen">
+  <div class="loading-logo">gamezone <span class="yellow">erp</span></div>
+  <div class="loading-spinner"></div>
+  <div class="loading-sub">Sunucuya bağlanıyor...</div>
+</div>
+
+<!-- NO INTERNET SCREEN -->
+<div id="no-internet-screen">
+  <div class="no-net-icon">📡</div>
+  <div class="no-net-title">Bağlantı Kurulamadı</div>
+  <div class="no-net-sub">Game Zone ERP'ye bağlanmak için internet bağlantısı gereklidir. Lütfen bağlantını kontrol et ve tekrar dene.</div>
+  <button class="no-net-retry" onclick="retryConnection()">🔄 Tekrar Dene</button>
+</div>
+
 <div id="app">
 
   <!-- ====== AUTH / WELCOME SCREEN ====== -->
-  <div id="welcome" class="auth-screen">
+  <div id="welcome" class="auth-screen" style="display:none">
     <div class="auth-hero">
       <svg class="auth-illustration" viewBox="0 0 300 220" fill="none" xmlns="http://www.w3.org/2000/svg">
         <!-- City silhouette -->
@@ -2132,6 +2211,29 @@ const FB_CONFIG={apiKey:"AIzaSyCZ-maUXnCNTHR1BlSwTzjMUaotJduTDQs",authDomain:"ga
 let fbApp,fbAuth,fbDb,fbUser=null,fbUnsubscribe=null;
 let deviceId=localStorage.getItem('gz_deviceId')||(localStorage.setItem('gz_deviceId',Math.random().toString(36).slice(2)),localStorage.getItem('gz_deviceId'));
 
+function showLoadingScreen(msg){
+  const el=document.getElementById('loading-screen');
+  if(el){el.classList.remove('hidden');const s=el.querySelector('.loading-sub');if(s)s.textContent=msg||'Sunucuya bağlanıyor...';}
+}
+function hideLoadingScreen(){
+  const el=document.getElementById('loading-screen');
+  if(el){el.classList.add('hidden');setTimeout(()=>el.style.display='none',400);}
+}
+function showNoInternet(){
+  hideLoadingScreen();
+  const el=document.getElementById('no-internet-screen');
+  if(el)el.classList.add('active');
+}
+function hideNoInternet(){
+  const el=document.getElementById('no-internet-screen');
+  if(el)el.classList.remove('active');
+}
+function retryConnection(){
+  hideNoInternet();
+  showLoadingScreen('Yeniden bağlanıyor...');
+  initFirebase();
+}
+
 async function initFirebase(){
   try{
     const {initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
@@ -2143,41 +2245,62 @@ async function initFirebase(){
     window._fbAuthLib={createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,onAuthStateChanged};
     window._fbDbLib={doc,setDoc,getDoc,onSnapshot,updateDoc};
     onAuthStateChanged(fbAuth,async user=>{
-      if(user){fbUser=user;await loadFirestoreState();}
+      if(user){
+        fbUser=user;
+        const mainEl=document.getElementById('main');
+        const isMainActive=mainEl&&mainEl.classList.contains('active');
+        if(!isMainActive){
+          showLoadingScreen('Veriler yükleniyor...');
+          await loadFirestoreState();
+        }
+      } else {
+        // Kullanıcı yoksa welcome ekranını göster
+        hideLoadingScreen();
+        showScreen('welcome');
+      }
     });
-  }catch(err){console.warn('Firebase offline, localStorage mode:',err);}
+  }catch(err){
+    console.warn('Firebase bağlantı hatası:',err);
+    showNoInternet();
+  }
 }
 initFirebase();
 
 async function loadFirestoreState(){
-  if(!fbDb||!fbUser)return;
-  const {doc,getDoc,onSnapshot}=window._fbDbLib;
-  const ref=doc(fbDb,'players',fbUser.uid);
-  const snap=await getDoc(ref);
-  if(snap.exists()){
-    const data=snap.data();
-    // kick sistemi
-    if(data.deviceId && data.deviceId!==deviceId){
-      alert('⚠️ Hesabınıza başka bir cihazdan giriş yapıldı. Bu cihazda oturum kapatılıyor.');
-      await fbAuth.signOut();location.reload();return;
+  if(!fbDb||!fbUser){showNoInternet();return;}
+  try{
+    const {doc,getDoc,onSnapshot}=window._fbDbLib;
+    const ref=doc(fbDb,'players',fbUser.uid);
+    const snap=await getDoc(ref);
+    if(snap.exists()){
+      const data=snap.data();
+      // kick sistemi
+      if(data.deviceId && data.deviceId!==deviceId){
+        alert('⚠️ Hesabınıza başka bir cihazdan giriş yapıldı. Bu cihazda oturum kapatılıyor.');
+        await fbAuth.signOut();location.reload();return;
+      }
+      state=Object.assign(state,data.gameState||{});
+      state.user=data.user||state.user;
+    } else {
+      // ilk kayıt - kaydet
+      await saveFirestoreState();
     }
-    state=Object.assign(state,data.gameState||{});
-    state.user=data.user||state.user;
-  } else {
-    // ilk kayıt - kaydet
-    await saveFirestoreState();
+    // canlı senkronizasyon
+    if(fbUnsubscribe)fbUnsubscribe();
+    fbUnsubscribe=onSnapshot(ref,snap2=>{
+      if(!snap2.exists())return;
+      const d=snap2.data();
+      if(d.deviceId && d.deviceId!==deviceId){
+        alert('⚠️ Hesabınıza başka bir cihazdan giriş yapıldı. Bu cihazda oturum kapatılıyor.');
+        location.reload();
+      }
+    });
+    hideLoadingScreen();
+    showMain();
+  }catch(err){
+    console.warn('Firestore yükleme hatası:',err);
+    showNoInternet();
   }
-  // canlı senkronizasyon
-  if(fbUnsubscribe)fbUnsubscribe();
-  fbUnsubscribe=onSnapshot(ref,snap2=>{
-    if(!snap2.exists())return;
-    const d=snap2.data();
-    if(d.deviceId && d.deviceId!==deviceId){
-      alert('⚠️ Hesabınıza başka bir cihazdan giriş yapıldı. Bu cihazda oturum kapatılıyor.');
-      location.reload();
-    }
-  });
-  showMain();
 }
 
 async function saveFirestoreState(){
@@ -2190,15 +2313,17 @@ async function saveFirestoreState(){
   }catch(e){}
 }
 
-// otomatik 15 saniyede bir kaydet
-setInterval(()=>{saveFirestoreState();saveState();},15000);
+// otomatik 15 saniyede bir kaydet - sadece Firebase aktifse
+setInterval(()=>{if(fbDb&&fbUser){saveFirestoreState();saveState();}},15000);
 
 /* ---- AUTH FLOW ---- */
 function showScreen(id){
-  ['welcome','login','register','forgot'].forEach(s=>{
+  ['welcome','login','register'].forEach(s=>{
     const el=document.getElementById(s);
     if(el)el.style.display=s===id?'flex':'none';
   });
+  const fg=document.getElementById('forgot');
+  if(fg)fg.style.display=id==='forgot'?'flex':'none';
 }
 function openLogin(){showScreen('login')}
 function openRegister(){showScreen('register')}
@@ -2206,21 +2331,26 @@ function openForgot(){showScreen('forgot')}
 
 async function doLogin(e){
   e.preventDefault();
+  if(!window._fbAuthLib||!fbAuth){
+    toast('Sunucuya bağlanılamıyor. İnternet bağlantını kontrol et.','error');
+    return;
+  }
   const emailOrUser=document.getElementById('login-user').value.trim();
   const pass=document.getElementById('login-pass').value;
   if(!emailOrUser||!pass){toast('Tüm alanları doldurun','error');return}
   const btn=e.target.querySelector('button[type=submit]');
   btn.disabled=true;btn.textContent='Giriş yapılıyor...';
-  // email yoksa @gamezone.tr ekle (kullanıcı adı desteği)
   const email=emailOrUser.includes('@')?emailOrUser:emailOrUser+'@gamezone.tr';
   try{
     const {signInWithEmailAndPassword}=window._fbAuthLib;
     await signInWithEmailAndPassword(fbAuth,email,pass);
+    showLoadingScreen('Veriler yükleniyor...');
     // onAuthStateChanged halleder
   }catch(err){
     let msg='Giriş başarısız';
-    if(err.code==='auth/user-not-found'||err.code==='auth/wrong-password'||err.code==='auth/invalid-credential')msg='E-posta veya şifre hatalı';
+    if(err.code==='auth/user-not-found'||err.code==='auth/wrong-password'||err.code==='auth/invalid-credential')msg='Kullanıcı adı veya şifre hatalı';
     if(err.code==='auth/too-many-requests')msg='Çok fazla deneme. Biraz bekle.';
+    if(err.code==='auth/network-request-failed'){showNoInternet();return;}
     toast(msg,'error');
     btn.disabled=false;btn.textContent='Giriş Yap';
   }
@@ -2228,6 +2358,10 @@ async function doLogin(e){
 
 async function doRegister(e){
   e.preventDefault();
+  if(!window._fbAuthLib||!fbAuth){
+    toast('Sunucuya bağlanılamıyor. İnternet bağlantını kontrol et.','error');
+    return;
+  }
   const u=document.getElementById('reg-user').value.trim();
   const em=document.getElementById('reg-email').value.trim();
   const pass=document.getElementById('reg-pass').value;
@@ -2240,13 +2374,16 @@ async function doRegister(e){
     const cred=await createUserWithEmailAndPassword(fbAuth,em,pass);
     fbUser=cred.user;
     state.user={name:u,email:em,isNew:true};
+    showLoadingScreen('Hesap oluşturuluyor...');
     await saveFirestoreState();
+    hideLoadingScreen();
     showMain(true);
   }catch(err){
     let msg='Kayıt başarısız';
     if(err.code==='auth/email-already-in-use')msg='Bu e-posta zaten kullanımda';
     if(err.code==='auth/invalid-email')msg='Geçersiz e-posta';
-    if(err.code==='auth/weak-password')msg='Şifre çok zayıf';
+    if(err.code==='auth/weak-password')msg='Şifre çok zayıf (en az 6 karakter)';
+    if(err.code==='auth/network-request-failed'){showNoInternet();return;}
     toast(msg,'error');
     btn.disabled=false;btn.textContent='Hesap Oluştur';
   }
@@ -2254,6 +2391,7 @@ async function doRegister(e){
 
 async function doForgot(e){
   e.preventDefault();
+  if(!window._fbAuthLib){toast('İnternet bağlantısı yok','error');return;}
   const em=document.getElementById('forgot-email').value.trim();
   if(!em){toast('E-posta girin','error');return}
   try{
@@ -2261,10 +2399,15 @@ async function doForgot(e){
     await sendPasswordResetEmail(fbAuth,em);
     toast('Sıfırlama e-postası gönderildi! 📧','success');
     showScreen('login');
-  }catch(err){toast('E-posta gönderilemedi','error');}
+  }catch(err){
+    if(err.code==='auth/network-request-failed'){showNoInternet();return;}
+    toast('E-posta gönderilemedi','error');
+  }
 }
 
 function showMain(isNew=false){
+  hideLoadingScreen();
+  hideNoInternet();
   document.getElementById('welcome').style.display='none';
   document.getElementById('login').style.display='none';
   document.getElementById('register').style.display='none';
