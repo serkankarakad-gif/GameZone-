@@ -2236,14 +2236,20 @@ function retryConnection(){
 
 async function initFirebase(){
   try{
-    const {initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const {initializeApp,getApps}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
     const {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,onAuthStateChanged}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
     const {getFirestore,doc,setDoc,getDoc,onSnapshot,updateDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    fbApp=initializeApp(FB_CONFIG);
+
+    // Daha önce başlatıldıysa tekrar başlatma
+    if(!fbApp){
+      const existing=getApps();
+      fbApp=existing.length?existing[0]:initializeApp(FB_CONFIG);
+    }
     fbAuth=getAuth(fbApp);
     fbDb=getFirestore(fbApp);
     window._fbAuthLib={createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,onAuthStateChanged};
     window._fbDbLib={doc,setDoc,getDoc,onSnapshot,updateDoc};
+
     onAuthStateChanged(fbAuth,async user=>{
       if(user){
         fbUser=user;
@@ -2254,7 +2260,7 @@ async function initFirebase(){
           await loadFirestoreState();
         }
       } else {
-        // Kullanıcı yoksa welcome ekranını göster
+        // Kullanıcı oturumu yok → welcome ekranı
         hideLoadingScreen();
         showScreen('welcome');
       }
@@ -2269,9 +2275,9 @@ initFirebase();
 async function loadFirestoreState(){
   if(!fbDb||!fbUser){showNoInternet();return;}
   try{
-    const {doc,getDoc,onSnapshot}=window._fbDbLib;
-    const ref=doc(fbDb,'players',fbUser.uid);
-    const snap=await getDoc(ref);
+    const _db=window._fbDbLib;
+    const ref=_db.doc(fbDb,'players',fbUser.uid);
+    const snap=await _db.getDoc(ref);
     if(snap.exists()){
       const data=snap.data();
       // kick sistemi
@@ -2287,7 +2293,7 @@ async function loadFirestoreState(){
     }
     // canlı senkronizasyon
     if(fbUnsubscribe)fbUnsubscribe();
-    fbUnsubscribe=onSnapshot(ref,snap2=>{
+    fbUnsubscribe=_db.onSnapshot(ref,snap2=>{
       if(!snap2.exists())return;
       const d=snap2.data();
       if(d.deviceId && d.deviceId!==deviceId){
@@ -2304,10 +2310,10 @@ async function loadFirestoreState(){
 }
 
 async function saveFirestoreState(){
-  if(!fbDb||!fbUser)return;
+  if(!fbDb||!fbUser||!window._fbDbLib)return;
   try{
-    const {doc,setDoc}=window._fbDbLib;
-    await setDoc(doc(fbDb,'players',fbUser.uid),{
+    const _db=window._fbDbLib;
+    await _db.setDoc(_db.doc(fbDb,'players',fbUser.uid),{
       user:state.user,gameState:state,deviceId,updatedAt:Date.now()
     });
   }catch(e){}
