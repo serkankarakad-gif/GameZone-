@@ -929,6 +929,2610 @@ input,select,textarea{
       </div>
       <div class="auth-row">
         <label><input type="checkbox"> Beni Hatırla</label>
+        <a onclick="openForgot()" style="cursor:pointer">Şifremi Unuttum</a>
+      </div>
+      <button class="btn-primary" type="submit">Giriş Yap</button>
+      <div class="auth-footer">Hesabın yok mu? <a onclick="openRegister()">Kayıt Ol</a></div>
+    </form>
+  </div>
+
+  <!-- REGISTER -->
+  <div id="register" class="auth-screen" style="display:none">
+    <div class="auth-header">
+      <button class="auth-back" onclick="showScreen('welcome')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div style="font-weight:700;font-size:16px">Kayıt Ol</div>
+    </div>
+    <div class="auth-hero">
+      <div class="auth-logo" style="font-size:32px">gamezone <span class="yellow">erp</span></div>
+      <div style="text-align:center;opacity:.85;margin-top:8px">20.000 TL ile başla!</div>
+    </div>
+    <form class="auth-form" onsubmit="doRegister(event)">
+      <div class="auth-field">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
+        <input type="text" id="reg-user" placeholder="Kullanıcı adı" required minlength="3" maxlength="16">
+      </div>
+      <div class="auth-field">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <input type="email" id="reg-email" placeholder="E-posta" required>
+      </div>
+      <div class="auth-field">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input type="password" id="reg-pass" placeholder="Parola" required minlength="4">
+      </div>
+      <button class="btn-primary" type="submit">Hesap Oluştur</button>
+      <div class="auth-footer">Zaten hesabın var mı? <a onclick="openLogin()">Giriş Yap</a></div>
+    </form>
+  </div>
+
+  <!-- ====== MAIN APP ====== -->
+  <div id="main" class="main-shell">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="topbar-row">
+        <div class="brand">gamezone <span class="yellow">erp</span></div>
+        <div class="topbar-icons">
+          <button class="tb-btn" onclick="openPage('chat')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="badge" id="chat-badge" style="display:none">!</span>
+          </button>
+          <button class="tb-btn" onclick="openPage('notifications')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="badge" id="notif-badge">1</span>
+          </button>
+          <button class="tb-btn" onclick="openPage('bank')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+          </button>
+          <button class="tb-btn" onclick="openPage('profile')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </button>
+          <button class="tb-btn" onclick="openPage('menu')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="topbar-stats">
+        <div class="stat-pill">
+          <span class="level-num" id="level-num">1</span>
+          <div>
+            <div style="font-size:9px;margin-bottom:2px"><span id="xp-text">0/1000</span></div>
+            <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="stat-pill">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#60a5fa"><path d="M12 2l3 7h7l-5.5 4.5L18 22l-6-4-6 4 1.5-8.5L2 9h7z"/></svg>
+          <span id="diamond-count">10</span>
+        </div>
+        <div class="money-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+          <span id="money-count">20.000,00 ₺</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content" id="content-area">
+
+      <!-- HOME (DÜKKANLAR) -->
+      <div class="page active" id="page-dukkanlar">
+        <div class="page-header">
+          <span class="page-icon">🏪</span>
+          <span class="page-title">Dükkanlar</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7M5 9v11h14V9"/></svg>
+        </div>
+        <div id="dukkanlar-body"></div>
+      </div>
+
+      <!-- BAHÇELER (locked lvl 5) -->
+      <div class="page" id="page-bahceler">
+        <div class="page-header"><span class="page-icon">🌾</span><span class="page-title">Bahçeler</span></div>
+        <div class="empty">
+          <div class="empty-lock">🔒</div>
+          <div class="empty-big">5. Seviyede Açılacak</div>
+          <div class="empty-text" style="margin-top:8px">Dükkanlarını büyüterek seviye atla ve bahçeleri aç!</div>
+        </div>
+      </div>
+
+      <!-- ÇIFTLIKLER (locked lvl 10) -->
+      <div class="page" id="page-ciftlikler">
+        <div class="page-header"><span class="page-icon">🥚</span><span class="page-title">Çiftlikler</span></div>
+        <div class="empty">
+          <div class="empty-lock">🔒</div>
+          <div class="empty-big">10. Seviyede Açılacak</div>
+          <div class="empty-text" style="margin-top:8px">Önce bahçelerini kur, sonra çiftlik sahibi ol!</div>
+        </div>
+      </div>
+
+      <!-- FABRIKALAR (locked lvl 20) -->
+      <div class="page" id="page-fabrikalar">
+        <div class="page-header"><span class="page-icon">🏭</span><span class="page-title">Fabrikalar</span></div>
+        <div class="empty">
+          <div class="empty-lock">🔒</div>
+          <div class="empty-big">20. Seviyede Açılacak</div>
+          <div class="empty-text" style="margin-top:8px">Seri üretime geçmek için seviye atla!</div>
+        </div>
+      </div>
+
+      <!-- MADENLER (locked lvl 30) -->
+      <div class="page" id="page-madenler">
+        <div class="page-header"><span class="page-icon">⛏️</span><span class="page-title">Madenler</span></div>
+        <div class="empty">
+          <div class="empty-lock">🔒</div>
+          <div class="empty-big">30. Seviyede Açılacak</div>
+          <div class="empty-text" style="margin-top:8px">En üst seviye: Maden imparatorluğu!</div>
+        </div>
+      </div>
+
+      <!-- BANK -->
+      <div class="page" id="page-bank">
+        <div class="page-header">
+          <button class="back-btn" onclick="backToMain()">←</button>
+          <span class="page-icon">🏦</span>
+          <span class="page-title">Banka</span>
+        </div>
+        <div id="bank-body"></div>
+      </div>
+
+      <!-- NOTIFICATIONS -->
+      <div class="page" id="page-notifications">
+        <div class="page-header">
+          <button class="back-btn" onclick="backToMain()">←</button>
+          <span class="page-title">Bildirimler</span>
+        </div>
+        <div id="notif-body"></div>
+      </div>
+
+      <!-- CHAT -->
+      <div class="page" id="page-chat">
+        <div class="page-header">
+          <button class="back-btn" onclick="backToMain()">←</button>
+          <span class="page-icon">💬</span>
+          <span class="page-title">Global Sohbet</span>
+        </div>
+        <div class="chat-wrap">
+          <div class="chat-input">
+            <div class="chat-input-avatar">🙂</div>
+            <input id="chat-text" placeholder="Bir şeyler yaz..." maxlength="200">
+            <button class="chat-send" onclick="sendChat()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+            </button>
+          </div>
+          <div class="chat-messages" id="chat-messages"></div>
+        </div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="page" id="page-profile">
+        <div class="page-header">
+          <button class="back-btn" onclick="backToMain()">←</button>
+          <span class="page-title">Profil</span>
+        </div>
+        <div id="profile-body"></div>
+      </div>
+
+      <!-- MENU -->
+      <div class="page" id="page-menu">
+        <div class="menu-header">
+          <button class="back-btn" onclick="backToMain()">←</button>
+          <div style="flex:1"></div>
+          <div style="width:40px;height:40px;border-radius:10px;background:#f3f4f6;display:grid;place-items:center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+          </div>
+        </div>
+        <div class="menu-grid">
+          <div class="menu-tile" onclick="openPage('news')">
+            <div class="menu-tile-icon">📰</div>
+            <div class="menu-tile-label">Haberler</div>
+          </div>
+          <div class="menu-tile" onclick="openPage('cities')">
+            <div class="menu-tile-icon">🏙️</div>
+            <div class="menu-tile-label">Şehirler</div>
+          </div>
+          <div class="menu-tile" onclick="openPage('lottery')">
+            <div class="menu-tile-icon">🎰</div>
+            <div class="menu-tile-label">Çekiliş</div>
+          </div>
+          <div class="menu-tile" onclick="openPage('assistant')">
+            <div class="menu-tile-icon">🤖</div>
+            <div class="menu-tile-label">Asistan</div>
+          </div>
+          <div class="menu-tile" onclick="openPage('ranking')">
+            <div class="menu-tile-icon">🏆</div>
+            <div class="menu-tile-label">Sıralama</div>
+          </div>
+          <div class="menu-tile" onclick="openPage('faq')">
+            <div class="menu-tile-icon">❓</div>
+            <div class="menu-tile-label">SSS</div>
+          </div>
+          <div class="menu-tile" onclick="openPage('terms')">
+            <div class="menu-tile-icon">📜</div>
+            <div class="menu-tile-label">Kullanım Koşulları</div>
+          </div>
+          <div class="menu-tile" onclick="openPage('store')">
+            <div class="menu-tile-icon">💳</div>
+            <div class="menu-tile-label">Uygulama Mağazası</div>
+          </div>
+          <div class="menu-tile" onclick="openPage('feedback')">
+            <div class="menu-tile-icon">✉️</div>
+            <div class="menu-tile-label">Geri Bildirim</div>
+          </div>
+        </div>
+        <div class="menu-footer">
+          <div class="menu-socials">
+            <button class="social-btn" style="background:linear-gradient(135deg,#f09433,#dc2743);color:#fff">📷</button>
+            <button class="social-btn" style="background:#111;color:#fff">𝕏</button>
+            <button class="social-btn" style="background:#ff0000;color:#fff">▶</button>
+          </div>
+          <div style="text-align:right;font-size:11px">
+            © 2026 Game Zone ERP<br>
+            <span style="color:#9ca3af">Tüm hakları saklıdır</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEWS -->
+      <div class="page" id="page-news">
+        <div class="page-header">
+          <button class="back-btn" onclick="openPage('menu')">←</button>
+          <span class="page-icon">📰</span>
+          <span class="page-title">Haberler</span>
+        </div>
+        <div id="news-body"></div>
+      </div>
+
+      <!-- CITIES -->
+      <div class="page" id="page-cities">
+        <div class="page-header">
+          <button class="back-btn" onclick="openPage('menu')">←</button>
+          <span class="page-icon">🏙️</span>
+          <span class="page-title">Şehirler</span>
+        </div>
+        <div class="city-list" id="city-list"></div>
+      </div>
+
+      <!-- LOTTERY -->
+      <div class="page" id="page-lottery">
+        <div class="page-header">
+          <button class="back-btn" onclick="openPage('menu')">←</button>
+          <span class="page-icon">🎰</span>
+          <span class="page-title">Çekiliş</span>
+        </div>
+        <div class="lottery-box">
+          <div class="lottery-emoji">💎</div>
+          <div class="lottery-title">Haftalık Elmas Çekilişi</div>
+          <div class="lottery-text">1 kupon ile büyük ödül kazanma şansı! Bu hafta 10.000 elmas dağıtılacak.</div>
+          <button class="lottery-btn" onclick="joinLottery()">Katıl (1 Kupon)</button>
+        </div>
+        <div style="padding:0 14px">
+          <div style="background:#fff;border-radius:14px;padding:16px;text-align:center">
+            <div style="font-size:13px;color:#6b7280;margin-bottom:4px">Sonraki çekilişe kalan süre</div>
+            <div id="lottery-timer" style="font-size:24px;font-weight:800;color:var(--primary)">--:--:--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ASSISTANT -->
+      <div class="page" id="page-assistant">
+        <div class="page-header">
+          <button class="back-btn" onclick="openPage('menu')">←</button>
+          <span class="page-icon">🤖</span>
+          <span class="page-title">Asistan</span>
+        </div>
+        <div style="padding:14px 14px 0;font-size:13px;color:#6b7280">
+          Asistanlar sen çevrimdışıyken dükkanlarını yönetir, satış yapar, stokları yeniler!
+        </div>
+        <div class="asst-card">
+          <div class="asst-icon">🤖</div>
+          <div class="asst-info">
+            <div class="asst-title">1 Günlük Asistan</div>
+            <div class="asst-desc">24 saat boyunca aktif</div>
+          </div>
+          <button class="asst-buy" onclick="buyAssistant(1,5)">💎 5</button>
+        </div>
+        <div class="asst-card">
+          <div class="asst-icon" style="background:linear-gradient(135deg,#60a5fa,#2563eb)">🤖</div>
+          <div class="asst-info">
+            <div class="asst-title">7 Günlük Asistan</div>
+            <div class="asst-desc">Bir hafta boyunca aktif • %15 indirim</div>
+          </div>
+          <button class="asst-buy" onclick="buyAssistant(7,30)">💎 30</button>
+        </div>
+        <div class="asst-card">
+          <div class="asst-icon" style="background:linear-gradient(135deg,#fbbf24,#d97706)">⭐</div>
+          <div class="asst-info">
+            <div class="asst-title">30 Günlük Premium Asistan</div>
+            <div class="asst-desc">Bir ay + %50 daha hızlı satış</div>
+          </div>
+          <button class="asst-buy" onclick="buyAssistant(30,90)">💎 90</button>
+        </div>
+      </div>
+
+      <!-- RANKING -->
+      <div class="page" id="page-ranking">
+        <div class="page-header">
+          <button class="back-btn" onclick="openPage('menu')">←</button>
+          <span class="page-icon">🏆</span>
+          <span class="page-title">Sıralama</span>
+        </div>
+        <div id="ranking-body"></div>
+      </div>
+
+      <!-- FAQ -->
+      <div class="page" id="page-faq">
+        <div class="page-header">
+          <button class="back-btn" onclick="openPage('menu')">←</button>
+          <span class="page-icon">❓</span>
+          <span class="page-title">Sıkça Sorulan Sorular</span>
+        </div>
+        <div id="faq-body"></div>
+      </div>
+
+      <!-- TERMS -->
+      <div class="page" id="page-terms">
+        <div class="page-header">
+          <button class="back-btn" onclick="openPage('menu')">←</button>
+          <span class="page-icon">📜</span>
+          <span class="page-title">Kullanım Koşulları</span>
+        </div>
+        <div class="terms-body">
+          <p>Game Zone ERP'ye hoş geldin! Uygulamayı kullanarak aşağıdaki koşulları kabul etmiş olursun.</p>
+          <h3>1. Hesap</h3>
+          <p>Kullanıcı tek bir hesap açabilir. Birden fazla hesap kullanımı tespit edilirse hesaplar kalıcı olarak askıya alınır.</p>
+          <h3>2. Sanal Para ve Satın Alımlar</h3>
+          <p>Uygulama içi satın alımlar gerçek para ile yapılır. Satın alınan elmas ve kuponlar iade edilmez. Sanal paranın gerçek dünyada bir değeri yoktur.</p>
+          <h3>3. Oyun İçi Davranış</h3>
+          <p>Sohbette küfür, hakaret, reklam yasaktır. Kural ihlali hesap kapanmasına sebep olur.</p>
+          <h3>4. Fikri Mülkiyet</h3>
+          <p>Uygulamadaki tüm grafik, yazı, logo ve içerikler Game Zone ERP'ye aittir. İzinsiz kullanılamaz.</p>
+          <h3>5. Sorumluluk Reddi</h3>
+          <p>Uygulama "olduğu gibi" sunulur. Hizmet kesintileri veya veri kaybından dolayı oluşabilecek zararlardan Game Zone ERP sorumlu tutulamaz.</p>
+          <h3>6. Değişiklikler</h3>
+          <p>Bu koşullar önceden haber verilmeksizin güncellenebilir. Kullanıma devam etmen güncel koşulları kabul ettiğin anlamına gelir.</p>
+          <p style="margin-top:20px;color:#9ca3af;font-size:11px">Son güncelleme: Nisan 2026</p>
+        </div>
+      </div>
+
+      <!-- STORE -->
+      <div class="page" id="page-store">
+        <div class="page-header">
+          <button class="back-btn" onclick="openPage('menu')">←</button>
+          <span class="page-icon">💳</span>
+          <span class="page-title">Uygulama Mağazası</span>
+        </div>
+        <div style="padding:14px 14px 0;font-size:13px;color:#6b7280">
+          Elmas paketleri ile asistan, çekiliş kuponu ve daha fazlasını satın al!
+        </div>
+        <div class="pkg-grid">
+          <div class="pkg-card">
+            <div class="pkg-icon">💎</div>
+            <div class="pkg-info">
+              <div class="pkg-amount">100 Elmas</div>
+              <div class="pkg-bonus">Başlangıç paketi</div>
+            </div>
+            <div class="pkg-price">39,99 ₺</div>
+          </div>
+          <div class="pkg-card">
+            <div class="pkg-icon">💎</div>
+            <div class="pkg-info">
+              <div class="pkg-amount">200 Elmas</div>
+              <div class="pkg-bonus">+20 bonus</div>
+            </div>
+            <div class="pkg-price">79,99 ₺</div>
+          </div>
+          <div class="pkg-card featured">
+            <div class="pkg-icon" style="background:linear-gradient(135deg,#fbbf24,#d97706)">💎</div>
+            <div class="pkg-info">
+              <div class="pkg-amount">400 Elmas <span class="featured-tag">POPÜLER</span></div>
+              <div class="pkg-bonus">+50 bonus</div>
+            </div>
+            <div class="pkg-price">159 ₺</div>
+          </div>
+          <div class="pkg-card">
+            <div class="pkg-icon" style="background:linear-gradient(135deg,#a78bfa,#7c3aed)">💎</div>
+            <div class="pkg-info">
+              <div class="pkg-amount">800 Elmas</div>
+              <div class="pkg-bonus">+150 bonus</div>
+            </div>
+            <div class="pkg-price">249 ₺</div>
+          </div>
+          <div class="pkg-card">
+            <div class="pkg-icon" style="background:linear-gradient(135deg,#f472b6,#be185d)">💎</div>
+            <div class="pkg-info">
+              <div class="pkg-amount">1600 Elmas</div>
+              <div class="pkg-bonus">+400 bonus</div>
+            </div>
+            <div class="pkg-price">489 ₺</div>
+          </div>
+          <div class="pkg-card">
+            <div class="pkg-icon" style="background:linear-gradient(135deg,#34d399,#059669)">💎</div>
+            <div class="pkg-info">
+              <div class="pkg-amount">3200 Elmas</div>
+              <div class="pkg-bonus">+1000 bonus • EN İYİ DEĞER</div>
+            </div>
+            <div class="pkg-price">969 ₺</div>
+          </div>
+        </div>
+        <div style="padding:14px;text-align:center;font-size:11px;color:#9ca3af">
+          * Bu bir demodur. Gerçek satın alma yapılmaz.
+        </div>
+      </div>
+
+      <!-- FEEDBACK -->
+      <div class="page" id="page-feedback">
+        <div class="page-header">
+          <button class="back-btn" onclick="openPage('menu')">←</button>
+          <span class="page-icon">✉️</span>
+          <span class="page-title">Geri Bildirim</span>
+        </div>
+        <form class="feedback-form" onsubmit="submitFeedback(event)">
+          <div>
+            <label>Konu</label>
+            <select required>
+              <option value="">Seçin...</option>
+              <option>Hata Bildirimi</option>
+              <option>Öneri</option>
+              <option>Şikayet</option>
+              <option>Diğer</option>
+            </select>
+          </div>
+          <div>
+            <label>E-posta (iletişim için)</label>
+            <input type="email" placeholder="ornek@mail.com">
+          </div>
+          <div>
+            <label>Mesajın</label>
+            <textarea placeholder="Görüşlerini bizimle paylaş..." required></textarea>
+          </div>
+          <button type="submit" class="btn-primary" style="color:#1f2937">Gönder</button>
+        </form>
+      </div>
+
+      <!-- ABOUT / STORY -->
+      <div class="page" id="page-about">
+        <div class="page-header">
+          <button class="back-btn" onclick="openPage('menu')">←</button>
+          <span class="page-icon">📖</span>
+          <span class="page-title">Hakkımızda</span>
+        </div>
+        <div style="padding:14px">
+          <div style="background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:18px;padding:24px;color:#fff;text-align:center;margin-bottom:14px">
+            <div style="font-size:60px;margin-bottom:12px">🏢</div>
+            <div style="font-family:'Space Grotesk';font-size:26px;font-weight:700;margin-bottom:6px">gamezone <span style="color:#fbbf24">erp</span></div>
+            <div style="opacity:.85;font-size:14px;line-height:1.6">Türkiye'nin En Büyük<br>Ekonomi Simülasyon Oyunu</div>
+          </div>
+          <div class="bank-card">
+            <div style="font-size:16px;font-weight:800;margin-bottom:12px">🚀 Oyun Hakkında</div>
+            <p style="font-size:13px;color:#374151;line-height:1.7">
+              <b>Game Zone ERP</b>, Türkiye'nin 81 ilinde işletme açıp büyütebileceğin gerçek zamanlı bir ekonomi simülasyon oyunudur. Dükkan, bahçe, çiftlik, fabrika ve madenden oluşan güçlü iş imparatorluğunu kur!
+            </p>
+          </div>
+          <div class="bank-card" style="margin-top:0">
+            <div style="font-size:16px;font-weight:800;margin-bottom:12px">👨‍💻 Geliştirici Ekibi</div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:#f9fafb;border-radius:10px;margin-bottom:8px">
+              <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#fbbf24,#d97706);display:grid;place-items:center;font-size:22px">👨‍💼</div>
+              <div>
+                <div style="font-weight:700">Serkan Karakaş</div>
+                <div style="font-size:12px;color:#6b7280">Kurucu & Baş Geliştirici</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:#f9fafb;border-radius:10px">
+              <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#3b82f6,#1e40af);display:grid;place-items:center;font-size:22px">👨‍💻</div>
+              <div>
+                <div style="font-weight:700">Resul Karakaş</div>
+                <div style="font-size:12px;color:#6b7280">Co-Founder & Teknik Direktör</div>
+              </div>
+            </div>
+          </div>
+          <div class="bank-card" style="margin-top:0">
+            <div style="font-size:16px;font-weight:800;margin-bottom:12px">🔄 Güncelleme Takvimi</div>
+            <p style="font-size:13px;color:#374151;line-height:1.7">
+              <b>gamezoneERP</b>, sürekli olarak geliştirilmektedir. Haftada en az 1 defa büyük güncelleme, iki günde bir küçük yamalar yayınlanmaktadır. Topluluğumuzla birlikte bu oyunu daha iyi bir hale getirmek için çalışıyoruz!
+            </p>
+          </div>
+          <div class="bank-card" style="margin-top:0;background:linear-gradient(135deg,#fef3c7,#fffbeb)">
+            <div style="font-size:16px;font-weight:800;margin-bottom:12px">⚖️ Güvenlik & Kurallar</div>
+            <div style="font-size:13px;color:#374151;line-height:1.7">
+              <p style="margin-bottom:8px">🚫 <b>Para hilesi kesinlikle yasaktır</b> — oyun içinde dışarıdan para enjeksiyonu yapılamaz. Hiçbir kullanıcı bu kuralın dışında değildir, geliştiriciler dahil.</p>
+              <p style="margin-bottom:8px">🤬 <b>Küfür ve hakaret</b> eden hesaplar anında kalıcı ban alır.</p>
+              <p style="margin-bottom:8px">😈 <b>Taciz ve zorbalık</b> sıfır tolerans politikasına tabidir.</p>
+              <p style="margin-bottom:8px">🔒 <b>Gizlilik:</b> Şifren ve e-posta adresin hiçbir zaman üçüncü taraflarla paylaşılmaz.</p>
+              <p>💬 Görüş ve önerilerinizi Geri Bildirim bölümünden iletebilirsiniz. Oyunu birlikte geliştiriyoruz!</p>
+            </div>
+          </div>
+          <div style="text-align:center;padding:16px 0;font-size:12px;color:#9ca3af">
+            © 2026 gamezoneERP · v2.1 · Tüm hakları saklıdır
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="page" id="page-settings">
+        <div class="page-header">
+          <button class="back-btn" onclick="openPage('profile')">←</button>
+          <span class="page-icon">⚙️</span>
+          <span class="page-title">Ayarlar</span>
+        </div>
+        <div id="settings-body"></div>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottomnav">
+      <button class="nav-item blue" data-tab="dukkanlar" onclick="switchTab('dukkanlar')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-4h16l1 4M3 9v11h18V9M3 9h18"/></svg>
+        <span>Dükkanlar</span>
+      </button>
+      <button class="nav-item" data-tab="bahceler" onclick="switchTab('bahceler')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M12 8c-3 0-5-2-5-4 2 0 5 2 5 4zM12 8c3 0 5-2 5-4-2 0-5 2-5 4zM12 14c-3 0-5-2-5-4 2 0 5 2 5 4zM12 14c3 0 5-2 5-4-2 0-5 2-5 4z"/></svg>
+        <span>Bahçeler</span>
+      </button>
+      <button class="nav-item" data-tab="ciftlikler" onclick="switchTab('ciftlikler')">
+        <span class="nav-hand">👆</span>
+        <svg viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="13" rx="7" ry="9"/></svg>
+        <span>Çiftlikler</span>
+      </button>
+      <button class="nav-item" data-tab="fabrikalar" onclick="switchTab('fabrikalar')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 20V10l5 3V10l5 3V6l4 3v11"/></svg>
+        <span>Fabrikalar</span>
+      </button>
+      <button class="nav-item" data-tab="madenler" onclick="switchTab('madenler')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l4-4 3 3 5-5 4 4v2H4z"/><circle cx="15" cy="7" r="2"/></svg>
+        <span>Madenler</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modal-backdrop" id="welcome-modal">
+    <div class="modal">
+      <div class="welcome-modal">
+        <svg class="welcome-illo" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="100" width="20" height="50" fill="#93c5fd" opacity=".8"/>
+          <rect x="42" y="80" width="20" height="70" fill="#60a5fa" opacity=".9"/>
+          <rect x="64" y="90" width="20" height="60" fill="#3b82f6"/>
+          <rect x="115" y="85" width="20" height="65" fill="#3b82f6"/>
+          <rect x="137" y="70" width="20" height="80" fill="#2563eb"/>
+          <rect x="159" y="90" width="20" height="60" fill="#60a5fa" opacity=".9"/>
+          <path d="M60 60 L160 40 L130 70 L100 65 Z" fill="#ffffff" stroke="#1e40af" stroke-width="1"/>
+          <circle cx="115" cy="45" r="7" fill="#fbbf24"/>
+          <rect x="110" y="50" width="10" height="18" rx="2" fill="#1e40af"/>
+          <rect x="112" y="66" width="3" height="10" fill="#111827"/>
+          <rect x="117" y="66" width="3" height="10" fill="#111827"/>
+          <rect x="122" y="58" width="8" height="2" rx="1" fill="#fbbf24" transform="rotate(30 122 58)"/>
+          <rect x="130" y="60" width="8" height="6" rx="1" fill="#7f1d1d"/>
+        </svg>
+        <div class="welcome-title">Game Zone ERP'ye Hoş Geldin! 🎉</div>
+        <div class="welcome-text">20.000 TL ile başla, kazancını katla! Üret, sat, rekabet et. Game Zone ERP'de ekonomik gücünü kanıtla!</div>
+        <button class="welcome-cta" onclick="closeWelcomeModal()">Hadi Başlayalım! 🚀</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="shop-modal">
+    <div class="modal" style="max-width:440px">
+      <div class="modal-header">
+        <button class="modal-close" onclick="closeModal('shop-modal')">×</button>
+        <div class="modal-title" style="text-align:center">Yeni Dükkan</div>
+        <div style="width:32px"></div>
+      </div>
+      <div class="modal-body" style="padding:0">
+        <div class="city-select">
+          <label>Şehir Seçin</label>
+          <select id="shop-city"><option value="">Şehir Seçin...</option></select>
+        </div>
+        <div class="shop-grid" id="shop-grid"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('shop-modal')">Vazgeç</button>
+        <button class="btn-confirm" id="shop-confirm" onclick="confirmShop()" disabled>Onayla</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="shop-detail-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <button class="modal-close" onclick="closeModal('shop-detail-modal')">×</button>
+        <div class="modal-title" id="sd-title">Dükkan</div>
+      </div>
+      <div class="modal-body" id="sd-body"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="bank-action-modal">
+    <div class="modal" style="max-width:380px">
+      <div class="modal-header">
+        <button class="modal-close" onclick="closeModal('bank-action-modal')">×</button>
+        <div class="modal-title" id="bam-title">İşlem</div>
+      </div>
+      <div class="modal-body">
+        <p id="bam-desc" style="font-size:13px;color:#6b7280;margin-bottom:14px"></p>
+        <div style="background:#f9fafb;border-radius:12px;padding:14px;margin-bottom:14px">
+          <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:6px">Tutar (₺)</label>
+          <input id="bam-amount" type="number" min="1" step="1" placeholder="0"
+            style="width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:10px;font-size:18px;font-weight:700;text-align:center;outline:none"
+            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="bam-withdraw" class="btn-cancel" style="background:#fef2f2;color:#dc2626">Çek</button>
+        <button id="bam-deposit" class="btn-confirm">Yatır</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="confetti" id="confetti-host" style="display:none"></div>
+</div>
+
+<!-- FORGOT PASSWORD (outside app div, full screen) -->
+<div id="forgot" class="auth-screen" style="display:none;position:fixed;inset:0;z-index:9999">
+  <div class="auth-header">
+    <button class="auth-back" onclick="showScreen('login')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <div style="font-weight:700;font-size:16px">Şifremi Unuttum</div>
+  </div>
+  <div class="auth-hero">
+    <div style="font-size:80px;margin-bottom:16px">🔑</div>
+    <div class="auth-title">Şifre Sıfırlama</div>
+    <div class="auth-subtitle">E-posta adresini gir, sıfırlama bağlantısını gönderelim.</div>
+  </div>
+  <form class="auth-form" onsubmit="doForgot(event)">
+    <div class="auth-field">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      <input type="email" id="forgot-email" placeholder="E-posta adresin" required>
+    </div>
+    <button class="btn-primary" type="submit">Sıfırlama Gönder</button>
+    <div class="auth-footer"><a onclick="showScreen('login')">Girişe Dön</a></div>
+  </form>
+</div>
+
+<script>
+/* ============================================
+   GAME ZONE ERP - MAIN LOGIC
+   ============================================ */
+
+/* ---- 81 TURKISH CITIES ---- */
+const CITIES = [
+  ["İstanbul",15840900],["Ankara",5803482],["İzmir",4462056],["Bursa",3214571],["Antalya",2688004],
+  ["Konya",2296347],["Adana",2270298],["Şanlıurfa",2170110],["Gaziantep",2154051],["Kocaeli",2079072],
+  ["Mersin",1916432],["Diyarbakır",1804880],["Hatay",1686043],["Manisa",1468279],["Kayseri",1441523],
+  ["Samsun",1377546],["Balıkesir",1257590],["Kahramanmaraş",1177436],["Van",1135410],["Aydın",1148241],
+  ["Tekirdağ",1155066],["Sakarya",1098115],["Denizli",1063077],["Muğla",1050160],["Eskişehir",898369],
+  ["Mardin",870374],["Malatya",806156],["Trabzon",820152],["Ordu",761400],["Afyonkarahisar",747555],
+  ["Erzurum",749754],["Sivas",634924],["Tokat",594223],["Adıyaman",632459],["Elazığ",591497],
+  ["Çorum",528422],["Batman",647205],["Aksaray",438504],["Kütahya",576688],["İzmir2",445020],
+  ["Zonguldak",587783],["Isparta",444914],["Edirne",414714],["Osmaniye",559405],["Çanakkale",559383],
+  ["Giresun",446090],["Şırnak",569278],["Düzce",407283],["Kastamonu",382330],["Uşak",375454],
+  ["Niğde",365419],["Nevşehir",310827],["Rize",343212],["Bolu",324789],["Bitlis",349396],
+  ["Bingöl",285655],["Yalova",308335],["Amasya",337508],["Karabük",252058],["Kırklareli",369347],
+  ["Kırıkkale",277046],["Kırşehir",243042],["Muş",406886],["Yozgat",420699],["Siirt",331311],
+  ["Ağrı",510626],["Bilecik",228334],["Bayburt",82514],["Burdur",273488],["Sinop",215193],
+  ["Artvin",169403],["Karaman",258838],["Kars",281032],["Çankırı",198255],["Gümüşhane",151682],
+  ["Iğdır",203155],["Erzincan",239247],["Hakkari",275761],["Tunceli",85062],["Ardahan",92819],
+  ["Kilis",148098]
+].map(([name,pop],i)=>({id:i,name,pop,buildings:{dukkan:Math.floor(Math.random()*800+200+i*5),bahce:Math.floor(Math.random()*500+100),ciftlik:Math.floor(Math.random()*300+50),fabrika:Math.floor(Math.random()*200+30),maden:Math.floor(Math.random()*50+2)}}));
+
+/* ---- SHOP TYPES ---- */
+const SHOP_TYPES = [
+  {id:'market',name:'Market',price:14000,income:800,cat:'market',emoji:'🛒',minLevel:1,
+   products:['ekmek','süt','yumurta','peynir','zeytin','reçel','şeker','un']},
+  {id:'butik',name:'Butik / Giyim',price:21000,income:1200,cat:'butik',emoji:'👔',minLevel:1,
+   products:['gömlek','pantolon','ayakkabı','ceket','kravat','takım elbise']},
+  {id:'elektronik',name:'Elektronik',price:27000,income:1800,cat:'elektronik',emoji:'📱',minLevel:2,
+   products:['telefon','kulaklık','powerbank','şarj aleti','tablet']},
+  {id:'mobilya',name:'Mobilya',price:29000,income:2200,cat:'mobilya',emoji:'🛋️',minLevel:2,
+   products:['koltuk','masa','sandalye','dolap','yatak']},
+  {id:'beyaz',name:'Beyaz Eşya',price:30000,income:2600,cat:'beyaz',emoji:'🧺',minLevel:3,
+   products:['buzdolabı','çamaşır makinesi','bulaşık makinesi','fırın']},
+  {id:'kuyumcu',name:'Kuyumcu',price:42000,income:4000,cat:'kuyumcu',emoji:'💍',minLevel:4,
+   products:['altın','gümüş','pırlanta','kolye','bilezik']},
+  {id:'oto',name:'Otomotiv',price:56000,income:7000,cat:'oto',emoji:'🚗',minLevel:5,
+   products:['sedan','SUV','hatchback','lüks araç']},
+  {id:'benzin',name:'Benzin İstasyonu',price:92000,income:14000,cat:'benzin',emoji:'⛽',minLevel:6,
+   products:['benzin','motorin','LPG','mazot']}
+];
+
+/* ---- MOCK PLAYERS ---- */
+const MOCK_PLAYERS = [
+  {name:'YAKISIKLI',emoji:'🐱',lvl:132,money:440700000000},
+  {name:'Bukubey_52',emoji:'👨‍💼',lvl:130,money:526200000000},
+  {name:'Pamela',emoji:'👸',lvl:122,money:432800000000},
+  {name:'kdr',emoji:'✨',lvl:135,money:381300000000},
+  {name:'okan',emoji:'🇹🇷',lvl:129,money:339400000000},
+  {name:'TIRTIL',emoji:'🌴',lvl:124,money:329300000000},
+  {name:'Legend1907',emoji:'⚽',lvl:113,money:308800000000},
+  {name:'Gold',emoji:'🥇',lvl:104,money:271000000000},
+  {name:'LEOPAR',emoji:'🐆',lvl:123,money:260800000000},
+  {name:'Atomikjack',emoji:'👯',lvl:124,money:252900000000},
+  {name:'Yum',emoji:'🎮',lvl:108,money:247300000000},
+  {name:'LEMUR',emoji:'🦫',lvl:117,money:243000000000},
+  {name:'Gaddar',emoji:'🤠',lvl:129,money:235100000000},
+  {name:'KARAESKI',emoji:'📷',lvl:114,money:233100000000},
+  {name:'ISO',emoji:'🔷',lvl:122,money:210500000000}
+];
+
+/* ---- CHAT MESSAGES (seeded) ---- */
+const CHAT_SEED = [
+  {user:'htatli46',av:'👨',time:'2 dk',text:'Vgn ucusta'},
+  {user:'htatli46',av:'👨',time:'2 dk',text:'@Utk aktifsen sürekli düşünüyorsan bize gelebilirsin'},
+  {user:'Aladeen',av:'🪖',time:'2 dk',text:'@Utk ufak brifing işleri var 😂'},
+  {user:'Aladeen',av:'🪖',time:'3 dk',text:'@Utk alırız alırız ayıp ettin'},
+  {user:'ByKeskin',av:'🙂',time:'5 dk',text:'@Utk 🙂'},
+  {user:'Utk',av:'🤴',time:'5 dk',text:'Vay be markasız kalsam kimse almayacak 😉'},
+  {user:'Utk',av:'🤴',time:'7 dk',text:'Marka var mı'},
+  {user:'Ka0s',av:'👤',time:'7 dk',text:'Vgn ucucak borsa mezunuyum satın al arkana yaslan kolonya yudumla xd'},
+  {user:'Bernand',av:'🥷',time:'9 dk',text:'gönderdim'},
+  {user:'Bernand',av:'🥷',time:'9 dk',text:'tamam'},
+  {user:'Aladeen',av:'🪖',time:'10 dk',text:'@Bernand gel detayları konuşuruz markada'},
+  {user:'Bolero',av:'🎩',time:'11 dk',text:'@YAKISIKLI sa gelince etiketlermisin'}
+];
+
+/* ---- ACTIVITY (live feed) ---- */
+const ACTIVITY_SEED = [
+  {user:'Sultann',av:'🐱',action:'buy',amount:1394.24,qty:520,prod:'alabalık',from:'Antalya',to:'Ankara',time:'2 saniye önce'},
+  {user:'Sultann',av:'🐱',action:'buy',amount:467.76,qty:120,prod:'süzme bal',unit:'kilo',from:'Antalya',to:'Ankara',time:'9 saniye önce'},
+  {user:'cigkofte',av:'👤',action:'buy',amount:451.94,qty:160,prod:'alabalık',from:'Diyarbakır',to:'Ankara',time:'9 saniye önce'},
+  {user:'cigkofte',av:'👤',action:'buy',amount:3335.46,qty:80,prod:'pastırma',unit:'kilo',from:'Diyarbakır',to:'Kastamonu',time:'10 saniye önce'},
+  {user:'Sultann',av:'🐱',action:'buy',amount:8713.09,qty:213,prod:'pastırma',unit:'kilo',from:'Antalya',to:'Kastamonu',time:'12 saniye önce'},
+  {user:'Mavis',av:'🧛',action:'buy',amount:2150.50,qty:50,prod:'gömlek',from:'İzmir',to:'Bursa',time:'15 saniye önce'},
+  {user:'Champ',av:'🏆',action:'buy',amount:12400.00,qty:10,prod:'altın',from:'Ankara',to:'İstanbul',time:'18 saniye önce'}
+];
+
+/* ---- FAQ ---- */
+const FAQ = [
+  {q:'Game Zone ERP nasıl oynanır?',a:'20.000 TL ile bir şehirde dükkan açarak başlarsın. Ürün satarak para ve XP kazanır, seviye atladıkça bahçe, çiftlik, fabrika ve maden gibi yeni iş kollarını açarsın.'},
+  {q:'Bahçeler ne zaman açılır?',a:'5. seviyede bahçeler, 10. seviyede çiftlikler, 20. seviyede fabrikalar ve 30. seviyede madenler açılır.'},
+  {q:'Elmas nasıl kazanırım?',a:'Günlük girişlerden, seviye atlayarak, görevleri tamamlayarak ve uygulama mağazasından satın alarak elmas kazanabilirsin.'},
+  {q:'Asistan ne işe yarar?',a:'Sen çevrimdışıyken asistan dükkanlarını yönetir, otomatik satış yapar ve stokları yeniler. Elmas ile satın alınır.'},
+  {q:'Banka nasıl çalışır?',a:'Paranı yatırarak faiz kazanır, kredi çekerek yeni yatırımlar yapabilirsin. Kredi limiti seviyene göre artar.'},
+  {q:'Çalışan morali ne demek?',a:'Çalışanlarının mutluluk seviyesidir. %100 moral = maksimum verim. Maaş ödemezsen moral düşer.'},
+  {q:'Haftalık işletme gideri nedir?',a:'Her hafta dükkan başına belli bir kira/gider ödersin. Bunları bankadan otomatik ödeyebilirsin.'},
+  {q:'Çekiliş nasıl katılınır?',a:'Kuponlarını kullanarak haftalık elmas çekilişine katılabilirsin. Her hafta Pazar gecesi sonuçlar açıklanır.'},
+  {q:'Hesabımı nasıl silerim?',a:'Ayarlar > Hesap > Hesabı Sil yolundan kalıcı olarak hesabını silebilirsin. Bu işlem geri alınamaz!'}
+];
+
+/* ---- STATE ---- */
+let state = {
+  user:null,
+  money:20000,
+  bank:{balance:0,investment:0,credit:0,limit:0,profit:0},
+  diamonds:10,
+  coupons:1,
+  level:1,
+  xp:0,
+  shops:[],
+  employees:0,
+  moral:100,
+  weeklyExpense:0,
+  weeklySalary:0,
+  joinDate:Date.now(),
+  lotteryJoined:false,
+  assistants:[],
+  notifications:[
+    {id:1,text:'Hoş geldin! 20.000 TL başlangıç sermayen hesabına yatırıldı 💰',time:'az önce',read:false}
+  ],
+  chatHistory:[]
+};
+
+const LS_KEY='gamezoneERP_v1';
+function saveState(){try{localStorage.setItem(LS_KEY,JSON.stringify(state))}catch(e){}}
+function loadState(){
+  try{
+    const d=localStorage.getItem(LS_KEY);
+    if(d){state=Object.assign(state,JSON.parse(d))}
+  }catch(e){}
+}
+
+/* ---- UTILS ---- */
+function fmt(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)}
+function fmtShort(n){
+  if(n>=1e9)return (n/1e9).toFixed(1)+' MİLYAR TL';
+  if(n>=1e6)return (n/1e6).toFixed(1)+' MİLYON TL';
+  if(n>=1e3)return (n/1e3).toFixed(1)+' BİN TL';
+  return fmt(n)+' ₺';
+}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+type;
+  setTimeout(()=>t.classList.remove('show'),2400);
+}
+function confetti(){
+  const host=document.getElementById('confetti-host');
+  host.style.display='block';host.innerHTML='';
+  const colors=['#fbbf24','#3b82f6','#ef4444','#10b981','#8b5cf6','#f472b6'];
+  for(let i=0;i<50;i++){
+    const s=document.createElement('span');
+    s.style.left=Math.random()*100+'%';
+    s.style.background=colors[Math.floor(Math.random()*colors.length)];
+    s.style.animationDelay=(Math.random()*.5)+'s';
+    s.style.animationDuration=(2+Math.random()*1.5)+'s';
+    host.appendChild(s);
+  }
+  setTimeout(()=>{host.style.display='none';host.innerHTML=''},3500);
+}
+
+/* ---- FIREBASE SETUP ---- */
+const FB_CONFIG={apiKey:"AIzaSyCZ-maUXnCNTHR1BlSwTzjMUaotJduTDQs",authDomain:"gamezone-erp.firebaseapp.com",projectId:"gamezone-erp"};
+let fbApp,fbAuth,fbDb,fbUser=null,fbUnsubscribe=null;
+let deviceId=localStorage.getItem('gz_deviceId')||(localStorage.setItem('gz_deviceId',Math.random().toString(36).slice(2)),localStorage.getItem('gz_deviceId'));
+
+async function initFirebase(){
+  try{
+    const {initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,onAuthStateChanged}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    const {getFirestore,doc,setDoc,getDoc,onSnapshot,updateDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    fbApp=initializeApp(FB_CONFIG);
+    fbAuth=getAuth(fbApp);
+    fbDb=getFirestore(fbApp);
+    window._fbAuthLib={createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,onAuthStateChanged};
+    window._fbDbLib={doc,setDoc,getDoc,onSnapshot,updateDoc};
+    onAuthStateChanged(fbAuth,async user=>{
+      if(user){fbUser=user;await loadFirestoreState();}
+    });
+  }catch(err){console.warn('Firebase offline, localStorage mode:',err);}
+}
+initFirebase();
+
+async function loadFirestoreState(){
+  if(!fbDb||!fbUser)return;
+  const {doc,getDoc,onSnapshot}=window._fbDbLib;
+  const ref=doc(fbDb,'players',fbUser.uid);
+  const snap=await getDoc(ref);
+  if(snap.exists()){
+    const data=snap.data();
+    // kick sistemi
+    if(data.deviceId && data.deviceId!==deviceId){
+      alert('⚠️ Hesabınıza başka bir cihazdan giriş yapıldı. Bu cihazda oturum kapatılıyor.');
+      await fbAuth.signOut();location.reload();return;
+    }
+    state=Object.assign(state,data.gameState||{});
+    state.user=data.user||state.user;
+  } else {
+    // ilk kayıt - kaydet
+    await saveFirestoreState();
+  }
+  // canlı senkronizasyon
+  if(fbUnsubscribe)fbUnsubscribe();
+  fbUnsubscribe=onSnapshot(ref,snap2=>{
+    if(!snap2.exists())return;
+    const d=snap2.data();
+    if(d.deviceId && d.deviceId!==deviceId){
+      alert('⚠️ Hesabınıza başka bir cihazdan giriş yapıldı. Bu cihazda oturum kapatılıyor.');
+      location.reload();
+    }
+  });
+  showMain();
+}
+
+async function saveFirestoreState(){
+  if(!fbDb||!fbUser)return;
+  try{
+    const {doc,setDoc}=window._fbDbLib;
+    await setDoc(doc(fbDb,'players',fbUser.uid),{
+      user:state.user,gameState:state,deviceId,updatedAt:Date.now()
+    });
+  }catch(e){}
+}
+
+// otomatik 15 saniyede bir kaydet
+setInterval(()=>{saveFirestoreState();saveState();},15000);
+
+/* ---- AUTH FLOW ---- */
+function showScreen(id){
+  ['welcome','login','register','forgot'].forEach(s=>{
+    const el=document.getElementById(s);
+    if(el)el.style.display=s===id?'flex':'none';
+  });
+}
+function openLogin(){showScreen('login')}
+function openRegister(){showScreen('register')}
+function openForgot(){showScreen('forgot')}
+
+async function doLogin(e){
+  e.preventDefault();
+  const emailOrUser=document.getElementById('login-user').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  if(!emailOrUser||!pass){toast('Tüm alanları doldurun','error');return}
+  const btn=e.target.querySelector('button[type=submit]');
+  btn.disabled=true;btn.textContent='Giriş yapılıyor...';
+  // email yoksa @gamezone.tr ekle (kullanıcı adı desteği)
+  const email=emailOrUser.includes('@')?emailOrUser:emailOrUser+'@gamezone.tr';
+  try{
+    const {signInWithEmailAndPassword}=window._fbAuthLib;
+    await signInWithEmailAndPassword(fbAuth,email,pass);
+    // onAuthStateChanged halleder
+  }catch(err){
+    let msg='Giriş başarısız';
+    if(err.code==='auth/user-not-found'||err.code==='auth/wrong-password'||err.code==='auth/invalid-credential')msg='E-posta veya şifre hatalı';
+    if(err.code==='auth/too-many-requests')msg='Çok fazla deneme. Biraz bekle.';
+    toast(msg,'error');
+    btn.disabled=false;btn.textContent='Giriş Yap';
+  }
+}
+
+async function doRegister(e){
+  e.preventDefault();
+  const u=document.getElementById('reg-user').value.trim();
+  const em=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-pass').value;
+  if(!u||!em||!pass){toast('Tüm alanları doldurun','error');return}
+  if(pass.length<6){toast('Şifre en az 6 karakter olmalı','error');return}
+  const btn=e.target.querySelector('button[type=submit]');
+  btn.disabled=true;btn.textContent='Kayıt olunuyor...';
+  try{
+    const {createUserWithEmailAndPassword}=window._fbAuthLib;
+    const cred=await createUserWithEmailAndPassword(fbAuth,em,pass);
+    fbUser=cred.user;
+    state.user={name:u,email:em,isNew:true};
+    await saveFirestoreState();
+    showMain(true);
+  }catch(err){
+    let msg='Kayıt başarısız';
+    if(err.code==='auth/email-already-in-use')msg='Bu e-posta zaten kullanımda';
+    if(err.code==='auth/invalid-email')msg='Geçersiz e-posta';
+    if(err.code==='auth/weak-password')msg='Şifre çok zayıf';
+    toast(msg,'error');
+    btn.disabled=false;btn.textContent='Hesap Oluştur';
+  }
+}
+
+async function doForgot(e){
+  e.preventDefault();
+  const em=document.getElementById('forgot-email').value.trim();
+  if(!em){toast('E-posta girin','error');return}
+  try{
+    const {sendPasswordResetEmail}=window._fbAuthLib;
+    await sendPasswordResetEmail(fbAuth,em);
+    toast('Sıfırlama e-postası gönderildi! 📧','success');
+    showScreen('login');
+  }catch(err){toast('E-posta gönderilemedi','error');}
+}
+
+function showMain(isNew=false){
+  document.getElementById('welcome').style.display='none';
+  document.getElementById('login').style.display='none';
+  document.getElementById('register').style.display='none';
+  const fg=document.getElementById('forgot');if(fg)fg.style.display='none';
+  document.getElementById('main').classList.add('active');
+  renderAll();
+  if(isNew||(state.user&&state.user.isNew)){
+    setTimeout(()=>openModal('welcome-modal'),300);
+  }
+}
+
+function closeWelcomeModal(){
+  closeModal('welcome-modal');
+  if(state.user)state.user.isNew=false;
+  saveState();saveFirestoreState();
+  confetti();
+}
+
+/* ---- RENDER TOP BAR ---- */
+function renderTopbar(){
+  document.getElementById('level-num').textContent=state.level;
+  const cap=state.level*1000;
+  document.getElementById('xp-text').textContent=state.xp+'/'+cap;
+  document.getElementById('xp-fill').style.width=(state.xp/cap*100)+'%';
+  document.getElementById('diamond-count').textContent=state.diamonds;
+  document.getElementById('money-count').textContent=fmt(state.money)+' ₺';
+
+  const unread=state.notifications.filter(n=>!n.read).length;
+  const badge=document.getElementById('notif-badge');
+  if(unread>0){badge.textContent=unread;badge.style.display='grid'}
+  else{badge.style.display='none'}
+}
+
+/* ---- TAB SWITCHING ---- */
+function switchTab(tab){
+  document.querySelectorAll('.bottomnav .nav-item').forEach(b=>{
+    b.classList.remove('active');
+    b.classList.remove('blue');
+  });
+  const btn=document.querySelector(`.nav-item[data-tab="${tab}"]`);
+  btn.classList.add('active');
+  if(tab==='dukkanlar')btn.classList.add('blue');
+
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.getElementById('content-area').scrollTop=0;
+
+  if(tab==='dukkanlar')renderShops();
+}
+function openPage(pageId){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+pageId).classList.add('active');
+  document.getElementById('content-area').scrollTop=0;
+
+  if(pageId==='bank')renderBank();
+  if(pageId==='notifications')renderNotifications();
+  if(pageId==='chat')renderChat();
+  if(pageId==='profile')renderProfile();
+  if(pageId==='news')renderNews();
+  if(pageId==='cities')renderCities();
+  if(pageId==='ranking')renderRanking();
+  if(pageId==='faq')renderFaq();
+  if(pageId==='settings')renderSettings();
+}
+function backToMain(){switchTab('dukkanlar')}
+
+/* ---- DÜKKAN (HOME) ---- */
+function renderShops(){
+  const body=document.getElementById('dukkanlar-body');
+  if(!state.shops.length){
+    body.innerHTML=`<div class="empty">
+      <div class="empty-icon">🏪</div>
+      <div class="empty-text">Burada işletmeniz bulunmuyor.</div>
+      <button class="btn-create" onclick="openShopModal()">+ Yeni Dükkan</button>
+    </div>`;
+    return;
+  }
+  body.innerHTML = state.shops.map((s,i)=>{
+    const type=SHOP_TYPES.find(t=>t.id===s.type);
+    const city=CITIES.find(c=>c.id===s.cityId);
+    return `<div class="bank-card" onclick="openShopDetail(${i})">
+      <div class="bank-header">
+        <div class="bank-icon cat-${type.cat}">${type.emoji}</div>
+        <div style="flex:1">
+          <div class="bank-title">${type.name}</div>
+          <div style="font-size:12px;color:#6b7280">${city.name} • Seviye ${s.lvl||1}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:#6b7280">Günlük gelir</div>
+          <div style="font-weight:800;color:#10b981">${fmt(type.income*(s.lvl||1))} ₺</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-create" style="flex:1;padding:10px" onclick="event.stopPropagation();collectIncome(${i})">💰 Kazanç Topla</button>
+        <button class="btn-create" style="flex:1;padding:10px;background:#10b981" onclick="event.stopPropagation();upgradeShop(${i})">⬆️ Yükselt</button>
+      </div>
+    </div>`;
+  }).join('') + `<div style="padding:12px"><button class="btn-create" style="width:100%" onclick="openShopModal()">+ Yeni Dükkan Aç</button></div>`;
+}
+
+function collectIncome(i){
+  const s=state.shops[i];
+  const type=SHOP_TYPES.find(t=>t.id===s.type);
+  const last=s.lastCollect||Date.now();
+  const hours=Math.min(8,(Date.now()-last)/3600000);
+  if(hours<0.01){toast('Henüz kazanç birikmedi','error');return}
+  const earned=Math.floor(type.income*(s.lvl||1)*hours);
+  state.money+=earned;
+  state.xp+=Math.floor(earned/100);
+  checkLevel();
+  s.lastCollect=Date.now();
+  saveState();renderAll();
+  toast('+'+fmt(earned)+' ₺ kazandın!','success');
+}
+
+function upgradeShop(i){
+  const s=state.shops[i];
+  const type=SHOP_TYPES.find(t=>t.id===s.type);
+  const cost=Math.floor(type.price*(s.lvl||1)*0.5);
+  if(state.money<cost){toast('Yetersiz bakiye! Gereken: '+fmt(cost)+' ₺','error');return}
+  state.money-=cost;
+  s.lvl=(s.lvl||1)+1;
+  state.xp+=50;
+  checkLevel();
+  saveState();renderAll();
+  toast('Dükkan seviye '+s.lvl+' oldu! 🎉','success');
+}
+
+function openShopDetail(i){
+  const s=state.shops[i];
+  const type=SHOP_TYPES.find(t=>t.id===s.type);
+  const city=CITIES.find(c=>c.id===s.cityId);
+  document.getElementById('sd-title').textContent=type.name+' - '+city.name;
+  document.getElementById('sd-body').innerHTML=`
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-size:60px">${type.emoji}</div>
+      <div style="font-size:18px;font-weight:800;margin-top:8px">Seviye ${s.lvl||1}</div>
+    </div>
+    <div class="bank-row"><span class="bank-row-label">Günlük Gelir</span><span class="bank-row-value green">${fmt(type.income*(s.lvl||1))} ₺</span></div>
+    <div class="bank-row"><span class="bank-row-label">Haftalık Gider</span><span class="bank-row-value red">${fmt(type.price*0.02)} ₺</span></div>
+    <div class="bank-row"><span class="bank-row-label">Çalışan</span><span class="bank-row-value">${(s.lvl||1)*2} kişi</span></div>
+    <div class="bank-row"><span class="bank-row-label">Şehir Nüfusu</span><span class="bank-row-value">${fmt(city.pop).replace(',00','')}</span></div>
+    <div style="padding:10px 0 0"><div style="font-weight:700;margin-bottom:8px">Satılan Ürünler:</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${type.products.map(p=>`<span style="background:#f3f4f6;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600">${p}</span>`).join('')}</div></div>
+  `;
+  openModal('shop-detail-modal');
+}
+
+/* ---- SHOP MODAL ---- */
+let selectedShop=null;
+function openShopModal(){
+  selectedShop=null;
+  const sel=document.getElementById('shop-city');
+  sel.innerHTML='<option value="">Şehir Seçin...</option>'+
+    CITIES.map(c=>`<option value="${c.id}">${c.name} (${fmt(c.pop).replace(',00','')} kişi)</option>`).join('');
+
+  const grid=document.getElementById('shop-grid');
+  grid.innerHTML=SHOP_TYPES.map((t,i)=>{
+    const locked=state.level<t.minLevel;
+    return `<div class="shop-card ${locked?'disabled':''}" data-idx="${i}" onclick="selectShop(${i})">
+      <div class="shop-img cat-${t.cat}" style="display:grid;place-items:center;font-size:50px;color:#fff">${t.emoji}
+        <div class="shop-price">${fmt(t.price)} ₺</div>
+      </div>
+      <div class="shop-info">
+        <div class="shop-name">${t.name}</div>
+        <div class="shop-income">${locked?'🔒 Sv '+t.minLevel:'Gelir: '+fmt(t.income)+' ₺/saat'}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('shop-confirm').disabled=true;
+  openModal('shop-modal');
+}
+function selectShop(i){
+  const t=SHOP_TYPES[i];
+  if(state.level<t.minLevel){toast('Bu dükkanı açmak için seviye '+t.minLevel,'error');return}
+  if(state.money<t.price){toast('Yetersiz bakiye! Gereken: '+fmt(t.price)+' ₺','error');return}
+  selectedShop=i;
+  document.querySelectorAll('.shop-card').forEach((c,j)=>c.classList.toggle('selected',j===i));
+  updateConfirmBtn();
+}
+function updateConfirmBtn(){
+  const city=document.getElementById('shop-city').value;
+  document.getElementById('shop-confirm').disabled=!(selectedShop!==null && city);
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('shop-city').addEventListener('change',updateConfirmBtn);
+});
+
+function confirmShop(){
+  const t=SHOP_TYPES[selectedShop];
+  const cityId=parseInt(document.getElementById('shop-city').value);
+  if(state.money<t.price){toast('Yetersiz bakiye!','error');return}
+  state.money-=t.price;
+  state.shops.push({type:t.id,cityId,lvl:1,bought:Date.now(),lastCollect:Date.now()});
+  state.employees+=2;
+  state.weeklyExpense+=t.price*0.02;
+  state.weeklySalary+=500;
+  state.xp+=100;
+  checkLevel();
+  state.notifications.unshift({id:Date.now(),text:`🏪 ${CITIES.find(c=>c.id===cityId).name}'da ${t.name} açıldı!`,time:'az önce',read:false});
+  saveState();
+  closeModal('shop-modal');
+  renderAll();
+  toast(t.name+' açıldı! 🎉','success');
+  confetti();
+}
+
+function updateLockedTabs(){
+  // Seviyeye göre tab içeriklerini güncelle
+  const lvl=state.level;
+  ['bahceler','ciftlikler','fabrikalar','madenler'].forEach(tab=>{
+    const page=document.getElementById('page-'+tab);
+    if(!page)return;
+    const limits={bahceler:5,ciftlikler:10,fabrikalar:20,madenler:30};
+    const names={bahceler:'Bahçeler 🌾',ciftlikler:'Çiftlikler 🥚',fabrikalar:'Fabrikalar 🏭',madenler:'Madenler ⛏️'};
+    const minLvl=limits[tab];
+    if(lvl>=minLvl){
+      // kilidi açılmış - içerik göster
+      const body=page.querySelector('.empty');
+      if(body&&body.querySelector('.empty-lock')){
+        body.innerHTML=`<div class="empty-icon">${names[tab].split(' ')[1]}</div><div class="empty-text">Bu bölüm yakında tam olarak aktif olacak!</div>`;
+      }
+    }
+  });
+}
+
+/* ---- SAVE OVERRIDE ---- */
+const _origSave=saveState;
+function saveState(){
+  try{localStorage.setItem(LS_KEY,JSON.stringify(state))}catch(e){}
+}
+  // Sınırsız seviye, hızlı ilerleme — her seviye XP eşiği biraz artar
+  let cap=state.level*500; // daha az XP gerekli
+  while(state.xp>=cap){
+    state.xp-=cap;
+    state.level++;
+    state.diamonds+=Math.min(state.level,10); // seviye başına ödül
+    state.notifications.unshift({id:Date.now(),text:`🎉 Seviye ${state.level}'e yükseldin! +${Math.min(state.level,10)} elmas kazandın`,time:'az önce',read:false});
+    toast('Seviye atladın! 🎉 Sv. '+state.level,'success');
+    confetti();
+    cap=state.level*500; // bir sonraki eşik
+    // level açılan iş kolları
+    if(state.level===5)toast('🌾 Bahçeler açıldı!','success');
+    if(state.level===10)toast('🥚 Çiftlikler açıldı!','success');
+    if(state.level===20)toast('🏭 Fabrikalar açıldı!','success');
+    if(state.level===30)toast('⛏️ Madenler açıldı!','success');
+  }
+  // dinamik içerikleri güncelle
+  updateLockedTabs();
+}
+
+/* ---- BANK ---- */
+function renderBank(){
+  const b=state.bank;
+  const limit=state.level*5000;
+  b.limit=limit;
+  document.getElementById('bank-body').innerHTML=`
+    <div class="bank-card">
+      <div class="bank-header">
+        <div class="bank-icon">🏦</div>
+        <div style="flex:1"><div class="bank-title">Banka</div><div style="font-size:12px;color:#6b7280">Kâr Payı / Kredi Borcu</div></div>
+      </div>
+      <div class="bank-row"><span class="bank-row-label">Kâr Payı / Kredi Borcu</span><span class="bank-row-value green">${fmt(b.profit)} ₺</span></div>
+    </div>
+    <div class="section-label">PARA YATIR / ÇEK</div>
+    <div style="padding:0 14px">
+      <div class="bank-action" onclick="bankAction('deposit')">
+        <div class="bank-action-info">
+          <div class="bank-action-label">Hesap Bakiyesi</div>
+          <div class="bank-action-value">${fmt(b.balance)} ₺</div>
+        </div>
+        <div class="bank-action-icon">💸</div>
+      </div>
+      <div class="bank-action" onclick="bankAction('invest')">
+        <div class="bank-action-info">
+          <div class="bank-action-label">Yatırım Hesabı (%8/yıl faiz)</div>
+          <div class="bank-action-value">${fmt(b.investment)} ₺</div>
+        </div>
+        <div class="bank-action-icon green">📈</div>
+      </div>
+      <div class="bank-action" onclick="bankAction('credit')">
+        <div class="bank-action-info">
+          <div class="bank-action-label">Kredi · Limit: ${fmt(limit)} ₺</div>
+          <div class="bank-action-value" style="color:${b.credit>0?'#ef4444':'inherit'}">${fmt(b.credit)} ₺</div>
+        </div>
+        <div class="bank-action-icon red">💳</div>
+      </div>
+    </div>
+    <div class="section-label">ÖDEMELER</div>
+    <div style="padding:0 14px">
+      <div class="bank-action" onclick="payExpense()">
+        <div class="bank-action-info">
+          <div class="bank-action-label">İşletme Giderleri (haftalık)</div>
+          <div class="bank-action-value">${fmt(state.weeklyExpense)} ₺</div>
+        </div>
+        <div class="bank-action-icon green">💵</div>
+      </div>
+      <div class="bank-action" onclick="paySalary()">
+        <div class="bank-action-info">
+          <div class="bank-action-label">Çalışan Maaşları (haftalık)</div>
+          <div class="bank-action-value">${fmt(state.weeklySalary)} ₺</div>
+        </div>
+        <div class="bank-action-icon green">💵</div>
+      </div>
+    </div>
+    <div class="section-label">HESAP HAREKETLERİ · SON 48 SAAT</div>
+    <div style="padding:0 14px 20px">
+      ${b.balance>0||b.investment>0||b.credit>0 ?
+        '<div class="bank-action"><div class="bank-action-info"><div class="bank-action-label">Son işlem</div><div class="bank-action-value" style="font-size:13px">Bugün</div></div><div class="bank-action-icon">📋</div></div>' :
+        '<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">💸 Hesap hareketi yok.</div>'}
+    </div>
+  `;
+}
+
+function bankAction(type){
+  const modal=document.getElementById('bank-action-modal');
+  const title=document.getElementById('bam-title');
+  const desc=document.getElementById('bam-desc');
+  const inp=document.getElementById('bam-amount');
+  const depositBtn=document.getElementById('bam-deposit');
+  const withdrawBtn=document.getElementById('bam-withdraw');
+
+  inp.value='';
+  if(type==='deposit'){
+    title.textContent='Hesap Bakiyesi';
+    desc.textContent='Nakit bakiyenizden banka hesabınıza para aktarın veya çekin.';
+    depositBtn.textContent='💸 Yatır';withdrawBtn.textContent='↩️ Çek';
+    depositBtn.onclick=()=>bankTransact('deposit','in');
+    withdrawBtn.onclick=()=>bankTransact('deposit','out');
+  } else if(type==='invest'){
+    title.textContent='Yatırım Hesabı (%8/yıl faiz)';
+    desc.textContent='Banka hesabınızdan yatırım hesabına para aktarın veya geri çekin.';
+    depositBtn.textContent='📈 Yatır';withdrawBtn.textContent='↩️ Çek';
+    depositBtn.onclick=()=>bankTransact('invest','in');
+    withdrawBtn.onclick=()=>bankTransact('invest','out');
+  } else if(type==='credit'){
+    title.textContent='İhtiyaç Kredisi (Limit: '+fmt(state.level*5000)+' ₺)';
+    desc.textContent='Kredi çekin ya da mevcut kredinizi ödeyin.';
+    depositBtn.textContent='💳 Kredi Çek';withdrawBtn.textContent='✅ Öde';
+    depositBtn.onclick=()=>bankTransact('credit','in');
+    withdrawBtn.onclick=()=>bankTransact('credit','out');
+  }
+  openModal('bank-action-modal');
+}
+
+function bankTransact(type,dir){
+  const n=parseFloat(document.getElementById('bam-amount').value);
+  if(isNaN(n)||n<=0){toast('Geçerli bir tutar girin','error');return}
+  const b=state.bank;
+  if(type==='deposit'){
+    if(dir==='in'){
+      if(state.money<n){toast('Yetersiz nakit','error');return}
+      state.money-=n;b.balance+=n;toast(fmt(n)+' ₺ yatırıldı ✅','success');
+    } else {
+      if(b.balance<n){toast('Yetersiz hesap bakiyesi','error');return}
+      b.balance-=n;state.money+=n;toast(fmt(n)+' ₺ çekildi ✅','success');
+    }
+  } else if(type==='invest'){
+    if(dir==='in'){
+      if(b.balance<n){toast('Yetersiz hesap bakiyesi','error');return}
+      b.balance-=n;b.investment+=n;toast(fmt(n)+' ₺ yatırıma aktarıldı 📈','success');
+    } else {
+      if(b.investment<n){toast('Yetersiz yatırım bakiyesi','error');return}
+      b.investment-=n;b.balance+=n;toast(fmt(n)+' ₺ yatırımdan çekildi','success');
+    }
+  } else if(type==='credit'){
+    const limit=state.level*5000;
+    if(dir==='in'){
+      if(b.credit+n>limit){toast('Kredi limiti aşıldı! Max: '+fmt(limit),'error');return}
+      b.credit+=n;state.money+=n;toast(fmt(n)+' ₺ kredi çekildi 💳','success');
+    } else {
+      if(state.money<n){toast('Yetersiz nakit','error');return}
+      if(b.credit<n){toast('Borç bu kadar değil','error');return}
+      b.credit-=n;state.money-=n;toast(fmt(n)+' ₺ kredi ödendi ✅','success');
+    }
+  }
+  closeModal('bank-action-modal');
+  saveState();saveFirestoreState();renderBank();renderTopbar();
+}
+
+function payExpense(){
+  if(state.weeklyExpense<=0){toast('Ödenecek gider yok','error');return}
+  if(state.money<state.weeklyExpense){toast('Yetersiz bakiye','error');return}
+  state.money-=state.weeklyExpense;
+  toast(fmt(state.weeklyExpense)+' ₺ gider ödendi','success');
+  saveState();renderAll();
+}
+function paySalary(){
+  if(state.weeklySalary<=0){toast('Ödenecek maaş yok','error');return}
+  if(state.money<state.weeklySalary){toast('Yetersiz bakiye, moral düşüyor!','error');state.moral=Math.max(0,state.moral-10);saveState();renderAll();return}
+  state.money-=state.weeklySalary;
+  state.moral=100;
+  toast('Maaşlar ödendi, moral %100!','success');
+  saveState();renderAll();
+}
+
+/* ---- NOTIFICATIONS ---- */
+function renderNotifications(){
+  const body=document.getElementById('notif-body');
+  if(!state.notifications.length){
+    body.innerHTML=`<div class="empty"><div class="empty-icon">🗑️</div><div class="empty-text">Bildirim yok.</div></div>`;
+    return;
+  }
+  body.innerHTML=state.notifications.map(n=>`
+    <div class="bank-card" style="margin:8px 12px;padding:14px;border-left:3px solid ${n.read?'#d1d5db':'#fbbf24'}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="font-size:13px;line-height:1.5">${n.text}</div>
+      </div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:4px">${n.time}</div>
+    </div>
+  `).join('');
+  state.notifications.forEach(n=>n.read=true);
+  saveState();
+  setTimeout(renderTopbar,500);
+}
+
+/* ---- CHAT ---- */
+function renderChat(){
+  const msgs=document.getElementById('chat-messages');
+  // Sadece kullanıcının kendi mesajlarını göster, seed mesajları yok
+  const all=[...state.chatHistory];
+  if(!all.length){
+    msgs.innerHTML='<div class="empty"><div class="empty-icon">💬</div><div class="empty-text">Henüz mesaj yok. İlk mesajı sen gönder!</div></div>';
+    return;
+  }
+  msgs.innerHTML=all.map(m=>`
+    <div class="chat-msg">
+      <div class="chat-msg-avatar">${m.av}</div>
+      <div class="chat-msg-body">
+        <div class="chat-msg-head">
+          <span class="chat-msg-name">${m.user}</span>
+          <span class="chat-msg-time">· ${m.time}</span>
+        </div>
+        <div class="chat-msg-text">${m.text}</div>
+      </div>
+    </div>
+  `).join('');
+}
+function sendChat(){
+  const inp=document.getElementById('chat-text');
+  const txt=inp.value.trim();
+  if(!txt)return;
+  state.chatHistory.unshift({user:state.user?.name||'Sen',av:'🙂',time:'şimdi',text:txt});
+  inp.value='';
+  saveState();renderChat();
+}
+
+/* ---- PROFILE ---- */
+function renderProfile(){
+  const body=document.getElementById('profile-body');
+  const name=state.user?.name||'Oyuncu';
+  body.innerHTML=`
+    <div class="profile-header">
+      <div class="profile-avatar">${name[0]?.toUpperCase()||'?'}</div>
+      <div class="profile-name">${name}</div>
+      <button class="profile-settings" onclick="openPage('settings')">⚙️</button>
+    </div>
+    <div class="profile-stats">
+      <div class="profile-stat">
+        <div class="profile-stat-label">Nakit</div>
+        <div class="profile-stat-value green"><span class="profile-stat-icon">💵</span>${fmt(state.money)} ₺</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-label">Banka</div>
+        <div class="profile-stat-value">🏦 ${fmt(state.bank.balance)} ₺</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-label">Elmas</div>
+        <div class="profile-stat-value">💎 ${state.diamonds}</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-label">Kupon</div>
+        <div class="profile-stat-value">🎟️ ${state.coupons}</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-label">Haftalık İşletme Gid.</div>
+        <div class="profile-stat-value" style="color:#ef4444">💸 ${fmt(state.weeklyExpense)} ₺</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-label">Haftalık Maaş</div>
+        <div class="profile-stat-value" style="color:#ef4444">💸 ${fmt(state.weeklySalary)} ₺</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-label">Toplam Çalışan</div>
+        <div class="profile-stat-value">👥 ${state.employees}</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-label">Çalışan Morali</div>
+        <div class="profile-stat-value" style="color:${state.moral>=80?'#10b981':state.moral>=50?'#f59e0b':'#ef4444'}">${state.moral>=80?'😊':state.moral>=50?'😐':'😢'} %${state.moral}</div>
+      </div>
+    </div>
+    <div style="padding:14px 14px 0"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">Sıralamadaki Yeriniz</div></div>
+    <div class="rank-row">
+      <div class="rank-card"><div class="rank-num">1027.</div><div class="rank-av">👤</div><div class="rank-money">25 BİN TL</div></div>
+      <div class="rank-card"><div class="rank-num">1028.</div><div class="rank-av">👤</div><div class="rank-money">22 BİN TL</div></div>
+      <div class="rank-card rank-you"><div class="rank-num">1029.</div><div class="rank-av">${name[0]?.toUpperCase()||'?'}</div><div class="rank-money">${fmtShort(state.money)}</div></div>
+      <div class="rank-card"><div class="rank-num">1030.</div><div class="rank-av">👤</div><div class="rank-money">18 BİN TL</div></div>
+      <div class="rank-card"><div class="rank-num">1031.</div><div class="rank-av">👤</div><div class="rank-money">15 BİN TL</div></div>
+    </div>
+    <div style="padding:14px"><button class="btn-create" style="width:100%" onclick="openPage('ranking')">↕️ Sıralamayı Göster</button></div>
+  `;
+}
+
+/* ---- NEWS ---- */
+function renderNews(){
+  document.getElementById('news-body').innerHTML=`
+    <div class="news-card">
+      <div class="news-hero" style="background:linear-gradient(135deg,#fbbf24,#ea580c)">🔥</div>
+      <div class="news-body">
+        <div class="news-status">Piyasaların Durumu: <b>İyi</b></div>
+        <div class="news-title">Fırınlarda Ramazan Mesaisi Başladı!</div>
+        <div class="news-text">Ekmek fabrikaları, Ramazan ayının vazgeçilmezi olan 500 gramlık mis gibi pideler için üretim hatlarını tam kapasite çalıştırmaya başladı. Normal ekmeğin iki katı ağırlığındaki bu altın kahverengi güzeller, daha ilk günden büyük ilgi gördü.</div>
+        <div class="news-date">21 Nisan 2026, Salı</div>
+        <div class="news-reactions">
+          <span class="reaction">😊 534</span>
+          <span class="reaction">🤣 69</span>
+          <span class="reaction">😞 27</span>
+          <span class="reaction">😱 23</span>
+          <span class="reaction">😑 21</span>
+          <span class="reaction">😠 99</span>
+        </div>
+      </div>
+    </div>
+    <div class="news-card">
+      <div class="news-hero" style="background:linear-gradient(135deg,#3b82f6,#1e40af);font-size:60px">📈</div>
+      <div class="news-body">
+        <div class="news-status">Piyasaların Durumu: <b style="color:#10b981">İyi</b></div>
+        <div class="news-title">Bahar Gelişi Tüketimi Artırdı</div>
+        <div class="news-text">Bahar aylarıyla birlikte vatandaşın alışveriş iştahı açıldı. Özellikle butik ve kuyumcu işletmeleri cirolarını ikiye katladı. Uzmanlar, bu trendin haziran sonuna kadar sürmesini bekliyor.</div>
+        <div class="news-date">19 Nisan 2026, Pazar</div>
+        <div class="news-reactions">
+          <span class="reaction">😊 412</span>
+          <span class="reaction">🤣 38</span>
+          <span class="reaction">😱 14</span>
+        </div>
+      </div>
+    </div>
+    <div class="news-card">
+      <div class="news-hero" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);font-size:60px">💎</div>
+      <div class="news-body">
+        <div class="news-status">Piyasaların Durumu: <b style="color:#f59e0b">Karışık</b></div>
+        <div class="news-title">Kuyumcularda Altın Fiyatları Yeni Rekor Kırdı</div>
+        <div class="news-text">Bu hafta altın gram fiyatı tüm zamanların rekorunu kırarak yatırımcıları sevindirdi. Kuyumcu işleten oyuncular rekor kâr açıkladı.</div>
+        <div class="news-date">17 Nisan 2026, Cuma</div>
+        <div class="news-reactions">
+          <span class="reaction">😊 298</span>
+          <span class="reaction">😱 45</span>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 12px 20px">
+      <div style="font-weight:800;margin:14px 0 10px;font-size:15px">🔴 Canlı İşlem Akışı</div>
+      <div class="activity-feed">
+        ${ACTIVITY_SEED.map(a=>`
+          <div class="activity-item">
+            <div class="activity-avatar">${a.av}</div>
+            <div class="activity-text">
+              <b>${a.user}</b> ${fmt(a.amount)} ₺ ödeyerek ${a.qty} ${a.unit||'adet'} <span class="prod">${a.prod}</span> aldı.
+              <div class="activity-meta">${a.from} → ${a.to} · ${a.time}</div>
+            </div>
+            <div class="activity-badge">${a.av}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/* ---- CITIES ---- */
+function renderCities(){
+  document.getElementById('city-list').innerHTML=CITIES.map((c,i)=>`
+    <div class="city-card">
+      <div class="city-rank">${i+1}</div>
+      <div class="city-body">
+        <div class="city-name">${c.name}</div>
+        <div class="city-pop">Nüfus: ${fmt(c.pop).replace(',00','')}</div>
+        <div class="city-biz">
+          <span class="city-biz-item">🏪 ${c.buildings.dukkan}</span>
+          <span class="city-biz-item">🌾 ${c.buildings.bahce}</span>
+          <span class="city-biz-item">🥚 ${c.buildings.ciftlik}</span>
+          <span class="city-biz-item">🏭 ${c.buildings.fabrika}</span>
+          <span class="city-biz-item">⛏️ ${c.buildings.maden}</span>
+        </div>
+      </div>
+      <button class="social-btn" onclick="toast('${c.name} detayları yakında!','')">🔍</button>
+    </div>
+  `).join('');
+}
+
+/* ---- RANKING ---- */
+function renderRanking(){
+  const playerMoney=state.money+state.bank.balance+state.bank.investment;
+  document.getElementById('ranking-body').innerHTML=`
+    <div style="padding:14px">
+      <div style="background:#f3f4f6;border-radius:12px;padding:6px;display:flex;gap:4px">
+        <button style="flex:1;padding:10px;border-radius:9px;background:#fff;font-weight:700;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,.08)">Toplam Varlık</button>
+        <button style="flex:1;padding:10px;border-radius:9px;font-weight:600;font-size:13px;color:#6b7280">Bugün Kazananlar</button>
+      </div>
+    </div>
+    <div style="padding:20px 14px;text-align:center;background:#fff;margin:0 12px;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+      <div style="font-size:48px;margin-bottom:10px">🏆</div>
+      <div style="font-size:18px;font-weight:800;margin-bottom:8px">Sıralama Sistemi</div>
+      <div style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:16px">Sıralama tablosu gerçek oyuncuların verilerinden oluşur. Oyun büyüdükçe burada görüneceksin!</div>
+      <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:12px;padding:16px;margin-bottom:12px">
+        <div style="font-size:12px;color:#6b7280;margin-bottom:4px">Senin Toplam Varlığın</div>
+        <div style="font-size:24px;font-weight:800;color:#1e40af">${fmtShort(playerMoney)}</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:4px">Kullanıcı: ${state.user?.name||'Oyuncu'} · Sv.${state.level}</div>
+      </div>
+      <div style="font-size:12px;color:#9ca3af">Sıralama güncelleme: Her 5 dakikada bir</div>
+    </div>
+    <div style="padding:14px">
+      <button class="btn-create" style="width:100%" onclick="openPage('profile')">📊 Profilimi Gör</button>
+    </div>
+  `;
+}
+
+/* ---- FAQ ---- */
+function renderFaq(){
+  document.getElementById('faq-body').innerHTML=FAQ.map((f,i)=>`
+    <div class="faq-item">
+      <div class="faq-q"><span>${i+1}.</span><div>${f.q}</div></div>
+      <div class="faq-a">${f.a}</div>
+    </div>
+  `).join('');
+}
+
+/* ---- SETTINGS ---- */
+function renderSettings(){
+  document.getElementById('settings-body').innerHTML=`
+    <div style="padding:14px">
+      <div class="bank-card">
+        <div class="bank-header"><div class="bank-icon" style="background:linear-gradient(135deg,#6366f1,#4338ca)">🔔</div><div><div class="bank-title">Bildirimler</div><div style="font-size:12px;color:#6b7280">Oyun bildirimleri</div></div></div>
+        <div class="bank-row"><span class="bank-row-label">Sohbet mesajları</span><input type="checkbox" checked style="transform:scale(1.3)"></div>
+        <div class="bank-row"><span class="bank-row-label">Bildirim sesleri</span><input type="checkbox" checked style="transform:scale(1.3)"></div>
+        <div class="bank-row"><span class="bank-row-label">Titreşim</span><input type="checkbox" style="transform:scale(1.3)"></div>
+      </div>
+      <div class="bank-card">
+        <div class="bank-header"><div class="bank-icon" style="background:linear-gradient(135deg,#ec4899,#be185d)">🎨</div><div><div class="bank-title">Görünüm</div><div style="font-size:12px;color:#6b7280">Tema ve dil</div></div></div>
+        <div class="bank-row"><span class="bank-row-label">Tema</span><select style="padding:6px 10px;border-radius:8px;border:1px solid #e5e7eb"><option>Açık</option><option>Koyu</option><option>Sistem</option></select></div>
+        <div class="bank-row"><span class="bank-row-label">Dil</span><select style="padding:6px 10px;border-radius:8px;border:1px solid #e5e7eb"><option>Türkçe</option><option>English</option></select></div>
+      </div>
+      <div class="bank-card">
+        <div class="bank-header"><div class="bank-icon" style="background:linear-gradient(135deg,#ef4444,#991b1b)">⚠️</div><div><div class="bank-title">Hesap</div><div style="font-size:12px;color:#6b7280">Güvenlik ve hesap</div></div></div>
+        <button class="btn-create" style="width:100%;margin-bottom:8px;background:#f3f4f6;color:#374151" onclick="toast('Şifre değiştirme yakında','')">🔑 Şifre Değiştir</button>
+        <button class="btn-create" style="width:100%;margin-bottom:8px;background:#fef2f2;color:#dc2626" onclick="logoutGame()">🚪 Çıkış Yap</button>
+        <button class="btn-create" style="width:100%;background:#dc2626" onclick="resetGame()">🗑️ Hesabı Sıfırla</button>
+      </div>
+    </div>
+  `;
+}
+
+async function logoutGame(){
+  if(!confirm('Çıkış yapmak istediğine emin misin?'))return;
+  if(fbAuth)try{await fbAuth.signOut();}catch(e){}
+  state.user=null;
+  document.getElementById('main').classList.remove('active');
+  showScreen('welcome');
+}
+function resetGame(){
+  if(!confirm('TÜM VERİLERİN SİLİNECEK! Emin misin?'))return;
+  localStorage.removeItem(LS_KEY);
+  location.reload();
+}
+
+/* ---- LOTTERY ---- */
+function joinLottery(){
+  if(state.coupons<1){toast('Yeterli kupon yok','error');return}
+  if(state.lotteryJoined){toast('Bu hafta zaten katıldın','error');return}
+  state.coupons--;
+  state.lotteryJoined=true;
+  state.notifications.unshift({id:Date.now(),text:'🎰 Haftalık elmas çekilişine katıldın! Başarılar.',time:'az önce',read:false});
+  saveState();renderAll();
+  toast('Çekilişe katıldın! Başarılar 🍀','success');
+  confetti();
+}
+function buyAssistant(days,cost){
+  if(state.diamonds<cost){toast('Yeterli elmas yok','error');return}
+  state.diamonds-=cost;
+  const until=Date.now()+days*86400000;
+  state.assistants.push({days,until});
+  state.notifications.unshift({id:Date.now(),text:`🤖 ${days} günlük asistan satın alındı!`,time:'az önce',read:false});
+  saveState();renderAll();
+  toast('Asistan aktif edildi ✅','success');
+}
+
+/* ---- FEEDBACK ---- */
+function submitFeedback(e){
+  e.preventDefault();
+  e.target.reset();
+  toast('Geri bildirimin alındı, teşekkürler! ✉️','success');
+  backToMain();
+}
+
+/* ---- LOTTERY TIMER ---- */
+function updateLotteryTimer(){
+  const el=document.getElementById('lottery-timer');
+  if(!el)return;
+  const now=new Date();
+  const end=new Date();
+  end.setDate(now.getDate()+(7-now.getDay())%7);
+  end.setHours(23,59,59);
+  const diff=end-now;
+  if(diff<=0){el.textContent='Çekiliş yapılıyor...';return}
+  const d=Math.floor(diff/86400000);
+  const h=Math.floor((diff%86400000)/3600000);
+  const m=Math.floor((diff%3600000)/60000);
+  const s=Math.floor((diff%60000)/1000);
+  el.textContent=`${d}g ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+/* ---- MODAL ---- */
+function openModal(id){document.getElementById(id).classList.add('active')}
+function closeModal(id){document.getElementById(id).classList.remove('active')}
+
+/* ---- RENDER ALL ---- */
+function renderAll(){
+  renderTopbar();
+  const active=document.querySelector('.page.active');
+  if(active){
+    const id=active.id.replace('page-','');
+    if(id==='dukkanlar')renderShops();
+    if(id==='bank')renderBank();
+    if(id==='profile')renderProfile();
+    if(id==='notifications')renderNotifications();
+  }
+}
+
+/* ---- INIT ---- */
+loadState();
+if(state.user){
+  document.getElementById('welcome').style.display='none';
+  document.getElementById('main').classList.add('active');
+  renderAll();
+} else {
+  showScreen('welcome');
+}
+setInterval(updateLotteryTimer,1000);
+
+/* auto-save on change */
+window.addEventListener('beforeunload',saveState);
+</script>
+</body>
+</html>
+  user-select:none;
+  -webkit-user-select:none;
+}
+#app{
+  max-width:480px;
+  margin:0 auto;
+  height:100vh;
+  height:100dvh;
+  background:var(--bg);
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 0 40px rgba(0,0,0,.08);
+}
+button{
+  font-family:inherit;
+  cursor:pointer;
+  border:none;
+  background:none;
+  color:inherit;
+  font-size:inherit;
+}
+input,select,textarea{
+  font-family:inherit;
+  font-size:inherit;
+}
+::-webkit-scrollbar{width:0;height:0}
+
+/* ====== WELCOME / AUTH SCREENS ====== */
+.auth-screen{
+  position:absolute;inset:0;
+  background:linear-gradient(140deg,#1e3a8a 0%,#1e40af 40%,#3b82f6 100%);
+  display:flex;flex-direction:column;
+  padding:24px;
+  color:#fff;
+}
+.auth-screen::before{
+  content:"";
+  position:absolute;top:-50%;right:-20%;
+  width:80%;height:80%;
+  background:radial-gradient(circle,rgba(251,191,36,.3),transparent 70%);
+  pointer-events:none;
+}
+.auth-screen::after{
+  content:"";
+  position:absolute;bottom:-30%;left:-20%;
+  width:70%;height:60%;
+  background:radial-gradient(circle,rgba(59,130,246,.4),transparent 70%);
+  pointer-events:none;
+}
+.auth-header{
+  display:flex;align-items:center;gap:10px;
+  padding-top:12px;
+  z-index:2;
+}
+.auth-back{
+  width:36px;height:36px;border-radius:10px;
+  background:rgba(255,255,255,.12);
+  display:grid;place-items:center;
+  backdrop-filter:blur(10px);
+}
+.auth-hero{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:2;padding:20px 0;
+}
+.auth-illustration{
+  width:100%;max-width:280px;margin-bottom:28px;
+  animation:float 4s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.auth-logo{
+  font-family:'Space Grotesk';
+  font-size:42px;font-weight:700;
+  letter-spacing:-1.5px;
+  margin-bottom:8px;
+  text-align:center;
+}
+.auth-logo .yellow{color:var(--accent)}
+.auth-title{
+  font-size:22px;font-weight:700;
+  text-align:center;margin-bottom:12px;
+}
+.auth-subtitle{
+  font-size:14px;opacity:.85;
+  text-align:center;line-height:1.5;
+  max-width:300px;margin-bottom:8px;
+}
+.auth-form{
+  z-index:2;margin-top:auto;
+  display:flex;flex-direction:column;gap:12px;
+}
+.auth-field{
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:14px;
+  padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+  backdrop-filter:blur(12px);
+}
+.auth-field input{
+  flex:1;background:none;border:none;outline:none;
+  color:#fff;font-size:15px;
+}
+.auth-field input::placeholder{color:rgba(255,255,255,.6)}
+.auth-field svg{opacity:.7;flex-shrink:0}
+.auth-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:0 4px}
+.auth-row label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.auth-row input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.auth-row a{color:var(--accent);text-decoration:none;font-weight:600}
+.btn-primary{
+  background:var(--accent);
+  color:#1f2937;
+  padding:15px;border-radius:14px;
+  font-weight:700;font-size:15px;
+  letter-spacing:.2px;
+  box-shadow:0 8px 20px rgba(251,191,36,.3);
+  transition:transform .15s;
+}
+.btn-primary:active{transform:scale(.98)}
+.btn-ghost{
+  background:rgba(255,255,255,.08);
+  color:#fff;
+  padding:14px;border-radius:14px;
+  font-weight:600;
+  border:1px solid rgba(255,255,255,.15);
+}
+.auth-footer{
+  text-align:center;font-size:13px;
+  opacity:.85;margin-top:8px;
+}
+.auth-footer a{color:var(--accent);font-weight:700;text-decoration:none}
+
+/* ====== MAIN APP SHELL ====== */
+.main-shell{
+  position:absolute;inset:0;
+  display:none;flex-direction:column;
+  background:var(--bg);
+}
+.main-shell.active{display:flex}
+
+/* top bar */
+.topbar{
+  background:linear-gradient(180deg,#1e40af,#2563eb);
+  color:#fff;
+  padding:14px 14px 0;
+  flex-shrink:0;
+  position:relative;
+}
+.topbar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.brand{
+  font-family:'Space Grotesk';
+  font-size:20px;font-weight:700;
+  letter-spacing:-.5px;
+  margin-right:auto;
+}
+.brand .yellow{color:var(--accent)}
+.topbar-icons{display:flex;gap:8px;align-items:center}
+.tb-btn{
+  width:34px;height:34px;border-radius:10px;
+  display:grid;place-items:center;
+  background:rgba(255,255,255,.08);
+  position:relative;
+  transition:background .15s;
+}
+.tb-btn:active{background:rgba(255,255,255,.18)}
+.tb-btn .badge{
+  position:absolute;top:-2px;right:-2px;
+  background:#ef4444;color:#fff;
+  font-size:10px;font-weight:700;
+  padding:2px 5px;border-radius:10px;
+  min-width:16px;height:16px;
+  display:grid;place-items:center;
+  border:2px solid var(--primary);
+}
+.topbar-stats{
+  display:flex;gap:8px;align-items:center;
+  padding-bottom:10px;
+}
+.stat-pill{
+  background:rgba(0,0,0,.18);
+  border-radius:8px;
+  padding:5px 10px;
+  font-size:12px;font-weight:600;
+  display:flex;align-items:center;gap:6px;
+  border:1px solid rgba(255,255,255,.08);
+}
+.stat-pill .level-num{
+  background:rgba(255,255,255,.95);color:#1e3a8a;
+  font-weight:800;font-size:11px;
+  padding:2px 7px;border-radius:5px;
+}
+.stat-pill .xp-bar{
+  width:60px;height:4px;border-radius:3px;
+  background:rgba(255,255,255,.2);overflow:hidden;
+}
+.stat-pill .xp-fill{
+  height:100%;background:var(--accent);
+  border-radius:3px;transition:width .4s;
+}
+.money-pill{
+  margin-left:auto;
+  background:rgba(0,0,0,.2);
+  border-radius:8px;padding:5px 10px;
+  font-size:13px;font-weight:700;
+  display:flex;align-items:center;gap:6px;
+}
+
+/* content area */
+.content{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  padding-bottom:76px;
+  -webkit-overflow-scrolling:touch;
+}
+.page{display:none;min-height:100%}
+.page.active{display:block}
+.page-header{
+  background:#fff;
+  padding:14px 16px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:10;
+}
+.page-title{font-size:16px;font-weight:700;flex:1}
+.page-icon{font-size:22px}
+
+/* bottom nav */
+.bottomnav{
+  position:absolute;bottom:0;left:0;right:0;
+  background:#fff;
+  border-top:1px solid var(--border);
+  display:flex;
+  padding:8px 4px;
+  padding-bottom:max(8px,env(safe-area-inset-bottom));
+  box-shadow:0 -4px 20px rgba(0,0,0,.05);
+  z-index:20;
+}
+.nav-item{
+  flex:1;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 4px;
+  color:var(--text-muted);
+  font-size:11px;font-weight:600;
+  position:relative;
+  border-radius:10px;
+  transition:color .15s;
+}
+.nav-item.active{color:#ef4444}
+.nav-item.active.blue{color:#1e40af}
+.nav-item svg{width:22px;height:22px}
+.nav-item .nav-hand{
+  position:absolute;top:-20px;left:50%;
+  transform:translateX(-50%);
+  font-size:20px;
+  pointer-events:none;
+  animation:pointBounce 1.6s ease-in-out infinite;
+  opacity:0;
+}
+.nav-item.active .nav-hand{opacity:1}
+@keyframes pointBounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(4px)}}
+
+/* empty states */
+.empty{
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:60px 20px;
+  text-align:center;
+}
+.empty-icon{
+  font-size:56px;margin-bottom:14px;
+  opacity:.4;
+}
+.empty-lock{
+  font-size:60px;
+  filter:drop-shadow(0 4px 10px rgba(239,68,68,.3));
+  margin-bottom:12px;
+}
+.empty-text{
+  color:var(--text-muted);font-size:15px;
+  margin-bottom:18px;
+}
+.empty-big{
+  font-size:18px;font-weight:700;color:var(--text);
+}
+.btn-create{
+  background:var(--primary);color:#fff;
+  padding:12px 28px;border-radius:10px;
+  font-weight:700;font-size:14px;
+  box-shadow:0 4px 14px rgba(30,64,175,.3);
+}
+
+/* ====== MODALS ====== */
+.modal-backdrop{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,.5);
+  backdrop-filter:blur(4px);
+  display:none;
+  align-items:center;justify-content:center;
+  padding:20px;
+  z-index:100;
+  animation:fadeIn .2s;
+}
+.modal-backdrop.active{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:#fff;
+  border-radius:18px;
+  width:100%;max-width:420px;
+  max-height:90vh;
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  animation:slideUp .3s cubic-bezier(.2,.8,.2,1);
+  box-shadow:0 20px 50px rgba(0,0,0,.3);
+}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-header{
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.modal-title{font-weight:700;font-size:16px;flex:1}
+.modal-close{
+  width:32px;height:32px;border-radius:8px;
+  display:grid;place-items:center;
+  background:#f3f4f6;
+}
+.modal-body{
+  padding:16px 18px;
+  overflow-y:auto;
+  flex:1;
+}
+.modal-footer{
+  padding:12px 18px;
+  border-top:1px solid var(--border);
+  display:flex;gap:10px;
+}
+.modal-footer button{
+  flex:1;padding:12px;border-radius:10px;
+  font-weight:700;font-size:14px;
+}
+.btn-cancel{background:#f3f4f6;color:#374151}
+.btn-confirm{background:var(--primary);color:#fff}
+.btn-confirm:disabled{background:#9ca3af;cursor:not-allowed}
+
+/* welcome modal */
+.welcome-modal{
+  text-align:center;padding:32px 24px;
+}
+.welcome-illo{
+  width:180px;margin:0 auto 20px;
+  animation:float 3s ease-in-out infinite;
+}
+.welcome-title{font-size:22px;font-weight:800;margin-bottom:10px;color:var(--text)}
+.welcome-text{font-size:14px;color:var(--text-muted);line-height:1.6;margin-bottom:24px}
+.welcome-cta{
+  background:var(--primary);color:#fff;
+  padding:14px;border-radius:12px;
+  font-weight:700;font-size:15px;
+  width:100%;
+  box-shadow:0 6px 20px rgba(30,64,175,.3);
+}
+.welcome-alt{margin-top:14px;font-size:13px;color:var(--text-muted)}
+.welcome-alt a{color:var(--primary);font-weight:700;text-decoration:none}
+
+/* shop creation */
+.shop-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:10px;padding:14px;
+}
+.shop-card{
+  background:#fff;border-radius:14px;
+  overflow:hidden;
+  border:2px solid transparent;
+  transition:all .15s;
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.shop-card.selected{border-color:var(--primary);transform:scale(.97)}
+.shop-card.disabled{opacity:.5}
+.shop-img{
+  width:100%;aspect-ratio:1;
+  background-size:cover;background-position:center;
+  position:relative;
+}
+.shop-price{
+  position:absolute;left:8px;bottom:8px;
+  background:rgba(16,185,129,.95);color:#fff;
+  padding:4px 8px;border-radius:6px;
+  font-size:12px;font-weight:700;
+}
+.shop-info{padding:8px 10px}
+.shop-name{font-size:13px;font-weight:700}
+.shop-income{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* city select */
+.city-select{
+  padding:14px;
+}
+.city-select label{font-size:13px;color:var(--text-muted);margin-bottom:6px;display:block}
+.city-select select{
+  width:100%;padding:12px;border-radius:10px;
+  border:1px solid var(--border);background:#fff;
+  font-size:14px;
+}
+
+/* ====== BANK ====== */
+.bank-card{
+  background:#fff;margin:12px;border-radius:14px;
+  padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.bank-header{
+  display:flex;align-items:center;gap:12px;margin-bottom:14px;
+}
+.bank-icon{
+  width:54px;height:54px;
+  background:linear-gradient(135deg,#3b82f6,#1e40af);
+  border-radius:14px;
+  display:grid;place-items:center;
+  color:#fff;font-size:24px;
+}
+.bank-title{font-size:18px;font-weight:700}
+.bank-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:13px 14px;
+  background:#f9fafb;border-radius:10px;
+  margin-bottom:8px;
+}
+.bank-row-label{font-size:13px;color:var(--text-muted)}
+.bank-row-value{font-size:15px;font-weight:700}
+.bank-row-value.green{color:var(--success)}
+.bank-row-value.red{color:var(--danger)}
+.section-label{
+  font-size:11px;font-weight:700;letter-spacing:1.2px;
+  color:var(--text-muted);
+  padding:16px 16px 8px;
+  text-transform:uppercase;
+}
+.bank-action{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px;background:#f9fafb;border-radius:12px;
+  margin-bottom:8px;cursor:pointer;
+}
+.bank-action:active{background:#f3f4f6}
+.bank-action-info{flex:1}
+.bank-action-label{font-size:12px;color:var(--text-muted);margin-bottom:2px}
+.bank-action-value{font-size:16px;font-weight:700}
+.bank-action-icon{
+  width:40px;height:40px;border-radius:10px;
+  display:grid;place-items:center;font-size:18px;
+  background:#eff6ff;color:var(--primary);
+}
+.bank-action-icon.red{background:#fef2f2;color:var(--danger)}
+.bank-action-icon.green{background:#ecfdf5;color:var(--success)}
+
+/* ====== PROFILE ====== */
+.profile-header{
+  background:#fff;padding:20px 16px;
+  display:flex;align-items:center;gap:14px;
+  border-bottom:1px solid var(--border);
+}
+.profile-avatar{
+  width:62px;height:62px;border-radius:18px;
+  background:linear-gradient(135deg,#e5e7eb,#f3f4f6);
+  display:grid;place-items:center;
+  font-size:30px;
+  border:3px solid #fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+.profile-name{font-size:20px;font-weight:700;flex:1}
+.profile-settings{
+  width:40px;height:40px;border-radius:12px;
+  background:#f3f4f6;display:grid;place-items:center;
+  font-size:18px;
+}
+.profile-stats{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;
+}
+.profile-stat{
+  background:#fff;border-radius:12px;padding:12px;
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+}
+.profile-stat-label{
+  font-size:11px;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:4px;
+}
+.profile-stat-value{font-size:18px;font-weight:700}
+.profile-stat-value.green{color:var(--success)}
+.profile-stat-icon{font-size:16px;margin-right:4px}
+
+.rank-row{
+  display:flex;gap:8px;padding:0 14px;margin-top:14px;
+  overflow-x:auto;
+}
+.rank-card{
+  flex:0 0 90px;
+  background:#fff;border-radius:12px;
+  padding:10px;text-align:center;
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+}
+.rank-num{font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px}
+.rank-av{
+  width:42px;height:42px;border-radius:10px;
+  background:#f3f4f6;margin:0 auto 6px;
+  display:grid;place-items:center;font-size:20px;
+}
+.rank-money{font-size:10px;font-weight:700;color:var(--primary)}
+.rank-you{background:linear-gradient(135deg,#fef3c7,#fde68a)}
+
+/* ====== NEWS / CHAT ====== */
+.news-card{
+  background:#fff;border-radius:14px;margin:12px;
+  overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);
+}
+.news-hero{
+  width:100%;aspect-ratio:16/10;
+  background:linear-gradient(135deg,#fbbf24,#f59e0b);
+  position:relative;display:grid;place-items:center;
+  font-size:72px;
+}
+.news-body{padding:14px}
+.news-status{
+  font-size:13px;color:var(--text-muted);margin-bottom:10px;
+  display:flex;align-items:center;gap:6px;
+}
+.news-status b{color:var(--success)}
+.news-title{font-size:16px;font-weight:800;margin-bottom:8px}
+.news-text{font-size:13px;color:#374151;line-height:1.6;margin-bottom:10px}
+.news-date{font-size:12px;color:var(--text-muted)}
+.news-reactions{
+  display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;
+}
+.reaction{
+  padding:4px 8px;border-radius:20px;
+  background:#f3f4f6;font-size:12px;
+  display:flex;align-items:center;gap:4px;
+  font-weight:600;
+}
+
+.activity-feed{padding:0 12px}
+.activity-item{
+  background:#fff;border-radius:12px;
+  padding:10px 12px;margin-bottom:8px;
+  display:flex;align-items:center;gap:10px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+.activity-avatar{
+  width:34px;height:34px;border-radius:8px;
+  background:#f3f4f6;display:grid;place-items:center;
+  font-size:16px;flex-shrink:0;
+}
+.activity-text{
+  flex:1;font-size:12px;line-height:1.4;
+}
+.activity-text b{font-weight:700}
+.activity-text .prod{color:var(--primary);font-weight:700}
+.activity-meta{font-size:11px;color:var(--text-muted);margin-top:2px}
+.activity-badge{
+  width:32px;height:32px;border-radius:8px;
+  background:#f3f4f6;flex-shrink:0;
+  display:grid;place-items:center;font-size:16px;
+}
+
+/* chat */
+.chat-wrap{
+  display:flex;flex-direction:column;height:100%;
+}
+.chat-input{
+  padding:10px 12px;background:#fff;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+  position:sticky;top:0;z-index:10;
+}
+.chat-input-avatar{
+  width:32px;height:32px;border-radius:10px;
+  background:#f3f4f6;display:grid;place-items:center;font-size:14px;
+}
+.chat-input input{
+  flex:1;background:#f3f4f6;border:none;outline:none;
+  padding:10px 14px;border-radius:20px;font-size:13px;
+}
+.chat-send{
+  width:36px;height:36px;border-radius:10px;
+  background:var(--primary);color:#fff;
+  display:grid;place-items:center;
+}
+.chat-messages{padding:6px 10px}
+.chat-msg{
+  background:#fff;border-radius:12px;
+  padding:10px 12px;margin-bottom:8px;
+  display:flex;gap:10px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+.chat-msg-avatar{
+  width:38px;height:38px;border-radius:9px;
+  background:linear-gradient(135deg,#ddd6fe,#c4b5fd);
+  display:grid;place-items:center;font-size:18px;
+  flex-shrink:0;
+}
+.chat-msg-body{flex:1}
+.chat-msg-head{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.chat-msg-name{font-weight:700;font-size:13px}
+.chat-msg-time{font-size:11px;color:var(--text-muted)}
+.chat-msg-text{font-size:13px;line-height:1.4;color:#374151}
+
+/* ====== CITIES ====== */
+.city-list{padding:10px}
+.city-card{
+  background:#fff;border-radius:14px;
+  margin-bottom:8px;padding:12px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);
+  display:flex;align-items:center;gap:12px;
+}
+.city-rank{
+  width:32px;height:32px;border-radius:10px;
+  background:#eff6ff;color:var(--primary);
+  font-weight:800;font-size:14px;
+  display:grid;place-items:center;flex-shrink:0;
+}
+.city-body{flex:1;min-width:0}
+.city-name{font-weight:800;font-size:15px;margin-bottom:3px}
+.city-pop{font-size:12px;color:var(--text-muted);margin-bottom:6px}
+.city-biz{
+  display:flex;gap:6px;flex-wrap:wrap;
+  font-size:11px;
+}
+.city-biz-item{
+  background:#f3f4f6;padding:3px 7px;border-radius:5px;
+  font-weight:700;
+  display:flex;align-items:center;gap:3px;
+}
+
+/* ====== MENU ====== */
+.menu-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  gap:10px;padding:14px;
+}
+.menu-tile{
+  background:#fff;border-radius:14px;
+  padding:16px 8px;text-align:center;
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;transition:transform .15s;
+}
+.menu-tile:active{transform:scale(.95)}
+.menu-tile-icon{
+  width:50px;height:50px;
+  display:grid;place-items:center;
+  font-size:28px;
+}
+.menu-tile-label{font-size:12px;font-weight:700;line-height:1.2}
+
+.menu-header{
+  background:#fff;padding:14px 16px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);
+}
+.back-btn{
+  width:36px;height:36px;border-radius:10px;
+  background:#f3f4f6;display:grid;place-items:center;
+  font-size:18px;
+}
+.menu-footer{
+  padding:16px;display:flex;gap:8px;
+  align-items:center;justify-content:center;
+  color:var(--text-muted);font-size:12px;
+}
+.menu-socials{display:flex;gap:8px;margin-right:auto}
+.social-btn{
+  width:34px;height:34px;border-radius:10px;
+  display:grid;place-items:center;
+  background:#f3f4f6;
+  font-size:14px;
+}
+
+/* lottery */
+.lottery-box{
+  background:linear-gradient(135deg,#fbbf24,#f59e0b);
+  color:#fff;border-radius:18px;
+  padding:24px;margin:14px;text-align:center;
+  box-shadow:0 8px 24px rgba(251,191,36,.3);
+}
+.lottery-emoji{font-size:60px;margin-bottom:10px}
+.lottery-title{font-size:20px;font-weight:800;margin-bottom:6px}
+.lottery-text{font-size:13px;opacity:.9;margin-bottom:16px}
+.lottery-btn{
+  background:#fff;color:#b45309;
+  padding:12px 28px;border-radius:12px;
+  font-weight:800;font-size:14px;
+}
+
+/* store */
+.pkg-grid{padding:14px;display:flex;flex-direction:column;gap:10px}
+.pkg-card{
+  background:#fff;border-radius:14px;
+  padding:14px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);
+  border:2px solid transparent;
+  cursor:pointer;transition:all .15s;
+}
+.pkg-card.featured{
+  border-color:var(--accent);
+  background:linear-gradient(135deg,#fffbeb,#fef3c7);
+}
+.pkg-icon{
+  width:60px;height:60px;border-radius:14px;
+  background:linear-gradient(135deg,#60a5fa,#3b82f6);
+  display:grid;place-items:center;font-size:30px;color:#fff;
+  flex-shrink:0;
+}
+.pkg-info{flex:1}
+.pkg-amount{font-size:18px;font-weight:800}
+.pkg-bonus{font-size:11px;color:var(--accent-dark);font-weight:700;margin-top:2px}
+.pkg-price{
+  background:var(--success);color:#fff;
+  padding:8px 14px;border-radius:10px;
+  font-weight:800;font-size:13px;
+  white-space:nowrap;
+}
+.featured-tag{
+  background:var(--danger);color:#fff;
+  font-size:10px;padding:2px 6px;border-radius:4px;
+  font-weight:800;margin-left:6px;
+}
+
+/* assistant */
+.asst-card{
+  background:#fff;border-radius:14px;
+  margin:10px 14px;padding:14px;
+  display:flex;align-items:center;gap:14px;
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.asst-icon{
+  width:58px;height:58px;border-radius:14px;
+  background:linear-gradient(135deg,#c4b5fd,#8b5cf6);
+  display:grid;place-items:center;font-size:26px;color:#fff;
+  flex-shrink:0;
+}
+.asst-info{flex:1}
+.asst-title{font-size:15px;font-weight:700;margin-bottom:2px}
+.asst-desc{font-size:12px;color:var(--text-muted)}
+.asst-buy{
+  background:var(--primary);color:#fff;
+  padding:8px 14px;border-radius:10px;
+  font-weight:700;font-size:12px;
+  display:flex;align-items:center;gap:4px;
+}
+
+/* faq */
+.faq-item{
+  background:#fff;border-radius:12px;
+  margin:8px 14px;padding:14px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+.faq-q{font-weight:700;font-size:14px;margin-bottom:6px;display:flex;gap:8px;align-items:flex-start}
+.faq-q span{color:var(--primary)}
+.faq-a{font-size:13px;color:var(--text-muted);line-height:1.6;padding-left:22px}
+
+/* terms */
+.terms-body{padding:14px;font-size:13px;line-height:1.7;color:#374151}
+.terms-body h3{font-size:15px;font-weight:800;margin:16px 0 6px;color:var(--primary)}
+.terms-body p{margin-bottom:10px}
+
+/* toast */
+.toast{
+  position:absolute;
+  top:20px;left:50%;transform:translateX(-50%) translateY(-100px);
+  background:#111827;color:#fff;
+  padding:12px 18px;border-radius:12px;
+  font-size:13px;font-weight:600;
+  box-shadow:0 10px 30px rgba(0,0,0,.3);
+  z-index:1000;
+  transition:transform .3s;
+  max-width:90%;
+  text-align:center;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{background:#059669}
+.toast.error{background:#dc2626}
+
+/* feedback form */
+.feedback-form{padding:14px;display:flex;flex-direction:column;gap:12px}
+.feedback-form label{font-size:13px;font-weight:700;color:#374151}
+.feedback-form input,.feedback-form textarea,.feedback-form select{
+  width:100%;padding:12px;border:1px solid var(--border);
+  border-radius:10px;font-size:14px;background:#fff;outline:none;
+  transition:border .15s;
+}
+.feedback-form input:focus,.feedback-form textarea:focus,.feedback-form select:focus{
+  border-color:var(--primary);
+}
+.feedback-form textarea{min-height:100px;resize:vertical}
+
+/* confetti */
+.confetti{
+  position:absolute;inset:0;pointer-events:none;z-index:99;overflow:hidden;
+}
+.confetti span{
+  position:absolute;width:8px;height:14px;
+  top:-20px;
+  animation:confettiFall 3s linear forwards;
+}
+@keyframes confettiFall{
+  to{transform:translateY(110vh) rotate(720deg)}
+}
+
+/* shop icons for category */
+.cat-market{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.cat-butik{background:linear-gradient(135deg,#6b7280,#374151)}
+.cat-elektronik{background:linear-gradient(135deg,#dc2626,#7f1d1d)}
+.cat-mobilya{background:linear-gradient(135deg,#f97316,#ea580c)}
+.cat-beyaz{background:linear-gradient(135deg,#e5e7eb,#9ca3af)}
+.cat-kuyumcu{background:linear-gradient(135deg,#fbbf24,#d97706)}
+.cat-oto{background:linear-gradient(135deg,#1f2937,#111827)}
+.cat-benzin{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
+
+@media (max-width:380px){
+  .brand{font-size:17px}
+  .tb-btn{width:32px;height:32px}
+  .stat-pill{font-size:11px;padding:4px 8px}
+  .money-pill{font-size:12px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ====== AUTH / WELCOME SCREEN ====== -->
+  <div id="welcome" class="auth-screen">
+    <div class="auth-hero">
+      <svg class="auth-illustration" viewBox="0 0 300 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- City silhouette -->
+        <rect x="20" y="120" width="32" height="90" rx="2" fill="#1e3a8a" opacity=".5"/>
+        <rect x="56" y="100" width="28" height="110" rx="2" fill="#1e40af" opacity=".6"/>
+        <rect x="88" y="140" width="24" height="70" rx="2" fill="#1e3a8a" opacity=".5"/>
+        <rect x="116" y="110" width="30" height="100" rx="2" fill="#2563eb" opacity=".65"/>
+        <rect x="150" y="130" width="26" height="80" rx="2" fill="#1e40af" opacity=".55"/>
+        <rect x="180" y="95" width="30" height="115" rx="2" fill="#2563eb" opacity=".7"/>
+        <rect x="214" y="125" width="28" height="85" rx="2" fill="#1e3a8a" opacity=".5"/>
+        <rect x="246" y="110" width="30" height="100" rx="2" fill="#1e40af" opacity=".6"/>
+        <!-- windows -->
+        <g fill="#fbbf24" opacity=".8">
+          <rect x="62" y="110" width="4" height="4"/><rect x="70" y="110" width="4" height="4"/>
+          <rect x="62" y="122" width="4" height="4"/><rect x="70" y="122" width="4" height="4"/>
+          <rect x="124" y="120" width="4" height="4"/><rect x="134" y="120" width="4" height="4"/>
+          <rect x="188" y="110" width="4" height="4"/><rect x="196" y="110" width="4" height="4"/>
+          <rect x="188" y="122" width="4" height="4"/><rect x="196" y="122" width="4" height="4"/>
+          <rect x="254" y="120" width="4" height="4"/><rect x="264" y="120" width="4" height="4"/>
+        </g>
+        <!-- person on paper airplane -->
+        <path d="M100 70 L230 45 L180 90 L140 75 Z" fill="#ffffff" opacity=".95"/>
+        <path d="M140 75 L180 90 L155 110 Z" fill="#cbd5e1"/>
+        <!-- person -->
+        <circle cx="175" cy="50" r="10" fill="#fbbf24"/>
+        <rect x="168" y="58" width="14" height="24" rx="3" fill="#1e40af"/>
+        <rect x="170" y="80" width="4" height="14" fill="#111827"/>
+        <rect x="178" y="80" width="4" height="14" fill="#111827"/>
+        <rect x="182" y="64" width="14" height="3" rx="1.5" fill="#fbbf24" transform="rotate(25 182 64)"/>
+        <!-- briefcase -->
+        <rect x="196" y="68" width="12" height="10" rx="1.5" fill="#7f1d1d"/>
+        <rect x="199" y="65" width="6" height="3" fill="#7f1d1d"/>
+      </svg>
+
+      <div class="auth-logo">gamezone <span class="yellow">erp</span></div>
+      <div class="auth-title">Ekonomik Gücünü Kanıtla!</div>
+      <div class="auth-subtitle">20.000 TL ile başla. Üret, sat, rekabet et. Türkiye'nin en büyük işletme imparatorluğunu kur.</div>
+    </div>
+
+    <div class="auth-form">
+      <button class="btn-primary" onclick="openLogin()">Giriş Yap</button>
+      <button class="btn-ghost" onclick="openRegister()">Kayıt Ol</button>
+      <div class="auth-footer">Henüz hesabın yok mu? <a onclick="openRegister()">Hemen başla</a></div>
+    </div>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="login" class="auth-screen" style="display:none">
+    <div class="auth-header">
+      <button class="auth-back" onclick="showScreen('welcome')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div style="font-weight:700;font-size:16px">Kullanıcı Girişi</div>
+    </div>
+    <div class="auth-hero">
+      <div class="auth-logo" style="font-size:32px">gamezone <span class="yellow">erp</span></div>
+    </div>
+    <form class="auth-form" onsubmit="doLogin(event)">
+      <div class="auth-field">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
+        <input type="text" id="login-user" placeholder="Kullanıcı adı veya e-posta" required>
+      </div>
+      <div class="auth-field">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input type="password" id="login-pass" placeholder="Parola" required>
+      </div>
+      <div class="auth-row">
+        <label><input type="checkbox"> Beni Hatırla</label>
         <a>Şifremi Unuttum</a>
       </div>
       <button class="btn-primary" type="submit">Giriş Yap</button>
