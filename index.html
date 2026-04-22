@@ -3983,26 +3983,18 @@ setInterval(updateLotteryTimer,1000);
 window.addEventListener('beforeunload',saveState);
 </script>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
   const firebaseConfig = {
-    apiKey: "AIzaSyCZ-maUXnCNTHR1BlSwTzjMUaotJduTDQs",
-    authDomain: "gamezone-erp.firebaseapp.com",
-    projectId: "gamezone-erp",
-    storageBucket: "gamezone-erp.firebasestorage.app",
-    messagingSenderId: "948726896226",
-    appId: "1:948726896226:web:e417b0f8375f7a4ec2233b",
-    measurementId: "G-VEVMCFM5T8"
+    databaseURL: "https://gamezone-e11b0-default-rtdb.europe-west1.firebasedatabase.app/"
   };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // Global erişim için db'yi pencereye bağlayalım
-  window.db = db;
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  window.db = firebase.database();
 </script>
+
 
 </body>
 </html>
