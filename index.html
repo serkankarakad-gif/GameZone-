@@ -1,347 +1,102 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
-<meta name="theme-color" content="#0f172a"/>
-<title>Game Zone ERP</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CakeSmash - GameZone</title>
+  <link rel="stylesheet" href="stil.css">
 </head>
 <body>
-<div id="app">
 
-<!-- LOADING -->
-<div id="ls">
-  <div id="ls-bg"></div>
-  <div class="ls-logo">game<span>zone</span></div>
-  <div class="ls-sub" id="ls-msg">Bağlanıyor...</div>
-  <div class="ls-spinner"></div>
-  <div class="ls-dots"><span></span><span></span><span></span></div>
-</div>
-
-<!-- NO INTERNET -->
-<div id="no-net">
-  <div style="font-size:64px;margin-bottom:14px">📡</div>
-  <div style="font-size:20px;font-weight:800;margin-bottom:10px">Bağlantı Kesildi</div>
-  <div style="font-size:14px;color:var(--tm);margin-bottom:24px;line-height:1.6">İnternet bağlantını kontrol et ve tekrar dene.</div>
-  <button class="btn-create" onclick="retryConn()">🔄 Yeniden Dene</button>
-</div>
-
-<!-- BAN -->
-<div id="ban-scr">
-  <div class="ban-ring">🚫</div>
-  <div class="ban-title">ERİŞİM REDDEDİLDİ</div>
-  <div class="ban-reason" id="ban-reason-txt">Kural ihlali tespit edildi.</div>
-  <div style="font-size:12px;opacity:.4">Haksız ban? İletişime geç.</div>
-</div>
-
-<!-- WELCOME -->
-<div id="welcome" class="auth-screen" style="display:none">
-  <div class="auth-bg"></div><div class="auth-orb1"></div><div class="auth-orb2"></div><div class="auth-orb3"></div>
-  <div class="auth-hero">
-    <div class="auth-logo">game<span class="y">zone</span></div>
-    <div class="auth-title">Ekonomik İmparatorluğunu Kur</div>
-    <div class="auth-sub">20.000 TL ile başla. 81 ilde dükkan aç, üret, sat, kazan.</div>
-    <div class="auth-stats">
-      <div class="auth-stat"><div class="auth-stat-val">81</div><div class="auth-stat-label">Şehir</div></div>
-      <div class="auth-stat"><div class="auth-stat-val">∞</div><div class="auth-stat-label">İmkân</div></div>
-      <div class="auth-stat"><div class="auth-stat-val">🏆</div><div class="auth-stat-label">Rekabet</div></div>
-    </div>
-    <div class="destan-box">
-      <div class="destan-title">🎻 Karakaş Kardeşler'den Bir Destan</div>
-      <div class="destan-text">"İki kardeş, bir hayaldi bu oyun...<br>Serkan ile Resul, geceyi gündüze kattı.<br>Her satır kod bir umuttu, her bug bir ders.<br>81 ile açılan kapı, sizin için örüldü."</div>
-      <button class="destan-btn" onclick="playDestan()">🎻 Dinle</button>
-    </div>
-  </div>
-  <div class="auth-form">
-    <button class="btn-primary" onclick="openLogin()">Giriş Yap</button>
-    <button class="btn-ghost" onclick="openRegister()">Kayıt Ol</button>
-    <div class="auth-footer">Hesabın yok mu? <a onclick="openRegister()">Ücretsiz Başla →</a></div>
-  </div>
-</div>
-
-<!-- LOGIN -->
-<div id="login" class="auth-screen" style="display:none">
-  <div class="auth-bg"></div><div class="auth-orb1"></div><div class="auth-orb2"></div>
-  <div class="auth-header">
-    <button class="auth-back" onclick="showScreen('welcome')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-    <div style="font-weight:700;font-size:16px">Giriş Yap</div>
-  </div>
-  <div class="auth-hero">
-    <div class="auth-logo" style="font-size:32px">game<span class="y">zone</span></div>
-    <div style="opacity:.7;margin-top:8px;text-align:center;font-size:13px">Hesabına tekrar hoş geldin 👋</div>
-  </div>
-  <form class="auth-form" onsubmit="doLogin(event)">
-    <div class="auth-field"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg><input type="text" id="login-user" placeholder="Kullanıcı adı veya e-posta" required autocomplete="username"></div>
-    <div class="auth-field"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><input type="password" id="login-pass" placeholder="Parola" required autocomplete="current-password"></div>
-    <div class="auth-row"><span></span><a onclick="openForgot()">Şifremi Unuttum</a></div>
-    <button class="btn-primary" type="submit">Giriş Yap</button>
-    <div class="auth-footer">Hesabın yok mu? <a onclick="openRegister()">Kayıt Ol</a></div>
-  </form>
-</div>
-
-<!-- REGISTER -->
-<div id="register" class="auth-screen" style="display:none">
-  <div class="auth-bg"></div><div class="auth-orb1"></div><div class="auth-orb2"></div>
-  <div class="auth-header">
-    <button class="auth-back" onclick="showScreen('welcome')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-    <div style="font-weight:700;font-size:16px">Hesap Oluştur</div>
-  </div>
-  <div class="auth-hero">
-    <div class="auth-logo" style="font-size:32px">game<span class="y">zone</span></div>
-    <div style="opacity:.7;margin-top:8px;text-align:center;font-size:13px">20.000 TL başlangıç sermayeyle başla!</div>
-  </div>
-  <form class="auth-form" onsubmit="doRegister(event)">
-    <div class="auth-field"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg><input type="text" id="reg-user" placeholder="Kullanıcı adı (3-16 karakter)" required minlength="3" maxlength="16"></div>
-    <div class="auth-field"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><input type="email" id="reg-email" placeholder="E-posta" required autocomplete="email"></div>
-    <div class="auth-field"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><input type="password" id="reg-pass" placeholder="Parola (min. 6 karakter)" required minlength="6" autocomplete="new-password"></div>
-    <button class="btn-primary" type="submit">Hesap Oluştur</button>
-    <div class="auth-footer">Hesabın var mı? <a onclick="openLogin()">Giriş Yap</a></div>
-  </form>
-</div>
-
-<!-- FORGOT -->
-<div id="forgot" class="auth-screen" style="display:none">
-  <div class="auth-bg"></div><div class="auth-orb1"></div>
-  <div class="auth-header">
-    <button class="auth-back" onclick="showScreen('login')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-    <div style="font-weight:700;font-size:16px">Şifre Sıfırla</div>
-  </div>
-  <div class="auth-hero">
-    <div style="font-size:72px;margin-bottom:14px">🔑</div>
-    <div class="auth-title">Şifre Sıfırlama</div>
-    <div class="auth-sub">E-postanı gir, sıfırlama bağlantısı gönderelim.</div>
-  </div>
-  <form class="auth-form" onsubmit="doForgot(event)">
-    <div class="auth-field"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><input type="email" id="forgot-email" placeholder="E-posta adresin" required></div>
-    <button class="btn-primary" type="submit">Sıfırlama Gönder</button>
-    <div class="auth-footer"><a onclick="showScreen('login')">← Girişe Dön</a></div>
-  </form>
-</div>
-
-<!-- MAIN APP -->
-<div id="main" class="main-shell">
-  <div class="topbar">
-    <div class="topbar-row">
-      <div class="brand">game<span class="y">zone</span></div>
-      <div class="topbar-icons">
-        <button class="tb-btn" onclick="openPage('chat')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
-        <button class="tb-btn" onclick="openPage('notifications')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="badge" id="notif-badge" style="display:none">1</span></button>
-        <button class="tb-btn" onclick="openPage('bank')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg></button>
-        <button class="tb-btn" onclick="openPage('profile')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
-        <button class="tb-btn" onclick="openPage('menu')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
-      </div>
-    </div>
-    <div class="topbar-stats">
-      <div class="stat-pill">
-        <span class="lvl-num" id="level-num">1</span>
-        <div><div style="font-size:9px;margin-bottom:2px;color:var(--tm)"><span id="xp-text">0/500</span></div><div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div></div>
-      </div>
-      <div class="stat-pill">💎 <span id="diamond-count">10</span></div>
-      <div class="money-pill">💵 <span id="money-count">20.000,00 ₺</span></div>
+  <!-- Kimlik doğrulama ekranı -->
+  <div id="authScreen" class="screen active">
+    <div class="form-box">
+      <h2>🎂 CakeSmash</h2>
+      <div id="authError" style="color:red;display:none;"></div>
+      <div id="authSuccess" style="color:green;display:none;"></div>
+      <input id="loginEmail" type="email" placeholder="E-posta">
+      <input id="loginPassword" type="password" placeholder="Şifre">
+      <button onclick="login()">Giriş Yap</button>
+      <button onclick="resetPassword()">Şifremi Unuttum</button>
+      <hr>
+      <input id="regName" placeholder="Kullanıcı Adı">
+      <input id="regEmail" type="email" placeholder="E-posta">
+      <input id="regPassword" type="password" placeholder="Şifre">
+      <button onclick="register()">Kayıt Ol</button>
     </div>
   </div>
 
-  <div class="content" id="content-area">
-    <div class="page active" id="page-dukkanlar"><div class="page-header"><span class="page-icon">🏪</span><span class="page-title">Dükkanlar</span></div><div id="dukkanlar-body"></div></div>
-    <div class="page" id="page-bahceler"><div class="page-header"><span class="page-icon">🌾</span><span class="page-title">Bahçeler</span></div><div id="bahceler-body"></div></div>
-    <div class="page" id="page-ciftlikler"><div class="page-header"><span class="page-icon">🥚</span><span class="page-title">Çiftlikler</span></div><div id="ciftlikler-body"></div></div>
-    <div class="page" id="page-fabrikalar"><div class="page-header"><span class="page-icon">🏭</span><span class="page-title">Fabrikalar</span></div><div id="fabrikalar-body"></div></div>
-    <div class="page" id="page-madenler"><div class="page-header"><span class="page-icon">⛏️</span><span class="page-title">Madenler</span></div><div id="madenler-body"></div></div>
-    <div class="page" id="page-nakit">
-      <div class="tycoon-hero"><div class="tycoon-hero-title">Nakit <span>Tycoon</span></div><div style="font-size:13px;opacity:.7;margin-bottom:14px;position:relative;z-index:1">Ürün sat · İhracat · Kripto</div><div class="tycoon-balance"><div><div style="font-size:12px;opacity:.7">BAKİYE</div><div style="font-size:20px;font-weight:800" id="tycoon-bal">— ₺</div></div><div style="font-size:28px">💰</div></div></div>
-      <div class="tycoon-sec">🏬 İşletmeler</div><div class="tycoon-hscroll" id="tc-isletme"></div>
-      <div class="tycoon-sec">📦 Lojistik &amp; Pazar</div><div class="tycoon-hscroll" id="tc-pazar"></div>
-      <div class="tycoon-sec">💹 Finans</div><div class="tycoon-hscroll" id="tc-finans"></div>
-    </div>
-    <div class="page" id="page-lojistik"><div class="page-header"><span class="page-icon">🚚</span><span class="page-title">Lojistik - Depo</span></div><div id="lojistik-body"></div></div>
-    <div class="page" id="page-ihracat"><div class="page-header"><span class="page-icon">🚢</span><span class="page-title">İhracat</span></div><div id="ihracat-body"></div></div>
-    <div class="page" id="page-ihale"><div class="page-header"><span class="page-icon">🔨</span><span class="page-title">İhale</span></div><div id="ihale-body"></div></div>
-    <div class="page" id="page-kripto"><div class="page-header"><span class="page-icon">💰</span><span class="page-title">Kripto</span></div><div id="kripto-body"></div></div>
-    <div class="page" id="page-enerji"><div class="page-header"><span class="page-icon">⚡</span><span class="page-title">Enerji Piyasası</span></div><div id="enerji-body"></div></div>
-    <div class="page" id="page-marka"><div class="page-header"><span class="page-icon">🏆</span><span class="page-title">Markalar</span></div><div id="marka-body"></div></div>
-    <div class="page" id="page-pazar"><div class="page-header"><span class="page-icon">🛍️</span><span class="page-title">Oyuncu Pazarı</span></div><div id="pazar-body"></div></div>
-    <div class="page" id="page-bank"><div class="page-header"><button class="back-btn" onclick="backToMain()">←</button><span class="page-icon">🏦</span><span class="page-title">Banka</span></div><div id="bank-body"></div></div>
-    <div class="page" id="page-notifications"><div class="page-header"><button class="back-btn" onclick="backToMain()">←</button><span class="page-title">Bildirimler</span></div><div id="notif-body"></div></div>
-    <div class="page" id="page-chat">
-      <div class="page-header"><button class="back-btn" onclick="backToMain()">←</button><span class="page-icon">💬</span><span class="page-title">Global Sohbet</span></div>
-      <div class="chat-wrap">
-        <div class="chat-input-bar">
-          <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#312e81,#6366f1);display:grid;place-items:center;font-size:14px" id="chat-av-display">🙂</div>
-          <input id="chat-text" placeholder="Mesajını yaz..." maxlength="200" onkeydown="if(event.key==='Enter')sendChat()">
-          <button class="chat-send" onclick="sendChat()"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
-        </div>
-        <div class="chat-messages" id="chat-messages"></div>
-      </div>
-    </div>
-    <div class="page" id="page-profile"><div class="page-header"><button class="back-btn" onclick="backToMain()">←</button><span class="page-title">Profil</span></div><div id="profile-body"></div></div>
-    <div class="page" id="page-menu">
-      <div style="background:var(--bg2);padding:14px 16px;border-bottom:1px solid var(--br);display:flex;align-items:center;gap:10px;">
-        <button class="back-btn" onclick="backToMain()">←</button><span style="font-size:16px;font-weight:700;flex:1">Menü</span>
-      </div>
-      <div class="menu-grid">
-        <div class="menu-tile" onclick="openPage('news')"><div class="menu-tile-icon">📰</div><div class="menu-tile-label">Haberler</div></div>
-        <div class="menu-tile" onclick="openPage('cities')"><div class="menu-tile-icon">🏙️</div><div class="menu-tile-label">Şehirler</div></div>
-        <div class="menu-tile" onclick="openPage('lottery')"><div class="menu-tile-icon">🎰</div><div class="menu-tile-label">Çekiliş</div></div>
-        <div class="menu-tile" onclick="openPage('ranking')"><div class="menu-tile-icon">🏆</div><div class="menu-tile-label">Sıralama</div></div>
-        <div class="menu-tile" onclick="openPage('pazar')"><div class="menu-tile-icon">🛍️</div><div class="menu-tile-label">Oyuncu Pazarı</div></div>
-        <div class="menu-tile" onclick="openPage('faq')"><div class="menu-tile-icon">❓</div><div class="menu-tile-label">SSS</div></div>
-        <div class="menu-tile" onclick="openPage('store')"><div class="menu-tile-icon">💎</div><div class="menu-tile-label">Mağaza</div></div>
-        <div class="menu-tile" onclick="openPage('about')"><div class="menu-tile-icon">🏢</div><div class="menu-tile-label">Hakkımızda</div></div>
-        <div class="menu-tile" onclick="openPage('settings')"><div class="menu-tile-icon">⚙️</div><div class="menu-tile-label">Ayarlar</div></div>
-      </div>
-      <div style="text-align:center;padding:16px;font-size:11px;color:var(--tm)">© 2026 gamezoneERP · v5.0</div>
-    </div>
-    <div class="page" id="page-news"><div class="page-header"><button class="back-btn" onclick="openPage('menu')">←</button><span class="page-icon">📰</span><span class="page-title">Haberler</span></div><div id="news-body"></div></div>
-    <div class="page" id="page-cities"><div class="page-header"><button class="back-btn" onclick="openPage('menu')">←</button><span class="page-icon">🏙️</span><span class="page-title">Şehirler</span></div><div id="city-list" style="padding:10px"></div></div>
-    <div class="page" id="page-lottery">
-      <div class="page-header"><button class="back-btn" onclick="openPage('menu')">←</button><span class="page-icon">🎰</span><span class="page-title">Çekiliş</span></div>
-      <div class="lottery-box"><div style="font-size:56px;margin-bottom:10px">💎</div><div style="font-size:20px;font-weight:800;margin-bottom:6px">Haftalık Elmas Çekilişi</div><div style="font-size:13px;opacity:.8;margin-bottom:16px">Kupon kullanarak büyük ödülü kazan!</div><button style="background:linear-gradient(135deg,#fbbf24,#d97706);color:#1f2937;padding:12px 28px;border-radius:12px;font-weight:800;font-size:14px;" onclick="joinLottery()">🎟️ Kuponu Kullan (×<span id="coupon-cnt">1</span>)</button></div>
-      <div style="text-align:center;padding:14px"><div style="font-size:13px;color:var(--tm);margin-bottom:6px">Sonraki Çekiliş:</div><div id="lottery-timer" style="font-size:22px;font-weight:800;color:#6366f1">—</div></div>
-    </div>
-    <div class="page" id="page-ranking"><div class="page-header"><button class="back-btn" onclick="openPage('menu')">←</button><span class="page-icon">🏆</span><span class="page-title">Liderlik Tablosu</span></div><div id="ranking-body"></div></div>
-    <div class="page" id="page-faq"><div class="page-header"><button class="back-btn" onclick="openPage('menu')">←</button><span class="page-icon">❓</span><span class="page-title">SSS</span></div><div id="faq-body"></div></div>
-    <div class="page" id="page-store">
-      <div class="page-header"><button class="back-btn" onclick="openPage('menu')">←</button><span class="page-icon">💎</span><span class="page-title">Mağaza</span></div>
-      <div style="padding:14px">
-        <div class="pkg-card featured"><div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#fbbf24,#d97706);display:grid;place-items:center;font-size:28px">💎</div><div style="flex:1"><div style="font-size:18px;font-weight:800">400 Elmas <span style="background:#ef4444;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px">POPÜLER</span></div><div style="font-size:11px;color:#d97706;font-weight:700;margin-top:2px">+50 bonus</div></div><div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:8px 14px;border-radius:10px;font-weight:800;font-size:13px">159 ₺</div></div>
-        <div class="pkg-card"><div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:grid;place-items:center;font-size:28px">💎</div><div style="flex:1"><div style="font-size:18px;font-weight:800">100 Elmas</div><div style="font-size:11px;color:var(--tm);margin-top:2px">Başlangıç</div></div><div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:8px 14px;border-radius:10px;font-weight:800;font-size:13px">39,99 ₺</div></div>
-        <div class="pkg-card"><div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#a78bfa,#7c3aed);display:grid;place-items:center;font-size:28px">💎</div><div style="flex:1"><div style="font-size:18px;font-weight:800">1600 Elmas</div><div style="font-size:11px;color:var(--tm);margin-top:2px">+400 bonus</div></div><div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:8px 14px;border-radius:10px;font-weight:800;font-size:13px">489 ₺</div></div>
-        <div style="text-align:center;font-size:11px;color:var(--tm);margin-top:8px">* Demo — gerçek satın alma yapılmaz.</div>
-      </div>
-    </div>
-    <div class="page" id="page-about">
-      <div class="page-header"><button class="back-btn" onclick="openPage('menu')">←</button><span class="page-icon">🏢</span><span class="page-title">Hakkımızda</span></div>
-      <div style="padding:14px">
-        <div style="background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:18px;padding:24px;color:#fff;text-align:center;margin-bottom:14px;border:1px solid rgba(99,102,241,.3)"><div style="font-size:56px;margin-bottom:12px">🏢</div><div style="font-family:'Space Grotesk';font-size:24px;font-weight:700;margin-bottom:6px">gamezone <span style="color:#fbbf24">erp</span></div><div style="opacity:.7;font-size:13px">Türkiye'nin En Büyük Ekonomi Simülasyonu</div></div>
-        <div class="card"><div style="font-weight:800;font-size:15px;margin-bottom:12px">👨‍💻 Geliştirici Ekibi</div>
-          <div style="display:flex;align-items:center;gap:12px;padding:10px;background:rgba(255,255,255,.04);border-radius:10px;margin-bottom:8px;border:1px solid var(--br)"><div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#fbbf24,#d97706);display:grid;place-items:center;font-size:20px">👨‍💼</div><div><div style="font-weight:700">Serkan Karakaş</div><div style="font-size:12px;color:var(--tm)">Kurucu & Baş Geliştirici</div></div></div>
-          <div style="display:flex;align-items:center;gap:12px;padding:10px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid var(--br)"><div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:grid;place-items:center;font-size:20px">👨‍💻</div><div><div style="font-weight:700">Resul Karakaş</div><div style="font-size:12px;color:var(--tm)">Co-Founder & Teknik Direktör</div></div></div>
-        </div>
-      </div>
-    </div>
-    <div class="page" id="page-settings"><div class="page-header"><button class="back-btn" onclick="openPage('profile')">←</button><span class="page-icon">⚙️</span><span class="page-title">Ayarlar</span></div><div id="settings-body"></div></div>
+  <!-- Ana Menü -->
+  <div id="mainMenu" class="screen">
+    <h1>🍰 CakeSmash</h1>
+    <button id="playBtn">Oyna</button>
+    <button id="profileBtn">Profil</button>
+    <button id="leaderboardBtn">Lider Tablosu</button>
+    <button id="howToPlayBtn">Nasıl Oynanır?</button>
+    <button id="aboutBtn">Hakkında</button>
+    <button onclick="logout()">Çıkış</button>
   </div>
 
-  <!-- NAV İŞLETMELER -->
-  <nav class="bottomnav" id="nav-isletme">
-    <button class="nav-item active" data-tab="dukkanlar" onclick="switchTab('dukkanlar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-4h16l1 4M3 9v11h18V9"/></svg><span>Dükkan</span></button>
-    <button class="nav-item" data-tab="bahceler" onclick="switchTab('bahceler')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M12 8c-3 0-5-2-5-4 2 0 5 2 5 4zM12 8c3 0 5-2 5-4-2 0-5 2-5 4z"/></svg><span>Bahçe</span></button>
-    <button class="nav-item" data-tab="ciftlikler" onclick="switchTab('ciftlikler')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="14" rx="8" ry="6"/><path d="M12 8V2"/></svg><span>Çiftlik</span></button>
-    <button class="nav-item" data-tab="fabrikalar" onclick="switchTab('fabrikalar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18M5 20V10l5 3V10l5 3V6l4 3v11"/></svg><span>Fabrika</span></button>
-    <button class="nav-item" data-tab="madenler" onclick="switchTab('madenler')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18l4-4 3 3 5-5 4 4v2H4z"/><circle cx="15" cy="7" r="2"/></svg><span>Maden</span></button>
-  </nav>
-
-  <!-- NAV PİYASALAR -->
-  <nav class="bottomnav" id="nav-piyasa" style="display:none">
-    <button class="nav-item" data-tab="nakit" onclick="switchTab('nakit')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg><span>Tycoon</span></button>
-    <button class="nav-item" data-tab="lojistik" onclick="switchTab('lojistik')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span>Lojistik</span></button>
-    <button class="nav-item" data-tab="ihracat" onclick="switchTab('ihracat')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>İhracat</span></button>
-    <button class="nav-item" data-tab="kripto" onclick="switchTab('kripto')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 10h1.5a1.5 1.5 0 0 1 0 3H9v-3zm0 3h2a1.5 1.5 0 0 1 0 3H9v-3z"/></svg><span>Kripto</span></button>
-    <button class="nav-item" data-tab="marka" onclick="switchTab('marka')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>Marka</span></button>
-  </nav>
-
-  <div style="position:absolute;bottom:72px;right:10px;z-index:25">
-    <button onclick="toggleNav()" style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;font-size:18px;display:grid;place-items:center;box-shadow:0 4px 16px rgba(99,102,241,.5)">⇄</button>
+  <!-- Bölüm Seçme -->
+  <div id="levelSelectScreen" class="screen">
+    <h2>Bölüm Seç</h2>
+    <div id="levelSelectContainer"></div>
+    <button onclick="showScreen('mainMenu')">Geri</button>
   </div>
-</div>
 
-<!-- MODALS -->
-<div class="modal-backdrop" id="welcome-modal">
-  <div class="modal"><div style="text-align:center;padding:32px 24px"><div style="font-size:60px;margin-bottom:12px">🎉</div><div style="font-size:22px;font-weight:800;margin-bottom:10px">Hoş Geldin!</div><div style="font-size:14px;color:var(--tm);line-height:1.6;margin-bottom:24px">20.000 TL ile Türkiye'nin en büyük işletme imparatorluğunu kur!</div><button class="btn-create" style="width:100%" onclick="closeWelcomeModal()">Oyuna Başla! 🚀</button></div></div>
-</div>
-
-<div class="modal-backdrop" id="shop-modal">
-  <div class="modal" style="max-width:440px">
-    <div class="modal-header"><button class="modal-close" onclick="closeModal('shop-modal')">×</button><div class="modal-title" style="text-align:center">Yeni Dükkan</div><div style="width:32px"></div></div>
-    <div class="modal-body" style="padding:0"><div style="padding:14px"><label style="font-size:13px;color:var(--tm);display:block;margin-bottom:6px">Şehir Seçin</label><select id="shop-city" class="input-dark"><option value="">Şehir Seçin...</option></select></div><div class="shop-grid" id="shop-grid"></div></div>
-    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('shop-modal')">Vazgeç</button><button class="btn-confirm" id="shop-confirm" onclick="confirmShop()" disabled>Onayla</button></div>
+  <!-- Oyun Ekranı -->
+  <div id="gameScreen" class="screen">
+    <div id="gameArea"></div>
+    <div id="scoreDisplay" class="score">Skor: 0</div>
+    <div id="comboDisplay" class="combo">Combo: x1</div>
+    <button onclick="CakeSmashGame.endGame()">Bitir</button>
   </div>
-</div>
 
-<div class="modal-backdrop" id="shop-detail-modal"><div class="modal"><div class="modal-header"><button class="modal-close" onclick="closeModal('shop-detail-modal')">×</button><div class="modal-title" id="sd-title">Dükkan</div></div><div class="modal-body" id="sd-body"></div></div></div>
-<div class="modal-backdrop" id="reyon-modal"><div class="modal" style="max-width:440px"><div class="modal-header"><button class="modal-close" onclick="closeModal('reyon-modal')">×</button><div class="modal-title">Ürün Seç</div><div style="width:32px"></div></div><div class="modal-body" style="padding:0;max-height:70vh;overflow-y:auto" id="reyon-product-list"></div></div></div>
-
-<div class="modal-backdrop" id="reyon-price-modal">
-  <div class="modal" style="max-width:380px"><div class="modal-header"><button class="modal-close" onclick="closeModal('reyon-price-modal')">×</button><div class="modal-title" id="rpm-title">Fiyat Ayarla</div></div>
-  <div class="modal-body"><div style="text-align:center;font-size:44px;margin-bottom:10px" id="rpm-icon">🛒</div>
-    <div style="background:rgba(99,102,241,.08);border-radius:12px;padding:12px;margin-bottom:12px;border:1px solid rgba(99,102,241,.2)"><div style="font-size:12px;color:var(--tm);margin-bottom:4px" id="rpm-tip">—</div></div>
-    <label style="font-size:12px;color:var(--tm);display:block;margin-bottom:6px">Satış Fiyatı (₺)</label>
-    <input id="rpm-price" type="number" min="0.01" step="0.01" class="input-dark" style="font-size:20px;font-weight:800;text-align:center">
-    <div style="font-size:12px;color:var(--tm);margin-top:8px;text-align:center">💡 Fiyatı düşürünce daha çok satış, yüksek tutarsan kâr marjın artar.</div>
+  <!-- Profil -->
+  <div id="profileScreen" class="screen">
+    <h2>Profil</h2>
+    <p>İsim: <span id="profileName"></span></p>
+    <p>Seviye: <span id="profileLevel"></span></p>
+    <p>XP: <span id="profileXP"></span></p>
+    <p>Altın: <span id="profileCoins"></span></p>
+    <p>Elmas: <span id="profileGems"></span></p>
+    <p>VIP: <span id="profileVIP"></span></p>
+    <button onclick="claimDailyGift()">Günlük Hediye</button>
+    <button onclick="buyVIP()">VIP Al (100 💎)</button>
+    <button onclick="showScreen('mainMenu')">Geri</button>
   </div>
-  <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('reyon-price-modal')">Vazgeç</button><button class="btn-confirm" onclick="saveReyonPrice()">Kaydet ✅</button></div></div>
-</div>
 
-<div class="modal-backdrop" id="stok-modal">
-  <div class="modal" style="max-width:380px"><div class="modal-header"><button class="modal-close" onclick="closeModal('stok-modal')">×</button><div class="modal-title" id="stok-modal-title">Stok Al</div></div>
-  <div class="modal-body">
-    <div style="text-align:center;font-size:42px;margin-bottom:8px" id="stok-emoji">📦</div>
-    <div style="text-align:center;font-weight:800;margin-bottom:14px" id="stok-name">—</div>
-    <div class="row"><span class="row-label">Mevcut Stok</span><span class="row-value" id="stok-cur">0</span></div>
-    <div class="row"><span class="row-label">Maksimum</span><span class="row-value" id="stok-max">50</span></div>
-    <div class="row"><span class="row-label">Birim Fiyat</span><span class="row-value yellow"><span id="stok-bp">0</span> ₺</span></div>
-    <label style="font-size:12px;color:var(--tm);display:block;margin:12px 0 6px">Miktar</label>
-    <input id="stok-qty" type="number" min="1" class="input-dark" style="font-size:18px;font-weight:800;text-align:center" placeholder="0">
-    <div style="text-align:center;margin-top:8px;font-size:13px;font-weight:700;color:#fbbf24">Toplam: <span id="stok-cost">0 ₺</span></div>
+  <!-- Hakkında -->
+  <div id="aboutScreen" class="screen">
+    <h2>Hakkında</h2>
+    <p>CakeSmash, pasta kırarak puan topladığın eğlenceli bir oyundur.</p>
+    <p><strong>Geliştirici:</strong> Serkan Karakaş</p>
+    <p>Sürüm: 1.0.0</p>
+    <button onclick="showScreen('mainMenu')">Geri</button>
   </div>
-  <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('stok-modal')">Vazgeç</button><button class="btn-confirm" onclick="confirmStokAl()">Satın Al 📦</button></div></div>
-</div>
 
-<div class="modal-backdrop" id="bank-action-modal">
-  <div class="modal" style="max-width:380px"><div class="modal-header"><button class="modal-close" onclick="closeModal('bank-action-modal')">×</button><div class="modal-title" id="bam-title">İşlem</div></div>
-  <div class="modal-body">
-    <div style="font-size:13px;color:var(--tm);margin-bottom:14px" id="bam-desc"></div>
-    <label style="font-size:12px;color:var(--tm);display:block;margin-bottom:6px">Tutar (₺)</label>
-    <input id="bam-amount" type="number" min="1" step="0.01" class="input-dark" style="font-size:20px;font-weight:800;text-align:center" placeholder="0">
+  <!-- Nasıl Oynanır? -->
+  <div id="howToPlayScreen" class="screen">
+    <h2>Nasıl Oynanır?</h2>
+    <ul>
+      <li>Pastaya tıkla, puan kazan!</li>
+      <li>Hızlı tıklayarak combo yap.</li>
+      <li>Seviyeni yükselt, yeni bölümler aç.</li>
+      <li>Altın ve elmas topla, VIP ol.</li>
+    </ul>
+    <button onclick="showScreen('mainMenu')">Geri</button>
   </div>
-  <div class="modal-footer">
-    <button id="bam-deposit" class="btn-confirm" style="flex:1">Yatır</button>
-    <button id="bam-withdraw" class="btn-cancel" style="flex:1">Çek</button>
-  </div></div>
-</div>
 
-<div class="modal-backdrop" id="depo-modal">
-  <div class="modal" style="max-width:400px"><div class="modal-header"><button class="modal-close" onclick="closeModal('depo-modal')">×</button><div class="modal-title">Depo Aç</div></div>
-  <div class="modal-body">
-    <label style="font-size:12px;color:var(--tm);display:block;margin-bottom:6px">Şehir</label>
-    <select id="depo-city-sel" class="input-dark" style="margin-bottom:12px"><option value="">Şehir Seçin...</option></select>
-    <label style="font-size:12px;color:var(--tm);display:block;margin-bottom:6px">Depo Tipi</label>
-    <select id="depo-cap-sel" class="input-dark" style="margin-bottom:12px"></select>
-    <div id="depo-info-box" style="display:none;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:12px;font-size:12px;color:#fbbf24"></div>
+  <!-- Lider Tablosu -->
+  <div id="leaderboardScreen" class="screen">
+    <h2>Lider Tablosu</h2>
+    <ol id="leaderboardList"></ol>
+    <button onclick="showScreen('mainMenu')">Geri</button>
   </div>
-  <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('depo-modal')">Vazgeç</button><button class="btn-confirm" onclick="confirmDepo()">Depo Aç 🏢</button></div></div>
-</div>
 
-<div class="modal-backdrop" id="ihale-bid-modal">
-  <div class="modal" style="max-width:360px"><div class="modal-header"><button class="modal-close" onclick="closeModal('ihale-bid-modal')">×</button><div class="modal-title" id="ibm-title">Teklif Ver</div></div>
-  <div class="modal-body"><p id="ibm-desc" style="font-size:13px;color:var(--tm);margin-bottom:12px"></p><input id="ibm-amount" type="number" min="0.01" step="0.01" placeholder="Teklifinizi girin (₺)" class="input-dark" style="font-size:16px;font-weight:700;text-align:center"><div style="font-size:12px;color:var(--tm);text-align:center;margin-top:6px" id="ibm-tip"></div></div>
-  <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('ihale-bid-modal')">Vazgeç</button><button class="btn-confirm" style="background:linear-gradient(135deg,#ef4444,#dc2626)" onclick="submitIhaleBid()">🔨 Teklif Ver</button></div></div>
-</div>
-
-<div class="modal-backdrop" id="kripto-modal"><div class="modal"><div class="modal-header"><button class="modal-close" onclick="closeModal('kripto-modal')">×</button><div class="modal-title" id="km-title">Kripto</div></div><div class="modal-body" id="km-body"></div></div></div>
-
-<div class="modal-backdrop" id="pazar-sat-modal">
-  <div class="modal" style="max-width:400px"><div class="modal-header"><button class="modal-close" onclick="closeModal('pazar-sat-modal')">×</button><div class="modal-title">Pazara Ürün Ekle</div></div>
-  <div class="modal-body">
-    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;color:var(--tm)">Ürün Adı</label><input id="ps-name" class="input-dark" placeholder="Ürün adı girin"></div>
-    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;color:var(--tm)">Emoji</label><input id="ps-emoji" class="input-dark" placeholder="🛒" maxlength="2"></div>
-    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;color:var(--tm)">Fiyat (₺)</label><input id="ps-price" type="number" min="1" class="input-dark" placeholder="0"></div>
-    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;color:var(--tm)">Miktar</label><input id="ps-qty" type="number" min="1" class="input-dark" placeholder="0"></div>
-    <div><label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;color:var(--tm)">Açıklama</label><input id="ps-desc" class="input-dark" placeholder="Kısa açıklama"></div>
-  </div>
-  <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('pazar-sat-modal')">Vazgeç</button><button class="btn-confirm" onclick="addToPazar()">🛍️ Pazara Ekle</button></div></div>
-</div>
-
-<div class="toast" id="toast"></div>
-<div class="confetti" id="confetti-host" style="display:none"></div>
-
-<!-- JS DOSYALARI — sırayla yüklenmeli -->
-<script src="firebase-init.js"></script>
-<script src="economy.js"></script>
-<script src="ui-manager.js"></script>
-<script src="login.js"></script>
-</div>
+  <script type="module" src="firebase-init.js"></script>
+  <script type="module" src="giriş.js"></script>
+  <script type="module" src="ekonomi.js"></script>
+  <script type="module" src="ui-manager.js"></script>
 </body>
 </html>
