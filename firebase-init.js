@@ -1,7 +1,7 @@
-// Firebase yapılandırması ve ortak modüller
+// Firebase yapılandırması ve tüm modüllerin içe aktarımı
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref, set, get, update, onValue, push, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getDatabase, ref, set, get, update, onValue, push, runTransaction, query, orderByChild, limitToLast, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5pl78DRao2SmUWsMYMSZ6YbfX4rtRNdc",
@@ -18,7 +18,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-// Kullanıcı durumu
 let currentUser = null;
 let userData = null;
 
@@ -32,16 +31,14 @@ onAuthStateChanged(auth, async (user) => {
         uid: user.uid,
         email: user.email,
         username: user.displayName || 'Oyuncu',
-        level: 1,
-        xp: 0,
-        coins: 500,
-        gems: 10,
-        vip: false,
-        vipExpiry: null,
-        gifts: [],
+        level: 1, xp: 0, coins: 500, gems: 20,
+        vip: false, vipExpiry: null,
+        gifts: [], lives: 5, lastLifeRefill: Date.now(),
         unlockedLevels: { chapter1: 1 },
-        highScore: 0,
-        totalCakesSmashed: 0
+        highScore: 0, totalCakesSmashed: 0,
+        boosters: { hammer: 1, bomb: 0, shuffle: 0 },
+        collection: [],
+        settings: { music: true, sfx: true, flashEffects: true, grayscale: false }
       };
       await set(userRef, initial);
     }
@@ -50,12 +47,13 @@ onAuthStateChanged(auth, async (user) => {
       document.dispatchEvent(new CustomEvent('authStateChanged', { detail: { loggedIn: true } }));
     });
   } else {
-    currentUser = null;
-    userData = null;
+    currentUser = null; userData = null;
     document.dispatchEvent(new CustomEvent('authStateChanged', { detail: { loggedIn: false } }));
   }
 });
 
 window.logout = () => signOut(auth);
+window.getCurrentUser = () => currentUser;
+window.getUserData = () => userData;
 
-export { auth, db, currentUser, userData, ref, set, get, update, onValue, push, runTransaction };
+export { auth, db, currentUser, userData, ref, set, get, update, onValue, push, runTransaction, query, orderByChild, limitToLast, remove, GoogleAuthProvider, FacebookAuthProvider };
