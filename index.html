@@ -9,100 +9,116 @@
 </head>
 <body>
 
-  <!-- Giriş/Kayıt -->
-  <div id="authScreen" class="screen active">
-    <div class="form-box">
-      <h2>🎂 CakeSmash</h2>
-      <div id="authMsg" style="margin-bottom:10px;display:none;"></div>
-      <input id="loginEmail" type="email" placeholder="E-posta">
-      <input id="loginPassword" type="password" placeholder="Şifre">
-      <button onclick="login()">Giriş Yap</button>
-      <button onclick="resetPassword()" style="background:#555;">Şifremi Unuttum</button>
-      <hr style="margin:20px 0; border-color:#444;">
-      <input id="regName" placeholder="Kullanıcı Adı">
-      <input id="regEmail" type="email" placeholder="E-posta">
-      <input id="regPassword" type="password" placeholder="Şifre">
-      <button onclick="register()">Kayıt Ol</button>
-    </div>
-  </div>
+<!-- Kullanım Şartları -->
+<div id="termsScreen" class="screen active">
+  <h2>📜 Kullanım Şartları</h2>
+  <p style="text-align:left; margin:20px 0;">Oyuna devam etmek için şartları kabul etmelisiniz.</p>
+  <button id="popupTermsAccept">KABUL ET</button>
+</div>
 
-  <!-- Ana Menü -->
-  <div id="mainMenu" class="screen">
-    <h1>🍰 CakeSmash</h1>
-    <p style="color:#f9ca24; margin-bottom:20px;">Serkan Karakaş - GameZone</p>
-    <button id="playBtn">▶ Oyna</button>
-    <button id="profileBtn">👤 Profil</button>
-    <button id="leaderboardBtn">🏆 Lider Tablosu</button>
-    <button id="howToPlayBtn">❓ Nasıl Oynanır?</button>
-    <button id="aboutBtn">ℹ️ Hakkında</button>
-    <button onclick="logout()" style="background:#555;">Çıkış</button>
+<!-- Giriş/Kayıt -->
+<div id="authScreen" class="screen">
+  <h2>🎂 CakeSmash</h2>
+  <p style="color:var(--gold);">İlerlemeni kaydet, arkadaşlarınla oyna!</p>
+  <div id="authMsg" style="display:none;"></div>
+  <div id="loginForm">
+    <input id="loginEmail" type="email" placeholder="E-posta">
+    <input id="loginPassword" type="password" placeholder="Şifre">
+    <button onclick="login()">Giriş Yap</button>
+    <button onclick="resetPassword()" style="background:#555;">Şifremi Unuttum</button>
+    <p style="margin:10px 0;">veya</p>
+    <button onclick="googleLogin()" style="background:#db4437;">Google ile devam et</button>
+    <button onclick="facebookLogin()" style="background:#4267B2;">Facebook ile devam et</button>
+    <p>Hesabın yok mu? <a onclick="showRegister()" style="color:#ffd700;cursor:pointer;">Kaydol</a></p>
   </div>
-
-  <!-- Bölüm Seçme -->
-  <div id="levelSelectScreen" class="screen">
-    <h2>📂 Bölüm Seç</h2>
-    <div id="levelSelectContainer" style="margin:20px 0;"></div>
-    <button onclick="showScreen('mainMenu')">◀ Geri</button>
+  <div id="registerForm" style="display:none;">
+    <input id="regName" placeholder="Kullanıcı Adı">
+    <input id="regEmail" type="email" placeholder="E-posta">
+    <input id="regPassword" type="password" placeholder="Şifre">
+    <button onclick="register()">Kayıt Ol</button>
+    <p>Zaten hesabın var mı? <a onclick="showLogin()" style="color:#ffd700;cursor:pointer;">Giriş yap</a></p>
   </div>
+</div>
 
-  <!-- Oyun Ekranı -->
-  <div id="gameScreen" class="screen">
-    <div class="score-board">
-      <span id="scoreDisplay">Skor: 0</span>
-      <span id="timerDisplay">⏱️ 30s</span>
-    </div>
-    <div id="gameArea">
-      <div id="comboPop"></div>
-    </div>
-    <button id="endGameBtn">Oyunu Bitir</button>
+<!-- Ana Menü -->
+<div id="mainMenu" class="screen">
+  <h1>🍰 CakeSmash</h1>
+  <p>Serkan Karakaş - GameZone</p>
+  <div style="margin:15px 0;">
+    <span>❤️ <span id="livesDisplay">5</span></span> |
+    <span>🪙 <span id="coinsDisplay">0</span></span> |
+    <span>💎 <span id="gemsDisplay">0</span></span>
   </div>
+  <button id="playBtn">▶ Oyna</button>
+  <button id="shopBtn">🛒 Dükkan</button>
+  <button id="friendsBtn">👥 Arkadaşlar</button>
+  <button id="collectionBtn">🏆 Koleksiyon</button>
+  <button id="settingsBtn">⚙️ Ayarlar</button>
+  <button onclick="logout()">Çıkış</button>
+</div>
 
-  <!-- Profil -->
-  <div id="profileScreen" class="screen">
-    <h2>👤 Profil</h2>
-    <p>İsim: <span id="profileName"></span></p>
-    <p>Seviye: <span id="profileLevel"></span></p>
-    <p>XP: <span id="profileXP"></span></p>
-    <p>🪙 Altın: <span id="profileCoins"></span></p>
-    <p>💎 Elmas: <span id="profileGems"></span></p>
-    <p>VIP: <span id="profileVIP"></span></p>
-    <button onclick="claimDailyGift()">🎁 Günlük Hediye</button>
-    <button onclick="buyVIP()">⭐ VIP Al (100 💎)</button>
-    <button onclick="showScreen('mainMenu')">◀ Geri</button>
+<!-- Oyun Ekranı -->
+<div id="gameScreen" class="screen">
+  <div style="display:flex; justify-content:space-between; font-weight:bold;">
+    <span id="scoreDisplay">Skor: 0</span>
+    <span id="timerDisplay">⏱️ 30s</span>
   </div>
+  <div id="gameArea"></div>
+  <button onclick="Game.endGame()">Oyunu Bitir</button>
+</div>
 
-  <!-- Hakkında -->
-  <div id="aboutScreen" class="screen">
-    <h2>ℹ️ Hakkında</h2>
-    <p>CakeSmash, pastalara hızlıca tıklayarak puan kazandığın, seviye atladığın eğlenceli bir oyundur.</p>
-    <p><strong>Geliştirici:</strong> Serkan Karakaş</p>
-    <p>Sürüm: 1.2.0</p>
-    <p>GameZone &copy; 2025</p>
-    <button onclick="showScreen('mainMenu')">◀ Geri</button>
+<!-- Dükkan -->
+<div id="shopScreen" class="screen">
+  <h2>🛒 Dükkan</h2>
+  <div class="offer-box"><span class="coin">🪙 1000</span><br>💎 50<br><button onclick="buyCoinPack(1000, 50)">Al</button></div>
+  <div class="offer-box"><span class="coin">🪙 5000</span><br>💎 200<br><button onclick="buyCoinPack(5000, 200)">Al</button></div>
+  <div class="offer-box"><span class="gem">💎 100</span><br>+2 Çekiç<br><button onclick="addBooster('hammer',2);addGems(-20);">Al</button></div>
+  <p style="margin-top:20px;">❤️ Can doldur: 💎4 <button onclick="purchaseLives()">Al</button></p>
+  <button onclick="showScreen('mainMenu')">Geri</button>
+</div>
+
+<!-- Arkadaşlar -->
+<div id="friendsScreen" class="screen">
+  <h2>👥 Arkadaşlar</h2>
+  <p>Arkadaşlarınla yarış!</p>
+  <button>+ Arkadaş Ekle</button>
+  <button>Facebook ile bul</button>
+  <div style="margin-top:20px;">
+    <p><strong>Can gönderenler:</strong></p>
+    <div>👤 Basil - 615 puan <button>Ekle</button></div>
+    <div>👤 Näzbâtîcâ - 2380 puan <button>Ekle</button></div>
   </div>
+  <button onclick="showScreen('mainMenu')">Geri</button>
+</div>
 
-  <!-- Nasıl Oynanır -->
-  <div id="howToPlayScreen" class="screen">
-    <h2>❓ Nasıl Oynanır?</h2>
-    <ul style="text-align:left; margin:20px;">
-      <li>🎯 Pastaya tıkla, puan kazan!</li>
-      <li>⚡ Hızlı tıklayarak combo yap.</li>
-      <li>📈 Seviye atlayarak yeni bölümler aç.</li>
-      <li>💎 Elmas ve altın biriktir, VIP ol.</li>
-    </ul>
-    <button onclick="showScreen('mainMenu')">◀ Geri</button>
+<!-- Koleksiyon -->
+<div id="collectionScreen" class="screen">
+  <h2>🏆 Koleksiyon & Ödüller</h2>
+  <p>Rozetlerin kilidini açmak için seviye atla!</p>
+  <div style="display:flex; gap:12px; justify-content:center; margin:20px;">
+    <div style="width:50px;height:50px;background:gray;border-radius:50%;"></div>
+    <div style="width:50px;height:50px;background:silver;border-radius:50%;"></div>
+    <div style="width:50px;height:50px;background:gold;border-radius:50%;"></div>
   </div>
+  <button onclick="showScreen('mainMenu')">Geri</button>
+</div>
 
-  <!-- Lider Tablosu -->
-  <div id="leaderboardScreen" class="screen">
-    <h2>🏆 Lider Tablosu</h2>
-    <ol id="leaderboardList" style="text-align:left; padding-left:20px;"></ol>
-    <button onclick="showScreen('mainMenu')">◀ Geri</button>
-  </div>
+<!-- Ayarlar -->
+<div id="settingsScreen" class="screen">
+  <h2>⚙️ Ayarlar</h2>
+  <label>Müzik: <input type="checkbox" id="musicToggle" checked></label><br>
+  <label>Ses Efektleri: <input type="checkbox" id="sfxToggle" checked></label><br>
+  <label>Işık Efektleri: <input type="checkbox" checked></label>
+  <h3>Erişilebilirlik</h3>
+  <label>Gri tonlama: <input type="checkbox"></label><br>
+  <label>İpuçları: <input type="checkbox" checked></label>
+  <p>Kullanıcı Kimliği: <span id="userID"></span></p>
+  <button onclick="showScreen('mainMenu')">Geri</button>
+</div>
 
-  <script type="module" src="firebase-init.js"></script>
-  <script type="module" src="giriş.js"></script>
-  <script type="module" src="ekonomi.js"></script>
-  <script type="module" src="ui-manager.js"></script>
+<script type="module" src="firebase-init.js"></script>
+<script type="module" src="giriş.js"></script>
+<script type="module" src="ekonomi.js"></script>
+<script type="module" src="ui-manager.js"></script>
 </body>
 </html>
