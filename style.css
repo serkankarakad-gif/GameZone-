@@ -302,68 +302,118 @@ input, select, textarea {
 }
 
 /* ================================================================
-   AUTH SCREENS
+   AUTH SCREENS — Fotoğraf 1:1 tasarım
+   Sol: şehir görseli + logo | Sağ: form kartı
    ================================================================ */
 .auth-screen {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
-  padding: 24px;
   color: #fff;
   overflow: hidden;
+  background: #08101e;
 }
 
+/* Fotoğraftaki şehir skyline arkaplanı */
 .auth-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(160deg, #070d1a 0%, #0d1235 40%, #070d1a 100%);
+  background:
+    linear-gradient(to bottom, rgba(6,10,22,0.85) 0%, rgba(6,10,22,0.4) 40%, rgba(6,10,22,0.92) 100%),
+    linear-gradient(135deg, #0a1628 0%, #0d1f3c 50%, #070d1a 100%);
 }
 
-.auth-orb1 {
+/* Şehir skyline efekti */
+.auth-bg::before {
+  content: '';
   position: absolute;
-  top: -15%;
-  left: -15%;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.22), transparent 70%);
-  pointer-events: none;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 55%;
+  background:
+    linear-gradient(0deg, rgba(6,10,22,0.95) 0%, transparent 100%),
+    repeating-linear-gradient(90deg,
+      transparent 0, transparent 18px,
+      rgba(30,60,120,0.15) 18px, rgba(30,60,120,0.15) 20px
+    );
 }
 
-.auth-orb2 {
-  position: absolute;
-  bottom: -15%;
-  right: -15%;
-  width: 360px;
-  height: 360px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.14), transparent 70%);
-  pointer-events: none;
-}
-
-.auth-orb3 {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.08), transparent 70%);
-  pointer-events: none;
-}
-
-/* Auth grid bg */
+/* Neon grid lines */
 .auth-bg::after {
   content: '';
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(99, 102, 241, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
-  background-size: 50px 50px;
+    linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+  background-size: 44px 44px;
 }
+
+/* Binalar efekti */
+.auth-city {
+  position: absolute;
+  bottom: 90px;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background:
+    /* büyük bina */
+    linear-gradient(180deg, transparent 30%, #0f1e35 30%, #0f1e35 100%) 15% 100% / 60px 160px no-repeat,
+    linear-gradient(180deg, transparent 45%, #0d1a2e 45%, #0d1a2e 100%) 0% 100% / 45px 120px no-repeat,
+    linear-gradient(180deg, transparent 20%, #111e34 20%, #111e34 100%) 35% 100% / 80px 190px no-repeat,
+    linear-gradient(180deg, transparent 10%, #0e1b30 10%, #0e1b30 100%) 55% 100% / 110px 210px no-repeat,
+    linear-gradient(180deg, transparent 35%, #101d33 35%, #101d33 100%) 75% 100% / 70px 150px no-repeat,
+    linear-gradient(180deg, transparent 50%, #0c1828 50%, #0c1828 100%) 90% 100% / 50px 110px no-repeat;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Pencere ışıkları */
+.auth-city::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 18% 55%, #fbbf24 0%, transparent 100%),
+    radial-gradient(1px 1px at 18% 65%, #6366f1 0%, transparent 100%),
+    radial-gradient(1px 1px at 18% 75%, #fbbf24 0%, transparent 100%),
+    radial-gradient(1px 1px at 23% 45%, #6366f1 0%, transparent 100%),
+    radial-gradient(1px 1px at 23% 60%, #10b981 0%, transparent 100%),
+    radial-gradient(1px 1px at 37% 40%, #fbbf24 0%, transparent 100%),
+    radial-gradient(1px 1px at 37% 52%, #6366f1 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 65%, #fbbf24 0%, transparent 100%),
+    radial-gradient(1px 1px at 57% 35%, #10b981 0%, transparent 100%),
+    radial-gradient(1px 1px at 57% 48%, #6366f1 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 58%, #fbbf24 0%, transparent 100%),
+    radial-gradient(1px 1px at 63% 70%, #6366f1 0%, transparent 100%),
+    radial-gradient(1px 1px at 77% 50%, #fbbf24 0%, transparent 100%),
+    radial-gradient(1px 1px at 77% 65%, #10b981 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 55%, #6366f1 0%, transparent 100%);
+}
+
+.auth-orb1 {
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 380px; height: 380px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99,102,241,0.25), transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+.auth-orb2 {
+  position: absolute;
+  bottom: -10%;
+  right: -10%;
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16,185,129,0.15), transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+.auth-orb3 { display: none; }
 
 .auth-header {
   display: flex;
@@ -572,6 +622,137 @@ input, select, textarea {
 }
 
 .main-shell.active { display: flex; }
+
+
+/* ---- LOGIN EKRANI LAYOUT (fotoğraf uyumlu) ---- */
+.auth-screen {
+  /* override: tam ekran scroll */
+  overflow-y: auto;
+  padding: 0;
+}
+
+/* Welcome ekranı: logo büyük üstte, form altta */
+#welcome.auth-screen .auth-hero {
+  padding-top: 60px;
+  padding-bottom: 0;
+  min-height: 55vh;
+}
+
+#welcome.auth-screen .auth-form {
+  background: rgba(13,21,38,0.92);
+  border-top: 1px solid rgba(99,102,241,0.2);
+  padding: 24px 24px 36px;
+  backdrop-filter: blur(20px);
+  margin-top: 0;
+}
+
+/* Login / Register: form ortada büyük kart */
+#login.auth-screen,
+#register.auth-screen,
+#forgot.auth-screen {
+  justify-content: flex-start;
+}
+
+#login.auth-screen .auth-hero,
+#register.auth-screen .auth-hero,
+#forgot.auth-screen .auth-hero {
+  padding-top: 20px;
+  padding-bottom: 10px;
+  min-height: auto;
+}
+
+#login.auth-screen .auth-form,
+#register.auth-screen .auth-form,
+#forgot.auth-screen .auth-form {
+  background: rgba(13,21,38,0.9);
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: 20px;
+  padding: 22px;
+  margin: 0 16px 24px;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+
+/* Fotoğraftaki GİRİŞ YAP butonu */
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%) !important;
+  color: #fff !important;
+  font-weight: 800;
+  font-size: 15px;
+  padding: 15px;
+  border-radius: 14px;
+  width: 100%;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.55; }
+
+/* "veya" ayrıcı */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--tm);
+}
+.auth-divider::before, .auth-divider::after {
+  content:''; flex:1; height:1px; background:rgba(255,255,255,0.08);
+}
+
+/* KAYIT OL ghost button */
+.btn-ghost {
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px;
+  border-radius: 14px;
+  width: 100%;
+  transition: background 0.15s;
+}
+.btn-ghost:active { background: rgba(255,255,255,0.1) !important; }
+
+/* Auth footer linkleri */
+.auth-bottom-links {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 12px 0 4px;
+  font-size: 12px;
+  color: var(--tm);
+  position: relative;
+  z-index: 10;
+}
+.auth-bottom-links a { color: var(--tm); cursor: pointer; }
+.auth-bottom-links a:active { color: #fff; }
+
+/* Fotoğraftaki topbar "Firebase yükleniyor" placeholder */
+.auth-status-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  background: rgba(99,102,241,0.15);
+  border-bottom: 1px solid rgba(99,102,241,0.3);
+  padding: 8px 16px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 20;
+}
+.auth-status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--neon);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100%{opacity:1;transform:scale(1);}
+  50%{opacity:0.4;transform:scale(0.7);}
+}
 
 /* ================================================================
    TOPBAR
