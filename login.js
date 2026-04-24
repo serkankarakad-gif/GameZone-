@@ -1,74 +1,41 @@
-// Giriş ve kayıt işlemleri
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { auth, db, ref, set } from './firebase-init.js';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-const auth = getAuth();
-const db = getDatabase();
-
-// Hata mesajlarını gösterme
-function showError(msg) {
-  const errorDiv = document.getElementById('authError');
-  if (errorDiv) {
-    errorDiv.textContent = msg;
-    errorDiv.style.display = 'block';
-    setTimeout(() => errorDiv.style.display = 'none', 5000);
-  }
+function msg(id, text, color) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.style.color = color;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
 }
 
-// Başarılı mesajı
-function showSuccess(msg) {
-  const successDiv = document.getElementById('authSuccess');
-  if (successDiv) {
-    successDiv.textContent = msg;
-    successDiv.style.display = 'block';
-    setTimeout(() => successDiv.style.display = 'none', 3000);
-  }
-}
-
-// Kayıt Ol
 window.register = async () => {
   const name = document.getElementById('regName').value.trim();
   const email = document.getElementById('regEmail').value.trim();
-  const password = document.getElementById('regPassword').value;
-
-  if (!name || !email || !password) {
-    showError('Tüm alanları doldurun.');
-    return;
-  }
-  if (password.length < 6) {
-    showError('Şifre en az 6 karakter olmalı.');
-    return;
-  }
-
+  const pass = document.getElementById('regPassword').value;
+  if (!name || !email || !pass) return msg('authMsg', 'Tüm alanları doldurun', 'red');
+  if (pass.length < 6) return msg('authMsg', 'Şifre en az 6 karakter', 'red');
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await updateProfile(cred.user, { displayName: name });
-    // Veritabanına kullanıcı adı yaz
-    await set(ref(db, 'users/' + cred.user.uid + '/username'), name);
-    showSuccess('Kayıt başarılı! Giriş yapılıyor...');
+    msg('authMsg', 'Kayıt başarılı! Giriş yapılıyor...', 'green');
   } catch (e) {
-    showError(e.message.replace('Firebase: ', ''));
+    msg('authMsg', e.message.replace('Firebase: ', ''), 'red');
   }
 };
 
-// Giriş Yap
 window.login = async () => {
   const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-
-  if (!email || !password) {
-    showError('E-posta ve şifre gerekli.');
-    return;
-  }
+  const pass = document.getElementById('loginPassword').value;
+  if (!email || !pass) return msg('authMsg', 'E-posta ve şifre gerekli', 'red');
   try {
-    await signInWithEmailAndPassword(auth, email, password);
-    showSuccess('Giriş başarılı!');
+    await signInWithEmailAndPassword(auth, email, pass);
+    msg('authMsg', 'Giriş başarılı!', 'green');
   } catch (e) {
-    showError(e.message.replace('Firebase: ', ''));
+    msg('authMsg', e.message.replace('Firebase: ', ''), 'red');
   }
 };
 
-// Şifre Sıfırlama
 window.resetPassword = async () => {
   const email = prompt('E-posta adresinizi girin:');
   if (!email) return;
@@ -76,6 +43,6 @@ window.resetPassword = async () => {
     await sendPasswordResetEmail(auth, email);
     alert('Şifre sıfırlama bağlantısı gönderildi.');
   } catch (e) {
-    showError(e.message.replace('Firebase: ', ''));
+    alert('Hata: ' + e.message);
   }
 };
