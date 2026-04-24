@@ -1,7 +1,7 @@
-// Firebase yapılandırması ve başlatma
+// Firebase yapılandırması ve ortak modüller
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getDatabase, ref, set, get, update, onValue, push } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { getDatabase, ref, set, get, update, onValue, push, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5pl78DRao2SmUWsMYMSZ6YbfX4rtRNdc",
@@ -18,43 +18,37 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-// Global kullanıcı durumu
+// Kullanıcı durumu
 let currentUser = null;
 let userData = null;
 
-// Oturum durumunu izle
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
-    // Kullanıcı verisini çek
     const userRef = ref(db, 'users/' + user.uid);
+    const snap = await get(userRef);
+    if (!snap.exists()) {
+      const initial = {
+        uid: user.uid,
+        email: user.email,
+        username: user.displayName || 'Oyuncu',
+        level: 1,
+        xp: 0,
+        coins: 500,
+        gems: 10,
+        vip: false,
+        vipExpiry: null,
+        gifts: [],
+        unlockedLevels: { chapter1: 1 },
+        highScore: 0,
+        totalCakesSmashed: 0
+      };
+      await set(userRef, initial);
+    }
     onValue(userRef, (snapshot) => {
       userData = snapshot.val();
-      if (!userData) {
-        // İlk kez giriş yapıyorsa veri oluştur
-        const initialData = {
-          uid: user.uid,
-          email: user.email,
-          username: user.displayName || 'Oyuncu',
-          level: 1,
-          xp: 0,
-          coins: 500,
-          gems: 10,
-          vip: false,
-          vipExpiry: null,
-          gifts: [],
-          unlockedLevels: { chapter1: 1 },
-          currentChapter: 'chapter1',
-          currentLevel: 1,
-          totalCakesSmashed: 0,
-          highScore: 0,
-          createdAt: Date.now()
-        };
-        set(userRef, initialData);
-      }
+      document.dispatchEvent(new CustomEvent('authStateChanged', { detail: { loggedIn: true } }));
     });
-    // UI güncelleme için event tetikle
-    document.dispatchEvent(new CustomEvent('authStateChanged', { detail: { loggedIn: true } }));
   } else {
     currentUser = null;
     userData = null;
@@ -62,7 +56,6 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-// Çıkış fonksiyonu
-window.logout = async () => {
-  await signOut(auth);
-};
+window.logout = () => signOut(auth);
+
+export { auth, db, currentUser, userData, ref, set, get, update, onValue, push, runTransaction };
