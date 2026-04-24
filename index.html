@@ -1,124 +1,492 @@
 <!DOCTYPE html>
+<!-- ============================================================
+     CakeSmash - Ana Sayfa
+     Geliştirici: Serkan Karakaş
+     Açıklama: Tüm ekranları (splash, auth, menü, harita, oyun,
+     mağaza, çark, günlük, profil, ayarlar, hakkında, nasıl
+     oynanır, hediye kodu, posta, liderlik, güçlendirici, görev,
+     başarım, etkinlik, arkadaş, hesap-yardım) tek HTML içinde
+     tutar. Modüller ES modules olarak yüklenir.
+     ============================================================ -->
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CakeSmash - GameZone</title>
-  <link rel="stylesheet" href="stil.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#ff5fa2" />
+  <title>CakeSmash · Tatlı Patlatma Macerası</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="stil.css" />
 </head>
 <body>
+  <div id="app">
 
-<!-- Kullanım Şartları -->
-<div id="termsScreen" class="screen active">
-  <h2>📜 Kullanım Şartları</h2>
-  <p style="text-align:left; margin:20px 0;">Oyuna devam etmek için şartları kabul etmelisiniz.</p>
-  <button id="popupTermsAccept">KABUL ET</button>
-</div>
+    <!-- ============ ÜST BAR ============ -->
+    <header class="app-header" id="appHeader">
+      <span class="h-pill lives" title="Canın">
+        ❤ <span id="hdrLives">5</span>
+        <span class="life-timer" id="hdrLifeTimer" hidden></span>
+      </span>
+      <span class="h-pill gold" title="Altın">🪙 <span id="hdrGold">0</span></span>
+      <span class="h-pill gems" title="Elmas">💎 <span id="hdrGems">0</span></span>
+      <span class="h-spacer"></span>
+      <span>
+        <div class="nick" id="hdrNick">Oyuncu</div>
+        <div class="lvl" id="hdrLvl">Seviye 1</div>
+      </span>
+    </header>
 
-<!-- Giriş/Kayıt -->
-<div id="authScreen" class="screen">
-  <h2>🎂 CakeSmash</h2>
-  <p style="color:var(--gold);">İlerlemeni kaydet, arkadaşlarınla oyna!</p>
-  <div id="authMsg" style="display:none;"></div>
-  <div id="loginForm">
-    <input id="loginEmail" type="email" placeholder="E-posta">
-    <input id="loginPassword" type="password" placeholder="Şifre">
-    <button onclick="login()">Giriş Yap</button>
-    <button onclick="resetPassword()" style="background:#555;">Şifremi Unuttum</button>
-    <p style="margin:10px 0;">veya</p>
-    <button onclick="googleLogin()" style="background:#db4437;">Google ile devam et</button>
-    <button onclick="facebookLogin()" style="background:#4267B2;">Facebook ile devam et</button>
-    <p>Hesabın yok mu? <a onclick="showRegister()" style="color:#ffd700;cursor:pointer;">Kaydol</a></p>
+    <!-- ============ EKRAN: SPLASH ============ -->
+    <main id="screen-splash" class="screen splash-wrap">
+      <div class="logo">CakeSmash</div>
+      <div class="tagline">Tatlı Patlatma Macerası</div>
+      <div class="loader-inline"><div class="spin" style="width:24px;height:24px;border-width:3px;"></div></div>
+      <div class="muted" style="font-size: 12px;">Geliştirici: Serkan Karakaş</div>
+    </main>
+
+    <!-- ============ EKRAN: GİRİŞ / KAYIT ============ -->
+    <main id="screen-auth" class="screen" hidden>
+      <div class="logo" style="text-align:center; margin: 8px 0;">CakeSmash</div>
+      <p class="muted" style="text-align:center; margin: 0 0 14px;">İlerlemeni kaydetmek için giriş yap.</p>
+
+      <div class="auth-tabs">
+        <button id="tabLogin" class="active">Giriş Yap</button>
+        <button id="tabRegister">Kayıt Ol</button>
+      </div>
+
+      <form id="formLogin" class="auth-form">
+        <input class="input" id="li_email" type="email" placeholder="E-posta" autocomplete="email" required />
+        <input class="input" id="li_pw" type="password" placeholder="Şifre" autocomplete="current-password" required />
+        <button class="btn" type="submit">Giriş Yap</button>
+        <button class="btn ghost" type="button" id="btnReset">Şifremi unuttum</button>
+      </form>
+
+      <form id="formRegister" class="auth-form" hidden>
+        <input class="input" id="rg_nick" type="text" placeholder="Takma adın (2-18 karakter)" maxlength="18" required />
+        <input class="input" id="rg_email" type="email" placeholder="E-posta" autocomplete="email" required />
+        <input class="input" id="rg_pw" type="password" placeholder="Şifre (en az 6 karakter)" autocomplete="new-password" required />
+        <button class="btn" type="submit">Hesap Oluştur</button>
+      </form>
+
+      <div style="margin-top:14px; text-align:center;" class="muted">veya</div>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn secondary" id="btnGoogle">Google ile devam et</button>
+        <button class="btn outline" id="btnGuest">Misafir oyna</button>
+      </div>
+
+      <p class="muted" style="text-align:center; font-size: 12px; margin-top:14px;">
+        Devam ederek <a href="#" onclick="show('about');return false;">Kullanım Şartları</a> ve gizlilik politikamızı kabul etmiş olursun.
+      </p>
+    </main>
+
+    <!-- ============ EKRAN: ANA MENÜ ============ -->
+    <main id="screen-menu" class="screen" hidden>
+      <section class="menu-hero">
+        <h1 style="margin:0">Hoş geldin!</h1>
+        <p class="muted" style="margin:6px 0 0;">Bölüm seç, çarkı çevir, günlük ödülünü al.</p>
+        <div class="badges">
+          <span class="badge" id="menuStreak">Seri: 0 gün</span>
+          <span class="badge vip" id="menuVipBadge" hidden>VIP Üye</span>
+        </div>
+        <div class="menu-cta">
+          <button class="btn" data-go="map">Oyna</button>
+          <div class="row">
+            <button class="btn secondary" data-go="daily">Günlük Ödül</button>
+            <button class="btn secondary" data-go="wheel">Çarkı Çevir</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="menu-grid">
+        <button class="menu-card" data-go="shop"><div class="ico">🏪</div><div class="lbl">Mağaza</div></button>
+        <button class="menu-card" data-go="powerups"><div class="ico">✨</div><div class="lbl">Güçlendiriciler</div></button>
+        <button class="menu-card" data-go="missions"><div class="ico">🎯</div><div class="lbl">Görevler</div></button>
+        <button class="menu-card" data-go="achievements"><div class="ico">🏆</div><div class="lbl">Başarımlar</div></button>
+        <button class="menu-card" data-go="leaderboard"><div class="ico">📊</div><div class="lbl">Lider Tablosu</div></button>
+        <button class="menu-card" data-go="friends"><div class="ico">👥</div><div class="lbl">Arkadaşlar</div></button>
+        <button class="menu-card" data-go="mail"><div class="ico">✉️</div><div class="lbl">Posta Kutusu</div></button>
+        <button class="menu-card" data-go="events"><div class="ico">🎁</div><div class="lbl">Etkinlikler</div></button>
+        <button class="menu-card" data-go="gift"><div class="ico">🎟</div><div class="lbl">Hediye Kodu</div></button>
+        <button class="menu-card" data-go="howto"><div class="ico">❓</div><div class="lbl">Nasıl Oynanır</div></button>
+        <button class="menu-card" data-go="profile"><div class="ico">👤</div><div class="lbl">Profilim</div></button>
+        <button class="menu-card" data-go="about"><div class="ico">ℹ️</div><div class="lbl">Hakkında</div></button>
+      </div>
+    </main>
+
+    <!-- ============ EKRAN: HARİTA / BÖLÜMLER ============ -->
+    <main id="screen-map" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Bölüm Seç</h2>
+        <button class="btn ghost" data-go="settings">Ayarlar</button>
+      </div>
+      <div id="mapList"></div>
+    </main>
+
+    <!-- ============ EKRAN: OYUN ============ -->
+    <main id="screen-game" class="screen" hidden>
+      <div class="row" style="align-items:center;">
+        <button class="btn ghost" data-go="map">‹ Çık</button>
+        <h2 style="text-align:center; margin:0;">CakeSmash</h2>
+        <span></span>
+      </div>
+      <div class="game-hud">
+        <div><div class="k">Bölüm</div><div class="v" id="gWorld">1-1</div></div>
+        <div><div class="k">Hamle</div><div class="v" id="gMoves">25</div></div>
+        <div><div class="k">Skor</div><div class="v" id="gScore">0</div></div>
+        <div><div class="k">Hedef</div><div class="v" id="gTarget">100</div></div>
+      </div>
+      <div class="board" id="gameBoard"></div>
+      <div style="display:flex; justify-content:space-between; margin-top:8px;">
+        <span class="muted">Kombo:</span>
+        <span class="v" id="gCombo">x1</span>
+      </div>
+      <div class="power-bar" id="gPowerBar"></div>
+    </main>
+
+    <!-- ============ EKRAN: MAĞAZA ============ -->
+    <main id="screen-shop" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Mağaza</h2>
+        <span></span>
+      </div>
+      <p class="muted">Altın, can ve güçlendirici paketleri burada. Daha fazla teklif çok yakında!</p>
+      <div class="shop-grid" id="shopList"></div>
+    </main>
+
+    <!-- ============ EKRAN: ÇARK ============ -->
+    <main id="screen-wheel" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Güçlendirici Çarkı</h2>
+        <span></span>
+      </div>
+      <div class="wheel-wrap">
+        <div class="wheel-pointer"></div>
+        <div class="wheel-disc" id="wheelDisc"></div>
+        <button class="btn" id="btnSpin">Çevir</button>
+        <div class="muted" style="font-size:12px;">24 saatte 1 ücretsiz çevirme.</div>
+      </div>
+    </main>
+
+    <!-- ============ EKRAN: GÜNLÜK ÖDÜL ============ -->
+    <main id="screen-daily" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Günlük Ödüller</h2>
+        <span></span>
+      </div>
+      <p class="muted">Her gün giriş yap, serini koru, daha büyük ödüller kazan.</p>
+      <div class="daily-grid" id="dailyGrid"></div>
+      <div style="margin-top:12px;">
+        <button class="btn" id="btnClaimDaily">Bugünün Ödülünü Al</button>
+      </div>
+    </main>
+
+    <!-- ============ EKRAN: PROFİL ============ -->
+    <main id="screen-profile" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Profilim</h2>
+        <span></span>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <label>Takma Ad</label>
+          <input class="input" id="prfNick" maxlength="18" />
+        </div>
+        <div class="field">
+          <label>Hakkımda</label>
+          <textarea class="textarea" id="prfBio" maxlength="160" rows="2" placeholder="Kısa biyografi..."></textarea>
+        </div>
+        <div class="field">
+          <label>Ülke</label>
+          <select class="select" id="prfCountry">
+            <option value="TR">Türkiye</option>
+            <option value="DE">Almanya</option>
+            <option value="US">ABD</option>
+            <option value="GB">İngiltere</option>
+            <option value="AZ">Azerbaycan</option>
+            <option value="KZ">Kazakistan</option>
+            <option value="OTHER">Diğer</option>
+          </select>
+        </div>
+        <button class="btn" id="btnSaveProfile">Kaydet</button>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 8px;">İstatistikler</h3>
+        <div class="kv"><span>Seviye</span><strong id="prfLevel">1</strong></div>
+        <div class="kv"><span>XP</span><strong id="prfXP">0 / 250</strong></div>
+        <div class="kv"><span>Toplam Skor</span><strong id="prfTotalScore">0</strong></div>
+        <div class="kv"><span>Toplam Yıldız</span><strong id="prfStars">0</strong></div>
+        <div class="kv"><span>En İyi Kombo</span><strong id="prfBestCombo">0</strong></div>
+        <div class="kv"><span>Parçalanan Pasta</span><strong id="prfSmashed">0</strong></div>
+        <div class="kv"><span>Üyelik</span><strong id="prfVip">Normal</strong></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 8px;">Hesap</h3>
+        <div class="kv"><span>Kullanıcı Kimliği</span><strong id="prfUid">—</strong></div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn secondary" id="btnCopyUid">Kimliği Kopyala</button>
+          <button class="btn secondary" id="btnChangePw">Şifreyi Değiştir</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn outline" id="btnLogout">Çıkış Yap</button>
+          <button class="btn danger" id="btnDeleteAcc">Hesabı Sil</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============ EKRAN: AYARLAR ============ -->
+    <main id="screen-settings" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Ayarlar</h2>
+        <span></span>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 8px;">Genel</h3>
+        <div class="switch-row"><span>Müzik</span><input type="checkbox" id="stMusic" /></div>
+        <div class="range-row"><label>Müzik Sesi</label><input type="range" id="stMusicVol" min="0" max="1" step="0.05" /></div>
+        <div class="switch-row"><span>Ses Efektleri</span><input type="checkbox" id="stSfx" /></div>
+        <div class="range-row"><label>SFX Sesi</label><input type="range" id="stSfxVol" min="0" max="1" step="0.05" /></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 8px;">Daha Çok Ses Ayarı</h3>
+        <div class="range-row"><label>Denge (Sol / Sağ)</label><input type="range" id="stBalance" min="-1" max="1" step="0.05" /></div>
+        <div class="range-row"><label>Bas</label><input type="range" id="stBass" min="0" max="1" step="0.05" /></div>
+        <div class="range-row"><label>Tiz</label><input type="range" id="stTreble" min="0" max="1" step="0.05" /></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 8px;">Erişilebilirlik</h3>
+        <div class="switch-row"><span>İpuçları</span><input type="checkbox" id="stHints" /></div>
+        <div class="switch-row"><span>Yanıp Sönen Işık Efektleri</span><input type="checkbox" id="stFlash" /></div>
+        <div class="switch-row"><span>Mono Ses</span><input type="checkbox" id="stMono" /></div>
+        <div class="switch-row"><span>Gri Tonlama Panosu</span><input type="checkbox" id="stGray" /></div>
+        <div class="field"><label>Dil</label>
+          <select id="stLang" class="select">
+            <option value="tr">Türkçe</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 8px;">Hesap & Yardım</h3>
+        <button class="btn secondary" data-go="accountHelp">Hesap & Yardım Sayfası</button>
+      </div>
+    </main>
+
+    <!-- ============ EKRAN: HAKKINDA ============ -->
+    <main id="screen-about" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Hakkında</h2>
+        <span></span>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 6px;">CakeSmash</h3>
+        <p>Pastel renkli, eğlenceli ve hızlı tempolu bir tatlı patlatma oyunudur. Aynı renkli pastaları gruplar hâlinde patlat, kombolar yap, yıldızları topla.</p>
+        <div class="kv"><span>Sürüm</span><strong>1.0.0</strong></div>
+        <div class="kv"><span>Geliştirici</span><strong>Serkan Karakaş</strong></div>
+        <div class="kv"><span>Motor</span><strong>HTML5 + Firebase</strong></div>
+        <div class="kv"><span>Lisans</span><strong>© 2026 Tüm hakları saklıdır.</strong></div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 6px;">İletişim</h3>
+        <p class="muted">Geri bildirim, hata bildirimi veya öneriler için yakında bir e-posta adresi paylaşılacak.</p>
+      </div>
+    </main>
+
+    <!-- ============ EKRAN: NASIL OYNANIR ============ -->
+    <main id="screen-howto" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Nasıl Oynanır</h2>
+        <span></span>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 6px;">Kurallar</h3>
+        <ul>
+          <li>Tahta üzerinde aynı renkli komşu pastalara dokun, en az 2 tanesi varsa parçalanır.</li>
+          <li>Daha büyük gruplar daha çok puan verir; ardışık vuruşlar kombo katsayısı ekler.</li>
+          <li>Her bölümün bir hedef puanı ve sınırlı hamle hakkı vardır.</li>
+          <li>Hedefe ulaşırsan yıldız kazanırsın: 1, 2 veya 3 yıldız.</li>
+          <li>Bölüm başlatmak 1 can harcar. Canın 30 dakikada 1 yenilenir.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 6px;">Güçlendiriciler</h3>
+        <ul>
+          <li>🔨 Çekiç — tek bir kareyi parçalar.</li>
+          <li>💣 Bomba — 3x3 alanı patlatır.</li>
+          <li>🌈 Gökkuşağı — en çok bulunan rengin tamamını toplar.</li>
+          <li>🔄 Karıştır — tahtayı yeniden karıştırır.</li>
+          <li>➕5 Hamle — sana 5 ek hamle verir.</li>
+          <li>⏱ Zaman Donut — sayaç tipindeki bölümlerde süreyi durdurur.</li>
+          <li>🧲 Mıknatıs — aynı renkleri yan yana çeker.</li>
+          <li>×2 Çift Skor — tur boyunca puanları ikiye katlar.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 6px;">İpuçları</h3>
+        <ul>
+          <li>Önce büyük grupları parçalamayı dene, kombo zinciri kurmaya çalış.</li>
+          <li>Hamleni bölüm hedefine yetiştirmek için aceleci davranma.</li>
+          <li>Çark ve günlük ödülleri kaçırma; ücretsiz altın ve güçlendirici verir.</li>
+        </ul>
+      </div>
+    </main>
+
+    <!-- ============ EKRAN: HEDİYE KODU ============ -->
+    <main id="screen-gift" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Hediye Kodu</h2>
+        <span></span>
+      </div>
+      <div class="card">
+        <p class="muted" style="margin-top:0;">Hediye kodları zamanla güncellenecek. Şimdilik test için: <strong>SERKAN</strong>, <strong>WELCOME</strong>, <strong>CAKEPARTY</strong>.</p>
+        <div class="field">
+          <label>Kod</label>
+          <input class="input" id="giftInput" placeholder="Kodu buraya yaz" />
+        </div>
+        <button class="btn" id="btnRedeem">Ödülü Al</button>
+      </div>
+    </main>
+
+    <!-- ============ EKRAN: POSTA ============ -->
+    <main id="screen-mail" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Posta Kutusu</h2>
+        <span></span>
+      </div>
+      <div id="mailList"></div>
+    </main>
+
+    <!-- ============ EKRAN: LİDER TABLOSU ============ -->
+    <main id="screen-leaderboard" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Lider Tablosu</h2>
+        <span></span>
+      </div>
+      <div id="lbList"></div>
+    </main>
+
+    <!-- ============ EKRAN: GÜÇLENDİRİCİLER ============ -->
+    <main id="screen-powerups" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Güçlendiriciler</h2>
+        <span></span>
+      </div>
+      <div id="puList"></div>
+    </main>
+
+    <!-- ============ EKRAN: GÖREVLER ============ -->
+    <main id="screen-missions" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Görevler</h2>
+        <span></span>
+      </div>
+      <div id="msList"></div>
+    </main>
+
+    <!-- ============ EKRAN: BAŞARIMLAR ============ -->
+    <main id="screen-achievements" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Başarımlar</h2>
+        <span></span>
+      </div>
+      <div id="achList"></div>
+    </main>
+
+    <!-- ============ EKRAN: ETKİNLİKLER ============ -->
+    <main id="screen-events" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Etkinlikler</h2>
+        <span></span>
+      </div>
+      <div id="evList"></div>
+    </main>
+
+    <!-- ============ EKRAN: ARKADAŞLAR ============ -->
+    <main id="screen-friends" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="menu">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Arkadaşlar</h2>
+        <span></span>
+      </div>
+      <div id="frList"></div>
+    </main>
+
+    <!-- ============ EKRAN: HESAP & YARDIM ============ -->
+    <main id="screen-accountHelp" class="screen" hidden>
+      <div class="row" style="align-items:center; margin-bottom:8px;">
+        <button class="btn ghost" data-go="settings">‹ Geri</button>
+        <h2 style="text-align:center; margin:0;">Hesap ve Yardım</h2>
+        <span></span>
+      </div>
+      <div class="card">
+        <div class="kv"><span>Kullanıcı kimliği</span><strong id="ahUid">—</strong></div>
+        <div class="kv"><span>E-posta</span><strong id="ahEmail">—</strong></div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn secondary" id="ahCopy">Kimliği Kopyala</button>
+          <button class="btn secondary" id="ahHelp">Yardım Merkezi</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn outline" id="ahForum">Forum</button>
+          <button class="btn danger" id="ahDelete">Hesabı Sil</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============ ALT NAV ============ -->
+    <nav class="bottom-nav">
+      <button data-go="map"><span class="ico">🗺</span><span>Harita</span></button>
+      <button data-go="events"><span class="ico">📅</span><span>Etkinlikler</span></button>
+      <button data-go="friends"><span class="ico">👥</span><span>Sosyal</span></button>
+      <button data-go="powerups"><span class="ico">✨</span><span>Çark / İğneler</span></button>
+      <button data-go="shop"><span class="ico">🏪</span><span>Dükkan</span></button>
+    </nav>
   </div>
-  <div id="registerForm" style="display:none;">
-    <input id="regName" placeholder="Kullanıcı Adı">
-    <input id="regEmail" type="email" placeholder="E-posta">
-    <input id="regPassword" type="password" placeholder="Şifre">
-    <button onclick="register()">Kayıt Ol</button>
-    <p>Zaten hesabın var mı? <a onclick="showLogin()" style="color:#ffd700;cursor:pointer;">Giriş yap</a></p>
+
+  <!-- ============ MODALLAR ============ -->
+  <div class="modal" id="resultModal">
+    <div class="box">
+      <h2 id="resultTitle">Bölümü Geçtin!</h2>
+      <div class="stars" id="resultStars"></div>
+      <p>Skor: <strong id="resultScore">0</strong></p>
+      <div class="modal-actions">
+        <button class="btn secondary" id="resultRetry">Tekrar Oyna</button>
+        <button class="btn" id="resultClose">Devam</button>
+      </div>
+    </div>
   </div>
-</div>
 
-<!-- Ana Menü -->
-<div id="mainMenu" class="screen">
-  <h1>🍰 CakeSmash</h1>
-  <p>Serkan Karakaş - GameZone</p>
-  <div style="margin:15px 0;">
-    <span>❤️ <span id="livesDisplay">5</span></span> |
-    <span>🪙 <span id="coinsDisplay">0</span></span> |
-    <span>💎 <span id="gemsDisplay">0</span></span>
-  </div>
-  <button id="playBtn">▶ Oyna</button>
-  <button id="shopBtn">🛒 Dükkan</button>
-  <button id="friendsBtn">👥 Arkadaşlar</button>
-  <button id="collectionBtn">🏆 Koleksiyon</button>
-  <button id="settingsBtn">⚙️ Ayarlar</button>
-  <button onclick="logout()">Çıkış</button>
-</div>
+  <!-- ============ TOAST + LOADER ============ -->
+  <div class="toast-host" id="toastHost"></div>
+  <div class="loader" id="loader"><div class="spin"></div></div>
 
-<!-- Oyun Ekranı -->
-<div id="gameScreen" class="screen">
-  <div style="display:flex; justify-content:space-between; font-weight:bold;">
-    <span id="scoreDisplay">Skor: 0</span>
-    <span id="timerDisplay">⏱️ 30s</span>
-  </div>
-  <div id="gameArea"></div>
-  <button onclick="Game.endGame()">Oyunu Bitir</button>
-</div>
-
-<!-- Dükkan -->
-<div id="shopScreen" class="screen">
-  <h2>🛒 Dükkan</h2>
-  <div class="offer-box"><span class="coin">🪙 1000</span><br>💎 50<br><button onclick="buyCoinPack(1000, 50)">Al</button></div>
-  <div class="offer-box"><span class="coin">🪙 5000</span><br>💎 200<br><button onclick="buyCoinPack(5000, 200)">Al</button></div>
-  <div class="offer-box"><span class="gem">💎 100</span><br>+2 Çekiç<br><button onclick="addBooster('hammer',2);addGems(-20);">Al</button></div>
-  <p style="margin-top:20px;">❤️ Can doldur: 💎4 <button onclick="purchaseLives()">Al</button></p>
-  <button onclick="showScreen('mainMenu')">Geri</button>
-</div>
-
-<!-- Arkadaşlar -->
-<div id="friendsScreen" class="screen">
-  <h2>👥 Arkadaşlar</h2>
-  <p>Arkadaşlarınla yarış!</p>
-  <button>+ Arkadaş Ekle</button>
-  <button>Facebook ile bul</button>
-  <div style="margin-top:20px;">
-    <p><strong>Can gönderenler:</strong></p>
-    <div>👤 Basil - 615 puan <button>Ekle</button></div>
-    <div>👤 Näzbâtîcâ - 2380 puan <button>Ekle</button></div>
-  </div>
-  <button onclick="showScreen('mainMenu')">Geri</button>
-</div>
-
-<!-- Koleksiyon -->
-<div id="collectionScreen" class="screen">
-  <h2>🏆 Koleksiyon & Ödüller</h2>
-  <p>Rozetlerin kilidini açmak için seviye atla!</p>
-  <div style="display:flex; gap:12px; justify-content:center; margin:20px;">
-    <div style="width:50px;height:50px;background:gray;border-radius:50%;"></div>
-    <div style="width:50px;height:50px;background:silver;border-radius:50%;"></div>
-    <div style="width:50px;height:50px;background:gold;border-radius:50%;"></div>
-  </div>
-  <button onclick="showScreen('mainMenu')">Geri</button>
-</div>
-
-<!-- Ayarlar -->
-<div id="settingsScreen" class="screen">
-  <h2>⚙️ Ayarlar</h2>
-  <label>Müzik: <input type="checkbox" id="musicToggle" checked></label><br>
-  <label>Ses Efektleri: <input type="checkbox" id="sfxToggle" checked></label><br>
-  <label>Işık Efektleri: <input type="checkbox" checked></label>
-  <h3>Erişilebilirlik</h3>
-  <label>Gri tonlama: <input type="checkbox"></label><br>
-  <label>İpuçları: <input type="checkbox" checked></label>
-  <p>Kullanıcı Kimliği: <span id="userID"></span></p>
-  <button onclick="showScreen('mainMenu')">Geri</button>
-</div>
-
-<script type="module" src="firebase-init.js"></script>
-<script type="module" src="giriş.js"></script>
-<script type="module" src="ekonomi.js"></script>
-<script type="module" src="ui-manager.js"></script>
+  <!-- ============ MODÜLLER ============ -->
+  <!-- Modül sırası: firebase-init -> giriş -> ekonomi -> ui-manager.
+       ui-manager kendisi diğerlerini import eder. -->
+  <script type="module" src="firebase-init.js"></script>
+  <script type="module" src="giriş.js"></script>
+  <script type="module" src="ekonomi.js"></script>
+  <script type="module" src="ui-manager.js"></script>
 </body>
 </html>
