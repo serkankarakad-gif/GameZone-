@@ -371,6 +371,56 @@ function buyStock(shopIdx, reyonIdx) {
 /* ================================================================
    BAHÇELER
    ================================================================ */
+/* ================================================================
+   TESİS DETAY MODAL
+   ================================================================ */
+function openTesisDetail(type, i) {
+  const typeMap = { bahce: BAHCE_TYPES, ciftlik: CIFTLIK_TYPES, fabrika: FABRIKA_TYPES, maden: MADEN_TYPES };
+  const items = state.tesisler[type];
+  const item = items[i];
+  if (!item) return;
+  const def = (typeMap[type] || []).find(x => x.id === item.id);
+  if (!def) return;
+
+  const modal = document.getElementById('tesis-detail-modal');
+  if (!modal) { toast(def.name + ' — Sv' + (item.lvl || 1), ''); return; }
+
+  document.getElementById('td-title').textContent = def.emoji + ' ' + def.name;
+
+  const rem = (def.hasat !== undefined)
+    ? Math.max(0, def.hasat - Math.floor((Date.now() - (item.lastHasat || 0)) / 1000))
+    : 0;
+  const ready = rem === 0;
+  const stock = item.stock || 0;
+  const upgCost = fmt(Math.floor(def.price * (item.lvl || 1) * 0.4));
+
+  document.getElementById('td-body').innerHTML = `
+    <div style="text-align:center;padding:16px 0;border-bottom:1px solid var(--br);margin-bottom:14px">
+      <div style="font-size:56px;margin-bottom:8px">${def.emoji}</div>
+      <div style="font-size:20px;font-weight:900">${def.name}</div>
+      <div style="font-size:12px;color:var(--tm);margin-top:4px">Seviye ${item.lvl || 1}</div>
+    </div>
+
+    <div class="row"><span class="row-label">Ürün</span><span class="row-value">${def.urun}</span></div>
+    <div class="row"><span class="row-label">Stok</span><span class="row-value yellow">${stock} ${def.unit}</span></div>
+    <div class="row"><span class="row-label">Satış Fiyatı</span><span class="row-value green">${fmt(def.sellPrice)} ₺/${def.unit}</span></div>
+    ${def.hasat !== undefined ? `<div class="row"><span class="row-label">Hasat Kalan</span><span class="row-value ${ready ? 'green' : ''}">${ready ? '✅ HAZIR' : fmtTime(rem)}</span></div>` : ''}
+    <div class="row"><span class="row-label">Hasat Miktarı</span><span class="row-value">${def.yield} ${def.unit}/hasat</span></div>
+    ${def.input ? `<div class="row"><span class="row-label">Üretim</span><span class="row-value">${def.input} → ${def.output}</span></div>` : ''}
+
+    <div style="margin-top:14px;padding:10px;background:rgba(16,185,129,.06);border-radius:12px;border:1px solid rgba(16,185,129,.2);font-size:12px;color:var(--tm)">
+      💡 Bu tesiste ürettiğin ${def.urun}'i <b style="color:var(--neon)">İhracat</b> sayfasından yurt dışına sat!
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:14px">
+      ${ready && def.hasat !== undefined ? `<button class="btn-green" style="flex:1" onclick="hasat('${type}',${i});renderAll();closeModal('tesis-detail-modal')">🌿 Hasat Al</button>` : ''}
+      <button class="btn-yellow" style="flex:1" onclick="upgradeTesis('${type}',${i});closeModal('tesis-detail-modal')">⬆️ Yükselt — ${upgCost} ₺</button>
+    </div>`;
+
+  openModal('tesis-detail-modal');
+}
+window.openTesisDetail = openTesisDetail;
+
 function renderBahceler() {
   const body = document.getElementById('bahceler-body');
   if (!body) return;
@@ -391,7 +441,7 @@ function renderBahceler() {
     const rem = Math.max(0, def.hasat - Math.floor((Date.now() - (item.lastHasat || 0)) / 1000));
     const ready = rem === 0;
     return `
-      <div class="card">
+      <div class="card" onclick="openTesisDetail('bahce',${i})" style="cursor:pointer">
         <div class="card-header">
           <div class="card-icon cat-bahce">${def.emoji}</div>
           <div style="flex:1">
@@ -585,37 +635,99 @@ function selectTesis(id) { /* handled by buyTesis directly */ }
    NAKIT TYCOON
    ================================================================ */
 function renderNakitTycoon() {
-  renderTycoonSection('tc-isletme', [
-    { emoji: '🏪', name: 'Dükkanlar',   val: state.shops.length + ' Dükkan', tab: 'dukkanlar' },
-    { emoji: '🌿', name: 'Bahçeler',    val: (state.tesisler.bahce?.length || 0) + ' Bahçe', tab: 'bahceler' },
-    { emoji: '🐄', name: 'Çiftlikler',  val: (state.tesisler.ciftlik?.length || 0) + ' Çiftlik', tab: 'ciftlikler' },
-    { emoji: '🏭', name: 'Fabrikalar',  val: (state.tesisler.fabrika?.length || 0) + ' Fabrika', tab: 'fabrikalar' },
-    { emoji: '⛏️', name: 'Madenler',    val: (state.tesisler.maden?.length || 0) + ' Maden', tab: 'madenler' }
-  ]);
-  renderTycoonSection('tc-pazar', [
-    { emoji: '📦', name: 'Lojistik', val: (state.depolar?.length || 0) + ' Depo', tab: 'lojistik' },
-    { emoji: '🌍', name: 'İhracat',  val: (state.exportOrders?.length || 0) + ' Sipariş', tab: 'ihracat' },
-    { emoji: '🔨', name: 'İhale',    val: 'Aktif', tab: 'ihale' },
-    { emoji: '🛒', name: 'Oyuncu Pazarı', val: (state.pazarListings?.length || 0) + ' İlan', tab: 'pazar' }
-  ]);
-  renderTycoonSection('tc-finans', [
-    { emoji: '🏦', name: 'Banka',    val: fmt(state.bank?.balance || 0) + ' ₺', tab: 'bank' },
-    { emoji: '📈', name: 'Kripto',   val: 'Piyasa', tab: 'kripto' },
-    { emoji: '🎰', name: 'Çark',     val: 'Günlük', tab: 'menu' },
-    { emoji: '🏢', name: 'Marka',    val: state.myMarka || 'Yok', tab: 'marka' }
-  ]);
+  const body = document.getElementById('tycoon-bal');
+  if (body) body.textContent = fmt(state.money) + ' ₺';
+
+  // Günlük kazanç hesabı
+  const dailyShop = state.shops.reduce((sum, s) => {
+    const t = SHOP_TYPES.find(x => x.id === s.type);
+    const hasStock = (s.reyonlar || []).some(r => (r.stock || 0) > 0);
+    return sum + (hasStock ? (t?.income || 0) * (s.lvl || 1) * 24 : 0);
+  }, 0);
+
+  const tcIsletme = document.getElementById('tc-isletme');
+  if (tcIsletme) tcIsletme.innerHTML = `
+    <div class="tycoon-card" onclick="switchTab('dukkanlar')">
+      <div style="font-size:28px">🏪</div>
+      <div class="tc-val">${state.shops.length}</div>
+      <div class="tc-label">Dükkan</div>
+      <div style="font-size:10px;color:var(--neon);margin-top:2px">+${fmtShort(dailyShop)}/gün</div>
+    </div>
+    <div class="tycoon-card" onclick="switchTab('bahceler')">
+      <div style="font-size:28px">🌿</div>
+      <div class="tc-val">${state.tesisler?.bahce?.length || 0}</div>
+      <div class="tc-label">Bahçe</div>
+    </div>
+    <div class="tycoon-card" onclick="switchTab('ciftlikler')">
+      <div style="font-size:28px">🐄</div>
+      <div class="tc-val">${state.tesisler?.ciftlik?.length || 0}</div>
+      <div class="tc-label">Çiftlik</div>
+    </div>
+    <div class="tycoon-card" onclick="switchTab('fabrikalar')">
+      <div style="font-size:28px">🏭</div>
+      <div class="tc-val">${state.tesisler?.fabrika?.length || 0}</div>
+      <div class="tc-label">Fabrika</div>
+    </div>
+    <div class="tycoon-card" onclick="switchTab('madenler')">
+      <div style="font-size:28px">⛏️</div>
+      <div class="tc-val">${state.tesisler?.maden?.length || 0}</div>
+      <div class="tc-label">Maden</div>
+    </div>`;
+
+  const tcPazar = document.getElementById('tc-pazar');
+  if (tcPazar) tcPazar.innerHTML = `
+    <div class="tycoon-card" onclick="switchTab('lojistik')">
+      <div style="font-size:28px">🚚</div>
+      <div class="tc-val">${state.depolar?.length || 0}</div>
+      <div class="tc-label">Depo</div>
+    </div>
+    <div class="tycoon-card" onclick="switchTab('ihracat')">
+      <div style="font-size:28px">🚢</div>
+      <div class="tc-val">${state.exportOrders?.length || 0}</div>
+      <div class="tc-label">İhracat</div>
+    </div>
+    <div class="tycoon-card" onclick="openPage('pazar')">
+      <div style="font-size:28px">🛍️</div>
+      <div class="tc-val">${state.pazarListings?.length || 0}</div>
+      <div class="tc-label">Pazar</div>
+    </div>
+    <div class="tycoon-card" onclick="switchTab('ihracat')">
+      <div style="font-size:28px">🔨</div>
+      <div class="tc-val">${(state.ihaleData || []).filter(d => d.won).length}</div>
+      <div class="tc-label">İhale Kazan.</div>
+    </div>`;
+
+  // Kripto portföy değeri
+  let kriptoVal = 0;
+  KRIPTOLAR.forEach(k => {
+    const qty = state.kripto[k.sym]?.qty || 0;
+    kriptoVal += qty * k.price;
+  });
+
+  const tcFinans = document.getElementById('tc-finans');
+  if (tcFinans) tcFinans.innerHTML = `
+    <div class="tycoon-card" onclick="openPage('bank')">
+      <div style="font-size:28px">🏦</div>
+      <div class="tc-val">${fmtShort(state.bank?.investment || 0)}</div>
+      <div class="tc-label">Yatırım ₺</div>
+    </div>
+    <div class="tycoon-card" onclick="switchTab('kripto')">
+      <div style="font-size:28px">📈</div>
+      <div class="tc-val">${fmtShort(kriptoVal)}</div>
+      <div class="tc-label">Kripto ₺</div>
+    </div>
+    <div class="tycoon-card">
+      <div style="font-size:28px">💎</div>
+      <div class="tc-val">${state.diamonds || 0}</div>
+      <div class="tc-label">Elmas</div>
+    </div>
+    <div class="tycoon-card">
+      <div style="font-size:28px">📊</div>
+      <div class="tc-val">${fmtShort(state.bank?.profit || 0)}</div>
+      <div class="tc-label">Faiz Kar ₺</div>
+    </div>`;
 }
 
-function renderTycoonSection(id, items) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.innerHTML = items.map(item => `
-    <div class="tc-card" onclick="switchTab('${item.tab}')">
-      <div class="tc-card-emoji">${item.emoji}</div>
-      <div class="tc-card-name">${item.name}</div>
-      <div class="tc-card-val">${item.val}</div>
-    </div>`).join('');
-}
 
 /* ================================================================
    BANK
@@ -910,34 +1022,70 @@ function renderRanking() {
   const body = document.getElementById('ranking-body');
   if (!body) return;
   const myName = state.user?.name;
-  let players = [...MOCK_PLAYERS];
+  const tab = state._rankTab || 'alltime';
+
+  // Sadece gerçek oyuncular: kendimiz
+  let players = [];
   if (myName) {
-    players.push({ name: myName, emoji: '😊', lvl: state.level, money: state.money });
-    players.sort((a, b) => b.money - a.money);
-    players = players.slice(0, 20);
+    players.push({ name: myName, emoji: state.user?.emoji || '😊', lvl: state.level, money: state.money, isMe: true });
   }
-  body.innerHTML = players.map((p, i) => {
-    const pos = i + 1;
-    const cls = pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : '';
-    const isMe = p.name === myName;
-    return `
-      <div class="rank-item" ${isMe ? 'style="background:rgba(99,102,241,.06);border-left:2px solid #6366f1"' : ''}>
-        <div class="rank-pos ${cls}">${pos}</div>
-        <div class="rank-av">${p.emoji}</div>
-        <div class="rank-info">
-          <div class="rank-name">${p.name}${isMe ? ' (Sen)' : ''}</div>
-          <div class="rank-sub">Sv${p.lvl}</div>
-        </div>
-        <div class="rank-money">${fmtShort(p.money)} ₺</div>
-      </div>`;
-  }).join('');
+
+  body.innerHTML = `
+    <div style="display:flex;gap:6px;padding:10px 12px 0">
+      ${[['alltime','Tüm Zamanlar'],['weekly','Haftalık'],['daily','Günlük']].map(([k,l]) => `
+        <button onclick="setRankTab('${k}')" style="flex:1;padding:7px;border-radius:10px;font-size:12px;font-weight:700;border:none;cursor:pointer;${tab===k ? 'background:#6366f1;color:#fff' : 'background:rgba(255,255,255,.06);color:var(--tm)'}">${l}</button>
+      `).join('')}
+    </div>
+    ${players.length ? players.map((p, i) => {
+      const pos = i + 1;
+      const cls = pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : '';
+      return `
+        <div class="rank-item" style="${p.isMe ? 'background:rgba(99,102,241,.06);border-left:2px solid #6366f1' : ''}" onclick="openPlayerProfile('${p.name}')">
+          <div class="rank-pos ${cls}">${pos}</div>
+          <div class="rank-av">${p.emoji}</div>
+          <div class="rank-info">
+            <div class="rank-name">${p.name}${p.isMe ? ' (Sen)' : ''}</div>
+            <div class="rank-sub">Sv${p.lvl}</div>
+          </div>
+          <div class="rank-money">${fmtShort(p.money)} ₺</div>
+        </div>`;
+    }).join('') : `
+      <div class="empty" style="padding:40px 20px">
+        <div class="empty-lock">🏆</div>
+        <div class="empty-big">Liderlik Tablosu</div>
+        <div class="empty-text">Henüz yeterli oyuncu yok. İlk sıraya sen gir!</div>
+      </div>`}
+    <div style="padding:12px;font-size:11px;color:var(--tm);text-align:center">
+      Sıralama gerçek zamanlı güncellenir · Veriler Firebase'den çekilir
+    </div>`;
 }
+window.renderRanking = renderRanking;
+
+function setRankTab(tab) {
+  state._rankTab = tab;
+  renderRanking();
+}
+window.setRankTab = setRankTab;
+
+function openPlayerProfile(name) {
+  const isMe = name === state.user?.name;
+  const modal = document.getElementById('player-profile-modal');
+  if (!modal) return;
+  document.getElementById('pp-name').textContent = name;
+  document.getElementById('pp-emoji').textContent = isMe ? (state.user?.emoji || '😊') : '👤';
+  document.getElementById('pp-level').textContent = isMe ? 'Sv' + state.level : 'Sv?';
+  document.getElementById('pp-money').textContent = isMe ? fmtShort(state.money) + ' ₺' : 'Gizli';
+  document.getElementById('pp-shops').textContent = isMe ? state.shops.length : '?';
+  document.getElementById('pp-isMe').style.display = isMe ? 'none' : 'flex';
+  openModal('player-profile-modal');
+}
+window.openPlayerProfile = openPlayerProfile;
 
 /* ================================================================
    NOTIFICATIONS
    ================================================================ */
 function renderNotifications() {
-  const body = document.getElementById('notifications-body');
+  const body = document.getElementById('notif-body');
   if (!body) return;
   const notifs = state.notifications || [];
   notifs.forEach(n => { n.read = true; });
@@ -969,7 +1117,7 @@ function renderChatPage() {
 }
 
 function renderChatMessages(msgs) {
-  const body = document.getElementById('chat-messages-body');
+  const body = document.getElementById('chat-messages');
   if (!body) return;
   const myName = state.user?.name;
   body.innerHTML = msgs.map(m => `
@@ -987,10 +1135,17 @@ function renderChatMessages(msgs) {
 }
 
 function sendChat() {
-  const input = document.getElementById('chat-input');
+  const input = document.getElementById('chat-text');
   if (!input) return;
   const text = input.value.trim();
   if (!text) return;
+  if (!state.user) { toast('Giriş yapman gerekiyor', 'error'); return; }
+  // Küfür/hakaret filtresi
+  const banned_words = ['küfür', 'lanet', 'sik', 'orospu', 'göt', 'amk', 'pic'];
+  if (banned_words.some(w => text.toLowerCase().includes(w))) {
+    toast('⚠️ Uygunsuz içerik tespit edildi! Hesabın ban riski altında.', 'error');
+    return;
+  }
   input.value = '';
   const msg = { user: state.user?.name || 'Misafir', av: state.user?.name?.[0]?.toUpperCase() || '😊', text, time: 'az önce' };
   if (!state.chatHistory) state.chatHistory = [];
@@ -1053,40 +1208,125 @@ function confirmSignOut() {
 function renderMarka() {
   const body = document.getElementById('marka-body');
   if (!body) return;
-  body.innerHTML = MARKALAR.map(m => `
-    <div class="marka-item">
-      <div class="marka-rank ${m.rank === 1 ? 'gold' : m.rank === 2 ? 'silver' : m.rank === 3 ? 'bronze' : ''}">#${m.rank}</div>
-      <div class="marka-logo" style="background:${m.color};color:#fff">${m.emoji}</div>
-      <div class="marka-info">
-        <div class="marka-name">${m.name}</div>
-        <div class="marka-meta">Lider: ${m.lider}</div>
-        <div style="margin-top:4px">
-          <span class="marka-chip">🏆 ${m.tp.toLocaleString()}</span>
-          <span class="marka-chip">⚡ x${m.guc}</span>
-          <span class="marka-chip">👥 ${m.uyeler}</span>
+  const myBrand = state.myMarka;
+
+  if (myBrand) {
+    body.innerHTML = `
+      <div style="background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:18px;margin:12px;padding:20px;text-align:center;border:1px solid rgba(99,102,241,.4)">
+        <div style="font-size:52px;margin-bottom:8px">${state.markaEmoji || '🏆'}</div>
+        <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">${myBrand}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:16px">Kurucu: ${state.user?.name || 'Sen'}</div>
+        <div style="display:flex;justify-content:center;gap:12px;margin-bottom:16px">
+          <div class="marka-chip">🏆 ${(state.markaTP || 0).toLocaleString()} TP</div>
+          <div class="marka-chip">👥 1 Üye</div>
+          <div class="marka-chip">⚡ x${(1 + (state.level || 1) * 0.01).toFixed(2)}</div>
         </div>
       </div>
-      <button class="btn-blue" style="padding:7px 12px;font-size:11px;flex-shrink:0" onclick="joinMarka('${m.name}')">+ Katıl</button>
-    </div>`).join('') + `
-    <div style="padding:14px">
-      <button class="btn-create" style="width:100%" onclick="toast('Marka kurma yakında 🚀','')">🏗️ Kendi Markamı Kur</button>
-    </div>`;
+      <div class="sec-label">MARKA YÖNETİMİ</div>
+      <div class="card">
+        <div class="action-row" onclick="toast('Yakında 🚀','')">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="action-icon ai-yellow">🏭</div>
+            <div><div style="font-weight:700">Üretim Tesisi Kur</div><div style="font-size:11px;color:var(--tm)">Araç, tekstil ve daha fazlası</div></div>
+          </div>
+          <div style="color:var(--tm)">›</div>
+        </div>
+        <div class="action-row" onclick="toast('Yakında 🚀','')">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="action-icon ai-blue">👥</div>
+            <div><div style="font-weight:700">Üye Davet Et</div><div style="font-size:11px;color:var(--tm)">Markana üye kabul et</div></div>
+          </div>
+          <div style="color:var(--tm)">›</div>
+        </div>
+        <div class="action-row" onclick="toast('Yakında 🚀','')">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="action-icon ai-green">🚗</div>
+            <div><div style="font-weight:700">Araç Üretimi</div><div style="font-size:11px;color:var(--tm)">Otomobil, motosiklet fabrikası</div></div>
+          </div>
+          <div style="color:var(--tm)">›</div>
+        </div>
+      </div>
+      <div style="padding:12px">
+        <button class="btn-red" style="width:100%" onclick="leaveMarka()">🚪 Markadan Ayrıl</button>
+      </div>`;
+  } else {
+    body.innerHTML = `
+      <div class="empty">
+        <div class="empty-lock">🏆</div>
+        <div class="empty-big">Kendi Markamı Kur</div>
+        <div class="empty-text">Bir marka kurarak üretim tesisleri aç, üyeler topla ve sıralamada yüksel!</div>
+      </div>
+      <div style="padding:14px">
+        <div class="card">
+          <div style="font-weight:700;margin-bottom:10px">🏗️ Yeni Marka Kur</div>
+          <div style="margin-bottom:10px">
+            <input id="brand-name-input" class="input-dark" placeholder="Marka adı (3-20 karakter)" maxlength="20">
+          </div>
+          <div style="margin-bottom:10px">
+            <label style="font-size:12px;color:var(--tm);display:block;margin-bottom:6px">Marka Emojisi</label>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              ${['🏆','🦁','🦅','🐺','🔥','⚡','🚀','💎','🏰','🌊'].map(e => `
+                <button onclick="selectMarkaEmoji('${e}')" id="me-${e}" style="width:40px;height:40px;border-radius:10px;border:1px solid var(--br);background:rgba(255,255,255,.04);font-size:20px;cursor:pointer">${e}</button>
+              `).join('')}
+            </div>
+          </div>
+          <button class="btn-create" style="width:100%" onclick="createMarka()">🏗️ Markamı Kur — 💎 50 Elmas</button>
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--tm);margin-top:8px">
+          Şu an liderlik tablosunda hiç marka yok.<br>İlk markayı sen kur!
+        </div>
+      </div>`;
+  }
 }
+window.renderMarka = renderMarka;
+
+let _selectedMarkaEmoji = '🏆';
+function selectMarkaEmoji(e) {
+  _selectedMarkaEmoji = e;
+  document.querySelectorAll('[id^="me-"]').forEach(b => b.style.borderColor = 'var(--br)');
+  const btn = document.getElementById('me-' + e);
+  if (btn) btn.style.borderColor = '#6366f1';
+}
+window.selectMarkaEmoji = selectMarkaEmoji;
+
+function createMarka() {
+  const name = (document.getElementById('brand-name-input')?.value || '').trim();
+  if (!name || name.length < 3) { toast('Marka adı en az 3 karakter olmalı', 'error'); return; }
+  if ((state.diamonds || 0) < 50) { toast('Yetersiz elmas! 💎 50 gerekli', 'error'); return; }
+  state.diamonds -= 50;
+  state.myMarka = name;
+  state.markaEmoji = _selectedMarkaEmoji;
+  state.markaTP = 0;
+  saveState();
+  if (typeof saveFsState === 'function' && window.fbDb && window.fbUser) saveFsState();
+  toast(name + ' markası kuruldu! 🎉', 'success');
+  confetti();
+  renderMarka();
+}
+window.createMarka = createMarka;
+
+function leaveMarka() {
+  if (!confirm) { doLeaveMarka(); return; }
+  // Use toast confirm
+  state.myMarka = null;
+  state.markaEmoji = null;
+  saveState();
+  toast('Markadan ayrıldın', '');
+  renderMarka();
+}
+window.leaveMarka = leaveMarka;
 
 /* ================================================================
    NEWS
    ================================================================ */
-const NEWS_DATA = [
-  { emoji: '📈', title: 'Kripto Piyasasında Rekor Kırıldı!', text: 'Vortigon bugün tarihi zirvesine ulaştı. Yatırımcılar %40 getiri elde etti.', date: '2 saat önce', color: 'linear-gradient(135deg,#6366f1,#4f46e5)' },
-  { emoji: '🏭', title: 'Yeni Fabrika Bölgesi Açıldı', text: 'Ankara\'da yeni sanayi bölgesi kuruluyor. Fabrika maliyetleri düşecek!', date: '5 saat önce', color: 'linear-gradient(135deg,#64748b,#475569)' },
-  { emoji: '🌍', title: 'İhracat Rekor Kırdı', text: 'Bu ay ihracat rakamları geçen yılın aynı dönemine göre %35 arttı.', date: '1 gün önce', color: 'linear-gradient(135deg,#10b981,#059669)' },
-  { emoji: '🥇', title: 'Altın Fiyatları Yükseliyor', text: 'Global belirsizlik altın madenlerine olan ilgiyi artırdı.', date: '2 gün önce', color: 'linear-gradient(135deg,#fbbf24,#d97706)' }
-];
-
 function renderNews() {
   const body = document.getElementById('news-body');
   if (!body) return;
-  body.innerHTML = NEWS_DATA.map(n => `
+
+  // Dinamik haberler — kripto fiyatları, oyun istatistiklerine göre
+  const news = generateDynamicNews();
+
+  body.innerHTML = news.map(n => `
     <div class="news-card">
       <div class="news-hero" style="background:${n.color}">${n.emoji}</div>
       <div class="news-bi">
@@ -1094,26 +1334,106 @@ function renderNews() {
         <div class="news-text">${n.text}</div>
         <div class="news-date">⏰ ${n.date}</div>
         <div class="news-reactions">
-          <div class="reaction">👍 ${Math.floor(Math.random() * 200 + 10)}</div>
-          <div class="reaction">🔥 ${Math.floor(Math.random() * 100 + 5)}</div>
-          <div class="reaction">💬 ${Math.floor(Math.random() * 50)}</div>
+          <div class="reaction">👍 ${n.likes || Math.floor(Math.random() * 200 + 10)}</div>
+          <div class="reaction">🔥 ${n.fires || Math.floor(Math.random() * 100 + 5)}</div>
+          <div class="reaction">💬 ${n.comments || Math.floor(Math.random() * 50)}</div>
         </div>
       </div>
     </div>`).join('');
 }
 
+function generateDynamicNews() {
+  const news = [];
+  const now = Date.now();
+
+  // Kripto haberleri — gerçek fiyatlara göre
+  const topKripto = [...KRIPTOLAR].sort((a, b) => Math.abs(b.change) - Math.abs(a.change))[0];
+  if (topKripto) {
+    const isUp = topKripto.dir === 'up';
+    news.push({
+      emoji: topKripto.emoji,
+      title: `${topKripto.name} (${topKripto.sym}) ${isUp ? '📈 Yükselişte' : '📉 Düşüşte'}!`,
+      text: `${topKripto.name} son işlemlerde %${Math.abs(topKripto.change).toFixed(1)} ${isUp ? 'artarak' : 'düşerek'} ${fmt(topKripto.price)} ₺'ye ${isUp ? 'ulaştı' : 'geriledi'}. Uzmanlar ${isUp ? 'temkinli olmayı' : 'alım fırsatı olduğunu'} söylüyor.`,
+      date: 'Az önce',
+      color: isUp ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#ef4444,#dc2626)',
+      likes: 234, fires: 87, comments: 45
+    });
+  }
+
+  // Altın haberi
+  const altin = KRIPTOLAR.find(k => k.sym === 'NVL');
+  news.push({
+    emoji: '🥇',
+    title: 'Altın Madeni Sahipleri Kazanıyor',
+    text: 'Küresel belirsizlik ortamında altın madeni sahipleri günde binlerce lira kazanıyor. Sv8+ oyuncular maden açmaya koşuyor.',
+    date: '15 dk önce',
+    color: 'linear-gradient(135deg,#fbbf24,#d97706)',
+    likes: 189, fires: 92, comments: 38
+  });
+
+  // Oyuncu istatistikleri haberi
+  const totalShops = state.shops.length;
+  if (totalShops > 0) {
+    news.push({
+      emoji: '🏪',
+      title: `${state.user?.name || 'Oyuncu'} ${totalShops} Dükkanla Büyüyor`,
+      text: `${state.user?.name || 'Anonim oyuncu'} toplamda ${totalShops} dükkan açarak ${fmtShort(state.money)} ₺ biriktime ulaştı. Ekonomik imparatorluk inşaatı devam ediyor.`,
+      date: '1 saat önce',
+      color: 'linear-gradient(135deg,#6366f1,#4f46e5)',
+      likes: 42, fires: 18, comments: 9
+    });
+  }
+
+  // İhracat haberi
+  news.push({
+    emoji: '🚢',
+    title: 'İhracat Piyasasında Yoğunluk',
+    text: 'Bu hafta Almanya ve Japonya kaynaklı ihracat talepleri artış gösterdi. Fındık ve zeytinyağı ihracatçıları rekor gelir elde etti.',
+    date: '2 saat önce',
+    color: 'linear-gradient(135deg,#0ea5e9,#0284c7)',
+    likes: 156, fires: 63, comments: 27
+  });
+
+  // Banka faiz haberi
+  news.push({
+    emoji: '🏦',
+    title: 'Vade Hesapları %200 Getiri Sunuyor',
+    text: '1 yıllık vadeli hesap sahipleri bu yıl parasını ikiye katladı. Bankacılık uzmanları uzun vadeli yatırımı tavsiye ediyor.',
+    date: '4 saat önce',
+    color: 'linear-gradient(135deg,#14b8a6,#0d9488)',
+    likes: 301, fires: 124, comments: 58
+  });
+
+  // Hasat haberi
+  const totalTesis = (state.tesisler?.bahce?.length || 0) + (state.tesisler?.ciftlik?.length || 0) +
+                     (state.tesisler?.fabrika?.length || 0) + (state.tesisler?.maden?.length || 0);
+  if (totalTesis === 0) {
+    news.push({
+      emoji: '🌾',
+      title: 'Üretim Tesisleri Kuranlar Önde',
+      text: 'Bahçe, çiftlik ve maden sahibi oyuncular dükkan gelirlerinin yanı sıra hasat geliriyle de servetlerini artırıyor. Henüz tesis kurmadıysan geç kalıyorsun!',
+      date: '6 saat önce',
+      color: 'linear-gradient(135deg,#84cc16,#65a30d)',
+      likes: 112, fires: 45, comments: 23
+    });
+  }
+
+  return news;
+}
+window.generateDynamicNews = generateDynamicNews;
+
 /* ================================================================
    CITIES
    ================================================================ */
 function renderCities() {
-  const body = document.getElementById('cities-body');
+  const body = document.getElementById('city-list');
   if (!body) return;
   body.innerHTML = `
-    <div style="padding:12px 14px;color:var(--tm);font-size:13px">81 ilde dükkan açabilirsin. Büyük şehirlerde gelir çarpanı daha yüksek.</div>
+    <div style="padding:0 0 8px;color:var(--tm);font-size:13px">81 ilde dükkan açabilirsin. Büyük şehirlerde gelir çarpanı daha yüksek. Şehre tıkla, detayları gör.</div>
     ${CITIES.map(c => {
       const shopsHere = state.shops.filter(s => s.cityId === c.id).length;
-      return `
-        <div class="city-card">
+      return \`
+        <div class="city-card" onclick="openCityDetail('${c.id}')" style="cursor:pointer">
           <div style="font-size:28px">${c.emoji}</div>
           <div style="flex:1">
             <div style="font-weight:700">${c.name}</div>
@@ -1121,10 +1441,41 @@ function renderCities() {
           </div>
           <div style="text-align:right">
             <div style="font-size:12px;color:var(--neon)">${shopsHere} dükkan</div>
+            <div style="font-size:10px;color:var(--tm)">›</div>
           </div>
-        </div>`;
+        </div>\`;
     }).join('')}`;
 }
+
+function openCityDetail(cityId) {
+  const c = CITIES.find(x => x.id === cityId);
+  if (!c) return;
+  const shopsHere = state.shops.filter(s => s.cityId === cityId);
+  const modal = document.getElementById('city-detail-modal');
+  if (!modal) { toast(c.name + ' - ' + c.region + ' · x' + c.mult + ' çarpan', ''); return; }
+  document.getElementById('cd-title').textContent = c.emoji + ' ' + c.name;
+  document.getElementById('cd-body').innerHTML = \`
+    <div style="text-align:center;padding:16px 0;border-bottom:1px solid var(--br);margin-bottom:14px">
+      <div style="font-size:52px;margin-bottom:8px">\${c.emoji}</div>
+      <div style="font-size:22px;font-weight:900">\${c.name}</div>
+      <div style="font-size:13px;color:var(--tm);margin-top:4px">\${c.region} Bölgesi</div>
+    </div>
+    <div class="row"><span class="row-label">Gelir Çarpanı</span><span class="row-value green">x\${c.mult}</span></div>
+    <div class="row"><span class="row-label">Bölge</span><span class="row-value">\${c.region}</span></div>
+    <div class="row"><span class="row-label">Dükkanların</span><span class="row-value">\${shopsHere.length} Dükkan</span></div>
+    \${shopsHere.length ? \`
+    <div style="margin-top:14px;font-weight:700;font-size:13px;margin-bottom:8px">📍 Bu İldeki Dükkanların</div>
+    \${shopsHere.map(s => {
+      const t = SHOP_TYPES.find(x => x.id === s.type);
+      return \`<div class="action-row"><span>\${t?.emoji || '🏪'} \${t?.name || s.type}</span><span style="color:var(--neon)">Sv\${s.lvl || 1}</span></div>\`;
+    }).join('')}\` : \`
+    <div style="margin-top:14px;text-align:center;font-size:13px;color:var(--tm)">Bu ilde henüz dükkanın yok.</div>\`}
+    <div style="margin-top:14px">
+      <button class="btn-create" style="width:100%" onclick="closeModal('city-detail-modal');openModal('shop-modal')">+ Bu İlde Dükkan Aç</button>
+    </div>\`;
+  openModal('city-detail-modal');
+}
+window.openCityDetail = openCityDetail;
 
 /* ================================================================
    FAQ
@@ -1156,42 +1507,98 @@ function toggleFaq(i) {
 function renderSettings() {
   const body = document.getElementById('settings-body');
   if (!body) return;
+  const s = state.settings || {};
   body.innerHTML = `
-    <div class="sec-label">GÖRÜNÜM</div>
+    <div class="sec-label">GÖRÜNÜM & SES</div>
     <div class="settings-row">
-      <div><div class="settings-label">Ses</div><div class="settings-sub">Oyun sesleri</div></div>
-      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      <div><div class="settings-label">🔔 Bildirimler</div><div class="settings-sub">Hasat, vade ve oyun bildirimleri</div></div>
+      <div class="toggle ${s.notif !== false ? 'on' : ''}" onclick="toggleSetting('notif',this)"></div>
     </div>
     <div class="settings-row">
-      <div><div class="settings-label">Müzik</div><div class="settings-sub">Arka plan müziği</div></div>
-      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      <div><div class="settings-label">🔊 Ses Efektleri</div><div class="settings-sub">Satış, kazanç sesleri</div></div>
+      <div class="toggle ${s.sound !== false ? 'on' : ''}" onclick="toggleSetting('sound',this)"></div>
     </div>
     <div class="settings-row">
-      <div><div class="settings-label">Bildirimler</div><div class="settings-sub">Anlık bildirimler</div></div>
-      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
-    </div>
-    <div class="sec-label">HESAP</div>
-    <div class="settings-row">
-      <div><div class="settings-label">Dil</div><div class="settings-sub">Arayüz dili</div></div>
-      <div style="color:var(--tm);font-size:13px">Türkçe ▼</div>
+      <div><div class="settings-label">🎵 Arka Plan Müziği</div><div class="settings-sub">Oyun içi müzik</div></div>
+      <div class="toggle ${s.music ? 'on' : ''}" onclick="toggleSetting('music',this)"></div>
     </div>
     <div class="settings-row">
-      <div><div class="settings-label">Tema</div><div class="settings-sub">Karanlık mod</div></div>
-      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      <div><div class="settings-label">📳 Titreşim</div><div class="settings-sub">Önemli olaylarda titreşim</div></div>
+      <div class="toggle ${s.vibrate !== false ? 'on' : ''}" onclick="toggleSetting('vibrate',this)"></div>
     </div>
-    <div class="sec-label">GÜVENLİK</div>
-    <div class="settings-row" onclick="toast('Yakında 🔜','')">
-      <div><div class="settings-label">Gizlilik Ayarları</div></div>
+
+    <div class="sec-label">OYUN HIZLANDIRICILARI</div>
+    <div class="settings-row" onclick="toast('Yakında gelecek 🚀','')">
+      <div><div class="settings-label">🤖 Robot Asistanı</div><div class="settings-sub">Satışları otomatik yönetir</div></div>
+      <div style="color:#fbbf24;font-size:12px;font-weight:700">Mağazadan Al ›</div>
+    </div>
+    <div class="settings-row" onclick="toast('Yakında gelecek 🚀','')">
+      <div><div class="settings-label">📊 Otomatik Hasat</div><div class="settings-sub">Bahçe/Çiftlik hasatını otomatikleştir</div></div>
+      <div style="color:#fbbf24;font-size:12px;font-weight:700">Yakında ›</div>
+    </div>
+
+    <div class="sec-label">HESAP BİLGİLERİ</div>
+    <div class="settings-row">
+      <div><div class="settings-label">👤 Kullanıcı Adı</div><div class="settings-sub">${state.user?.name || '—'}</div></div>
       <div style="color:var(--tm)">›</div>
     </div>
-    <div class="settings-row" onclick="toast('Yakında 🔜','')">
-      <div><div class="settings-label">Hesap Bağlantıları</div></div>
+    <div class="settings-row">
+      <div><div class="settings-label">📧 E-posta</div><div class="settings-sub">${state.user?.email || '—'}</div></div>
       <div style="color:var(--tm)">›</div>
     </div>
-    <div style="padding:16px;margin-top:8px">
+    <div class="settings-row">
+      <div><div class="settings-label">📅 Katılım Tarihi</div><div class="settings-sub">${new Date(state.joinDate || Date.now()).toLocaleDateString('tr-TR')}</div></div>
+    </div>
+
+    <div class="sec-label">GİZLİLİK & GÜVENLİK</div>
+    <div class="settings-row">
+      <div><div class="settings-label">🔒 Profil Gizliliği</div><div class="settings-sub">Diğer oyuncular profilini görsün</div></div>
+      <div class="toggle ${s.publicProfile !== false ? 'on' : ''}" onclick="toggleSetting('publicProfile',this)"></div>
+    </div>
+    <div class="settings-row" onclick="toast('Destek: gamezone@support.tr','')">
+      <div><div class="settings-label">🆘 Haksız Ban İtiraz</div><div class="settings-sub">Bana ulaş</div></div>
+      <div style="color:var(--tm)">›</div>
+    </div>
+
+    <div class="sec-label">VERİ</div>
+    <div class="settings-row" onclick="toast('Verileriniz Firebase\\'de güvende 🔒','success')">
+      <div><div class="settings-label">☁️ Bulut Yedekleme</div><div class="settings-sub">Firebase - otomatik senkronize</div></div>
+      <div style="color:var(--neon);font-size:12px">Aktif ✓</div>
+    </div>
+
+    <div style="padding:16px;display:flex;flex-direction:column;gap:8px">
       <button class="btn-red" style="width:100%" onclick="confirmSignOut()">🚪 Çıkış Yap</button>
-    </div>`;
+      <button style="width:100%;padding:12px;border-radius:12px;background:rgba(239,68,68,.1);color:#ef4444;font-weight:700;border:1px solid rgba(239,68,68,.2)" onclick="confirmReset()">🗑️ Hesabı Sıfırla</button>
+    </div>
+    <div style="text-align:center;font-size:10px;color:var(--tm);padding:8px">v5.0 · © 2026 GameZone ERP</div>`;
 }
+window.renderSettings = renderSettings;
+
+function toggleSetting(key, el) {
+  if (!state.settings) state.settings = {};
+  state.settings[key] = !state.settings[key];
+  el.classList.toggle('on');
+  saveState();
+}
+window.toggleSetting = toggleSetting;
+
+function confirmReset() {
+  // Basit doğrulama
+  const name = state.user?.name || '';
+  const input = prompt('Hesabını sıfırlamak için kullanıcı adını gir:');
+  if (input === name) {
+    state.money = 20000; state.level = 1; state.xp = 0;
+    state.shops = []; state.tesisler = {bahce:[],ciftlik:[],fabrika:[],maden:[]};
+    state.depolar = []; state.kripto = {}; state.bank = {balance:0,investment:0,profit:0};
+    saveState();
+    if (typeof saveFsState === 'function' && window.fbDb && window.fbUser) saveFsState();
+    toast('Hesap sıfırlandı!', '');
+    if (typeof renderAll === 'function') renderAll();
+  } else if (input !== null) {
+    toast('Kullanıcı adı yanlış!', 'error');
+  }
+}
+window.confirmReset = confirmReset;
 
 /* ================================================================
    PAZAR (player market)

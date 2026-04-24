@@ -235,13 +235,28 @@ const CHAT_SEED = [
    CONSTANTS — FAQ
    ================================================================ */
 const FAQ = [
-  {q:'Nasıl para kazanırım?',       a:'Dükkan aç → reyon ekle → stok satın al → kazanç topla. Bahçe/Çiftlik/Fabrika/Maden kurarak hasat geliri de elde edebilirsin.'},
-  {q:'Stok olmadan satış yapabilir miyim?', a:'HAYIR! Reyon varsa stok sıfırsa kazanç toplanamaz. Önce stok satın al.'},
-  {q:'Giriş yaptıktan sonra atılıyorum?',   a:'Bu sorun düzeltildi. DeviceID artık güncellemeden etkilenmez. Oturumun aktif kalır.'},
-  {q:'Depo fiyatları neden yüksek?',         a:'Depo seviyelidir. Küçük: 500K₺, Orta: 2M₺, Büyük: 5M₺, Dev: 15M₺, Mega: 500 elmas.'},
-  {q:'Level nasıl hızlı çıkarım?',           a:'Kazanç topla, hasat al, ihale kazan, kripto sat. Her işlem XP verir.'},
-  {q:'Oyuncu pazarı nedir?',                 a:"Kendi ürünlerini diğer oyunculara satabilirsin. Menü → Oyuncu Pazarı"},
-  {q:'Kripto/Enerji ne zaman açılır?',        a:'Kripto: Sv5 · Enerji: Sv8'}
+  {q:'Nasıl para kazanırım?',
+   a:'<b>3 yol:</b><br>1️⃣ Dükkan aç, Reyon ekle, Stok satın al, Kazanç Topla<br>2️⃣ Bahçe/Çiftlik/Fabrika/Maden kur, Hasat al, İhracat ile sat<br>3️⃣ Bankaya vadeli yatırım yap (kripto risklidir!)'},
+  {q:'Stoksuz/reyonsuz satış yapılıyor mu?',
+   a:'HAYIR! Reyon varken stok 0 ise kazanç toplanamaz. Bu bilinçli bir sistem kuralıdır, bug değil.'},
+  {q:'Bahçe/Çiftlik/Fabrika/Maden nasıl çalışır?',
+   a:'Satın al → Hasat süresi dolsun → Karta tıkla → Hasat Al → Stok biriktir → İhracat ile sat. Üretmediğin ürünü ihraç EDEMEZSIN.'},
+  {q:'Level nasıl çıkarılır? Neden zorlaşıyor?',
+   a:'Sv1→2: 500 XP, Sv5→6: 4.130 XP, Sv10→11: ~20.000 XP. Her seviye 1.7x daha zor. Hasat, ihale ve satış yaparak XP kazan.'},
+  {q:'Haftalık gider ve maaş sistemi nasıl çalışır?',
+   a:'Her Cumartesi otomatik kesilir. Bir haftada birden fazla ödeyemezsin. Robot yoksa 7 saat hareketsizlikte satışlar durur.'},
+  {q:'Kripto neden düşüyor?',
+   a:'Kripto sistemi gerçek gibi tasarlandı: %65 olasılıkla aşağı hareket eder. Tüm paranı yatırma!'},
+  {q:'İhracat için ne gerekiyor?',
+   a:'1. Depo aç (Lojistik). 2. Ürünü üret (bahçe/çiftlik stoku > 0). 3. İhracat sayfasından sat.'},
+  {q:'Marka nasıl kurulur?',
+   a:'Bot markalar kaldırıldı. Marka sayfasından 💎 50 elmas ile kendi markamı kurabilirsin.'},
+  {q:'Tüm verilerim kayboldu!',
+   a:'Veriler Firebase'de saklanır. Aynı hesapla giriş yapınca her şey geri gelir. Farklı e-posta kullandıysan veriler farklı hesapta.'},
+  {q:'Ban yedim, ne yapacağım?',
+   a:'Hız hilesi, küfür veya taciz tespitinde otomatik ban gelir. Haksız bansa Ayarlar → Haksız Ban İtiraz bağlantısını kullan.'},
+  {q:'Depo neden bu kadar pahalı?',
+   a:'Küçük: 500K₺, Orta: 2M₺, Büyük: 5M₺, Dev: 15M₺, Mega: 500💎. Seviyen arttıkça depo daha mantıklı hale gelir.'}
 ];
 
 /* ================================================================
@@ -388,20 +403,38 @@ function antiCheatTick() {
 
 setInterval(antiCheatTick, 5000);
 
+function checkBanned() {
+  if (state.banned) {
+    if (typeof showBanScreen === 'function') showBanScreen(state.banReason);
+  }
+}
+window.checkBanned = checkBanned;
+
 /* ================================================================
    LEVEL SYSTEM
    ================================================================ */
+function xpCap(lvl) {
+  // Her seviye ~1.7x daha zor: Sv1=500, Sv2=850, Sv5=4130, Sv10=20k, Sv20=200k
+  return Math.floor(500 * Math.pow(1.7, lvl - 1));
+}
+
 function checkLevel() {
-  const cap = state.level * 500;
+  let cap = xpCap(state.level);
   while (state.xp >= cap) {
     state.xp -= cap;
     state.level++;
-    toast('🎉 SEVİYE ' + state.level + '!', 'success');
+    cap = xpCap(state.level);
+    toast('🎉 SEVİYE ' + state.level + '! Yeni içerikler açıldı.', 'success');
     confetti();
-    addNotification('🎉 Seviye ' + state.level + `'e ulaştınız! Yeni içerikler açıldı.`);
+    addNotification('🎉 Seviye ' + state.level + `'e ulaştın! Yeni işletmeler, tesisler ve fırsatlar seni bekliyor.`);
+    // Seviyeye özel ödüller
+    if (state.level === 5)  { state.diamonds += 10; toast('Kripto kilidi açıldı! 💎+10', 'success'); }
+    if (state.level === 10) { state.diamonds += 25; toast('Büyük fabrikalar açıldı! 💎+25', 'success'); }
+    if (state.level === 20) { state.diamonds += 50; toast('Dev depo kilidi açıldı! 💎+50', 'success'); }
     saveState();
   }
 }
+window.xpCap = xpCap;
 
 /* ================================================================
    NOTIFICATIONS
@@ -625,19 +658,56 @@ function generateExportOrders() {
 
 function shipExport(i) {
   const o = state.exportOrders[i];
-  if (!(state.depolar || []).length) { toast('Önce depo açın!', 'error'); return; }
-  const earned = Math.floor(o.minQty * o.price);
+  if (!(state.depolar || []).length) { toast('Önce bir depo açın!', 'error'); return; }
+
+  // Üretim stoku kontrolü: ürün adına göre tesis stoğuna bak
+  const productName = o.product.name.toLowerCase();
+  let totalStock = 0;
+  const allTesis = [
+    ...(state.tesisler?.bahce   || []).map(t => ({ ...t, _type: 'bahce'   })),
+    ...(state.tesisler?.ciftlik || []).map(t => ({ ...t, _type: 'ciftlik' })),
+    ...(state.tesisler?.fabrika || []).map(t => ({ ...t, _type: 'fabrika' })),
+    ...(state.tesisler?.maden   || []).map(t => ({ ...t, _type: 'maden'   }))
+  ];
+  const typeMap = { bahce: BAHCE_TYPES, ciftlik: CIFTLIK_TYPES, fabrika: FABRIKA_TYPES, maden: MADEN_TYPES };
+  for (const t of allTesis) {
+    const def = (typeMap[t._type] || []).find(x => x.id === t.id);
+    if (def && def.urun.toLowerCase().includes(productName.split('/')[0].trim())) {
+      totalStock += (t.stock || 0);
+    }
+  }
+
+  if (totalStock <= 0) {
+    toast(`${o.product.name} stoğunuz yok! Önce ${o.product.emoji} üretin.`, 'error');
+    return;
+  }
+
+  const sendQty = Math.min(o.minQty, totalStock);
+  const earned = Math.floor(sendQty * o.price);
   state.money += earned;
   state.xp += Math.floor(earned / 200);
   checkLevel();
-  o.sent = Math.min(o.sent + o.minQty, o.qty);
+
+  // Stok düş
+  let remaining = sendQty;
+  for (const t of allTesis) {
+    const def = (typeMap[t._type] || []).find(x => x.id === t.id);
+    if (def && def.urun.toLowerCase().includes(productName.split('/')[0].trim())) {
+      const take = Math.min(t.stock || 0, remaining);
+      t.stock = (t.stock || 0) - take;
+      remaining -= take;
+      if (remaining <= 0) break;
+    }
+  }
+
+  o.sent = Math.min(o.sent + sendQty, o.qty);
   o.price = parseFloat((o.price * (0.92 + Math.random() * 0.18)).toFixed(2));
   _lastMoney = state.money;
   _lastCheck = Date.now();
   saveState();
   if (typeof saveFsState === 'function' && window.fbDb && window.fbUser) saveFsState();
   if (typeof renderAll === 'function') renderAll();
-  toast('+' + fmt(earned) + ' ₺ ihracat geliri 🚢', 'success');
+  toast('+' + fmt(earned) + ' ₺ ihracat geliri 🚢 (' + sendQty.toLocaleString() + ' ' + o.product.unit + ')', 'success');
 }
 
 /* Fluctuate export prices every 2 min */
@@ -738,14 +808,27 @@ function sellKripto(sym, amount) {
   toast('+' + fmt(earned) + ' ₺ kripto satışı 📉', 'success');
 }
 
-/* Fluctuate crypto prices every 30s */
+/* Kripto fiyatları her 30 saniyede değişir - aşağı eğilimli (%65 aşağı) */
 setInterval(() => {
   KRIPTOLAR.forEach(k => {
-    const change = (Math.random() - 0.48) * k.price * 0.03;
+    // %65 aşağı, %35 yukarı - yatırımcı para kaybeder
+    const bias = Math.random() < 0.65 ? -1 : 1;
+    const volatility = 0.02 + Math.random() * 0.03; // %2-5 oynaklık
+    const change = bias * Math.random() * k.price * volatility;
     k.price = Math.max(0.001, parseFloat((k.price + change).toFixed(k.price < 10 ? 4 : 2)));
-    k.change = parseFloat((change / k.price * 100).toFixed(2));
+    k.change = parseFloat(((change / k.price) * 100).toFixed(2));
     k.dir = change >= 0 ? 'up' : 'down';
   });
+  // Arada sırada büyük dump (%5 ihtimal)
+  if (Math.random() < 0.05) {
+    const victim = KRIPTOLAR[Math.floor(Math.random() * KRIPTOLAR.length)];
+    victim.price = Math.max(0.001, parseFloat((victim.price * (0.7 + Math.random() * 0.15)).toFixed(2)));
+    victim.change = -30;
+    victim.dir = 'down';
+  }
+  if (typeof renderAll === 'function' && document.getElementById('page-kripto')?.classList.contains('active')) {
+    renderAll();
+  }
 }, 30000);
 
 /* ================================================================

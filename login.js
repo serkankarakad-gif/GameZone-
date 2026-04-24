@@ -1,131 +1,109 @@
 /* ================================================================
-   GAME ZONE ERP v5.0 — login.js
-   Auth: giriş, kayıt, şifre sıfırlama
+   GAME ZONE ERP — login.js
+   firebase-init.js sonra yuklenir; fbAuth zaten window'da hazir.
    ================================================================ */
 
-/* ---------- EKRAN GEÇİŞLERİ ---------- */
 function showScreen(id) {
-  ['welcome','login','register','forgot'].forEach(s => {
-    const el = document.getElementById(s);
-    if (el) el.style.display = s === id ? 'flex' : 'none';
+  ['welcome','login','register','forgot'].forEach(function(s) {
+    var el = document.getElementById(s);
+    if (el) el.style.display = (s === id) ? 'flex' : 'none';
   });
 }
-window.showScreen = showScreen;
-
-function openLogin()    { showScreen('login'); }
+function openLogin()    { showScreen('login');    }
 function openRegister() { showScreen('register'); }
-function openForgot()   { showScreen('forgot'); }
+function openForgot()   { showScreen('forgot');   }
+window.showScreen   = showScreen;
 window.openLogin    = openLogin;
 window.openRegister = openRegister;
 window.openForgot   = openForgot;
 
-/* ---------- GİRİŞ YAP ---------- */
 async function doLogin(e) {
   e.preventDefault();
-  if (!window._fbAuthLib || !window.fbAuth) {
-    window.toast('Sunucuya bağlanılamıyor', 'error');
+  var auth = window.fbAuth || window.auth;
+  if (!window._fbAuthLib || !auth) {
+    if (typeof toast === 'function') toast('Sunucuya baglanamıyor — internet kontrol et', 'error');
     return;
   }
-  const u = document.getElementById('login-user').value.trim();
-  const p = document.getElementById('login-pass').value;
-  if (!u || !p) { window.toast('Tüm alanları doldurun', 'error'); return; }
-
-  const btn = e.target.querySelector('button[type=submit]');
-  btn.disabled = true;
-  btn.textContent = 'Giriş yapılıyor...';
-
-  const email = u.includes('@') ? u : u + '@gamezone.tr';
-
+  var u = document.getElementById('login-user').value.trim();
+  var p = document.getElementById('login-pass').value;
+  if (!u || !p) { toast('Tum alanlari doldurun', 'error'); return; }
+  var btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true; btn.textContent = 'Giris yapiliyor...';
+  var email = u.includes('@') ? u : (u + '@gamezone.tr');
   try {
-    await window._fbAuthLib.signInWithEmailAndPassword(window.fbAuth, email, p);
-    window.showLS('Veriler yükleniyor...');
+    await window._fbAuthLib.signInWithEmailAndPassword(auth, email, p);
+    if (typeof showLS === 'function') showLS('Veriler yukleniyor...');
   } catch (err) {
-    let msg = 'Giriş başarısız';
-    if (['auth/user-not-found','auth/wrong-password','auth/invalid-credential'].includes(err.code))
-      msg = 'Kullanıcı adı veya şifre hatalı';
-    if (err.code === 'auth/too-many-requests')
-      msg = 'Çok fazla deneme. Biraz bekle.';
-    if (err.code === 'auth/network-request-failed') { window.showNoNet(); return; }
-    window.toast(msg, 'error');
-    btn.disabled = false;
-    btn.textContent = 'Giriş Yap';
+    console.error('Login:', err.code);
+    var msg = 'Giris basarisiz';
+    if (['auth/user-not-found','auth/wrong-password','auth/invalid-credential','auth/invalid-email'].includes(err.code))
+      msg = 'Kullanici adi veya sifre hatali';
+    if (err.code === 'auth/too-many-requests')       msg = 'Cok fazla deneme. Bekle.';
+    if (err.code === 'auth/network-request-failed')  { if(typeof showNoNet==='function')showNoNet(); return; }
+    if (err.code === 'auth/user-disabled')            msg = 'Bu hesap engellendi.';
+    if (typeof toast === 'function') toast(msg, 'error');
+    btn.disabled = false; btn.textContent = 'Giris Yap';
   }
 }
 window.doLogin = doLogin;
 
-/* ---------- KAYIT OL ---------- */
 async function doRegister(e) {
   e.preventDefault();
-  if (!window._fbAuthLib || !window.fbAuth) {
-    window.toast('Sunucuya bağlanılamıyor', 'error');
-    return;
-  }
-  const u  = document.getElementById('reg-user').value.trim();
-  const em = document.getElementById('reg-email').value.trim();
-  const pw = document.getElementById('reg-pass').value;
-
-  if (!u || !em || !pw) { window.toast('Tüm alanları doldurun', 'error'); return; }
-  if (pw.length < 6)    { window.toast('Şifre en az 6 karakter olmalı', 'error'); return; }
-  if (u.length < 3)     { window.toast('Kullanıcı adı en az 3 karakter', 'error'); return; }
-
-  const btn = e.target.querySelector('button[type=submit]');
-  btn.disabled = true;
-  btn.textContent = 'Kayıt olunuyor...';
-
+  var auth = window.fbAuth || window.auth;
+  if (!window._fbAuthLib || !auth) { toast('Sunucuya baglanamıyor', 'error'); return; }
+  var u  = document.getElementById('reg-user').value.trim();
+  var em = document.getElementById('reg-email').value.trim();
+  var pw = document.getElementById('reg-pass').value;
+  if (!u || !em || !pw) { toast('Tum alanlari doldurun', 'error'); return; }
+  if (u.length < 3)     { toast('Kullanici adi en az 3 karakter', 'error'); return; }
+  if (pw.length < 6)    { toast('Sifre en az 6 karakter', 'error'); return; }
+  var btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true; btn.textContent = 'Kayit olunuyor...';
   try {
-    const cred = await window._fbAuthLib.createUserWithEmailAndPassword(window.fbAuth, em, pw);
+    var cred = await window._fbAuthLib.createUserWithEmailAndPassword(auth, em, pw);
     window.fbUser = cred.user;
-    window.state.user = { name: u, email: em, isNew: true, uid: cred.user.uid };
-    window.showLS('Hesap oluşturuluyor...');
-    await window.saveFsState();
-    window.hideLS();
-    window.showMain(true);
+    state.user = { name: u, email: em, isNew: true, uid: cred.user.uid };
+    if (typeof showLS === 'function') showLS('Hesap olusturuluyor...');
+    if (typeof saveFsState === 'function') await saveFsState();
+    if (typeof hideLS === 'function') hideLS();
+    if (typeof showMain === 'function') showMain(true);
   } catch (err) {
-    let msg = 'Kayıt başarısız';
-    if (err.code === 'auth/email-already-in-use') msg = 'Bu e-posta zaten kullanımda';
-    if (err.code === 'auth/invalid-email')        msg = 'Geçersiz e-posta adresi';
-    if (err.code === 'auth/weak-password')        msg = 'Şifre çok zayıf';
-    if (err.code === 'auth/network-request-failed') { window.showNoNet(); return; }
-    window.toast(msg, 'error');
-    btn.disabled = false;
-    btn.textContent = 'Hesap Oluştur';
+    console.error('Register:', err.code);
+    var msg = 'Kayit basarisiz';
+    if (err.code === 'auth/email-already-in-use') msg = 'Bu e-posta kullanımda';
+    if (err.code === 'auth/invalid-email')         msg = 'Gecersiz e-posta';
+    if (err.code === 'auth/weak-password')         msg = 'Sifre cok zayif';
+    if (err.code === 'auth/network-request-failed') { if(typeof showNoNet==='function')showNoNet(); return; }
+    toast(msg, 'error');
+    btn.disabled = false; btn.textContent = 'Hesap Olustur';
   }
 }
 window.doRegister = doRegister;
 
-/* ---------- ŞİFRE SIFIRLA ---------- */
 async function doForgot(e) {
   e.preventDefault();
-  if (!window._fbAuthLib) { window.toast('İnternet bağlantısı yok', 'error'); return; }
-  const em = document.getElementById('forgot-email').value.trim();
-  if (!em) { window.toast('E-posta adresinizi girin', 'error'); return; }
-
+  var auth = window.fbAuth || window.auth;
+  if (!window._fbAuthLib || !auth) { toast('Internet yok', 'error'); return; }
+  var em = document.getElementById('forgot-email').value.trim();
+  if (!em) { toast('E-posta girin', 'error'); return; }
   try {
-    await window._fbAuthLib.sendPasswordResetEmail(window.fbAuth, em);
-    window.toast('Sıfırlama e-postası gönderildi 📧', 'success');
+    await window._fbAuthLib.sendPasswordResetEmail(auth, em);
+    toast('Sifirlama e-postasi gonderildi! inbox kontrol et', 'success');
     showScreen('login');
   } catch (err) {
-    window.toast('E-posta gönderilemedi', 'error');
+    toast('Gonderilemedi — adresi kontrol et', 'error');
   }
 }
 window.doForgot = doForgot;
 
-/* ---------- DESTAN ---------- */
 function playDestan() {
-  const lines = [
-    'İki kardeş, bir hayaldi bu oyun...',
-    'Serkan ile Resul, geceyi gündüze kattı.',
-    'Her satır kod bir umuttu, her bug bir ders.',
-    '81 ile açılan kapı, sizin için örüldü.'
-  ];
-  let i = 0;
-  const box = document.querySelector('.destan-text');
+  var lines = ['"Iki kardes, bir hayaldi bu oyun...','Serkan ile Resul, geceyi gundüze kattı.','Her satir kod bir umuttu, her bug bir ders.','81 ile acilan kapi, sizin icin örüldü."'];
+  var box = document.querySelector('.destan-text');
   if (!box) return;
-  const orig = box.innerHTML;
-  box.textContent = '';
-  const iv = setInterval(() => {
+  var orig = box.innerHTML; box.textContent = ''; var i = 0;
+  var iv = setInterval(function() {
     if (i < lines.length) { box.textContent += (i ? '\n' : '') + lines[i++]; }
-    else { clearInterval(iv); setTimeout(() => { box.innerHTML = orig; }, 4000); }
+    else { clearInterval(iv); setTimeout(function() { box.innerHTML = orig; }, 4000); }
   }, 900);
 }
 window.playDestan = playDestan;
