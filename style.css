@@ -1,93 +1,39 @@
 :root {
-  --bg: #0f0c29;
-  --primary: #e94560;
-  --secondary: #16213e;
-  --gold: #f9ca24;
-  --text: #f0f0f0;
-  --grad: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  --bg: #1a0030; --primary: #ff5e7e; --secondary: #32174d; --gold: #ffd700;
+  --text: #fefefe; --grad: linear-gradient(145deg, #1a0030, #2d0a4e);
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  background: var(--grad);
-  font-family: 'Poppins', sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  color: var(--text);
-  overflow-x: hidden;
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background: var(--grad); font-family:'Poppins',sans-serif; min-height:100vh;
+  display:flex; justify-content:center; align-items:center; color:var(--text);
 }
-.screen {
-  display: none;
-  width: 95%;
-  max-width: 480px;
-  background: rgba(22,33,62,0.95);
-  backdrop-filter: blur(15px);
-  border-radius: 24px;
-  padding: 30px;
-  box-shadow: 0 30px 50px rgba(0,0,0,0.5);
-  text-align: center;
-  position: absolute;
+.screen{
+  display:none; width:95%; max-width:480px; background: rgba(30,10,60,0.95);
+  backdrop-filter:blur(20px); border-radius:28px; padding:25px;
+  box-shadow:0 30px 60px rgba(0,0,0,0.6); text-align:center; position:absolute;
 }
-.screen.active {
-  display: block;
-  animation: fadeIn 0.4s ease;
+.screen.active{display:block; animation:fadeIn 0.4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:scale(0.95);}to{opacity:1;transform:scale(1);}}
+button{
+  background:var(--primary); border:none; padding:14px 28px; margin:8px;
+  border-radius:40px; font-weight:bold; color:#fff; font-size:16px; cursor:pointer;
+  box-shadow:0 8px 20px rgba(255,94,126,0.5); transition:all 0.2s;
 }
-@keyframes fadeIn { from { opacity:0; transform: scale(0.95); } to { opacity:1; transform: scale(1); } }
-button {
-  background: var(--primary);
-  border: none;
-  padding: 14px 28px;
-  margin: 10px;
-  border-radius: 40px;
-  font-weight: bold;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 6px 18px rgba(233,69,96,0.5);
+button:hover{background:#ff7b9e;transform:translateY(-3px);box-shadow:0 14px 28px rgba(255,94,126,0.8);}
+input{
+  width:100%; padding:14px; margin:8px 0; border-radius:30px; border:1px solid #6b4c8a;
+  background:#2b1750; color:#fff; font-size:16px; outline:none;
 }
-button:hover {
-  background: #ff6b81;
-  transform: translateY(-3px);
-  box-shadow: 0 12px 24px rgba(233,69,96,0.8);
+#gameArea{
+  background:#2b1750; border-radius:20px; height:260px; display:flex;
+  align-items:center; justify-content:center; position:relative; margin:20px 0;
 }
-input {
-  width: 100%;
-  padding: 14px;
-  margin: 8px 0;
-  border-radius: 30px;
-  border: 1px solid #3a3a5c;
-  background: #1e2746;
-  color: white;
-  font-size: 16px;
-  outline: none;
+.cake{
+  width:130px; height:130px; border-radius:50%; background:radial-gradient(circle,#ff9a9e 0%,#fad0c4 100%);
+  cursor:pointer; box-shadow:0 0 40px var(--gold);
 }
-.form-box h2 { margin-bottom: 20px; font-size: 28px; color: var(--gold); }
-#gameArea {
-  background: #1e2746;
-  border-radius: 30px;
-  height: 260px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  margin: 20px 0;
-  overflow: hidden;
-  border: 2px solid var(--gold);
-}
-#comboPop {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 28px;
-  font-weight: bold;
-  color: var(--gold);
-  text-shadow: 0 0 15px gold;
-  opacity: 0;
-  transition: all 0.2s;
-  pointer-events: none;
-}
-.score-board { display: flex; justify-content: space-between; font-weight: bold; }
-.cake { transition: transform 0.1s ease; }
+.pop{ position:absolute; top:30%; left:50%; transform:translate(-50%,-50%); font-size:32px;
+  font-weight:bold; color:var(--gold); text-shadow:0 0 20px gold; animation:popAnim 0.3s ease; }
+@keyframes popAnim{0%{opacity:0;transform:translate(-50%,0);}100%{opacity:1;transform:translate(-50%,-40px);}}
+.offer-box{ background:#2b1750; border-radius:16px; padding:12px; margin:8px; display:inline-block; }
+.gem{color:#ff69b4;} .coin{color:#ffd700;}
