@@ -1,508 +1,956 @@
-// ============================================================
-// CakeSmash - Ekonomi & Oyun Sistemi Modülü
-// Geliştirici: Serkan Karakaş
-// İçerik: altın, can, enerji, çark, günlük ödül, mağaza,
-// envanter (güçlendiriciler), seviye/XP, başarımlar, görevler,
-// liderlik tablosu, posta kutusu, mini puzzle skoru.
-// ============================================================
+/* ==========================================================================
+   ekonomi.js — Ekonomi Çekirdeği
+   - Dükkanlar (Reyon sistemi: ürün YOKKEN satış YOK)
+   - Bahçe / Çiftlik / Fabrika / Maden (üretim hatları)
+   - Lojistik (depo)
+   - İhracat (gerçek talep listesi, oyuncu üretiminden satış)
+   - İhale (gerçek zamanlı geri sayım, en yüksek teklif kazanır)
+   - Kripto (rastgele dalgalanma, gerçek alım-satım)
+   - Marka (oyuncu kurar, üyeler katılır)
+   - Banka (vadeli, kredi, işletme gideri, maaş)
+   - Pazar (kendi reyonlarından il halkına otomatik satış)
+   - Mağaza (elmas paketleri, robot)
+   ========================================================================== */
 
-import { FB } from "./firebase-init.js";
-import { Session } from "./giriş.js";
+/* ============== ÜRÜN VERİTABANI ============== */
+const URUNLER = {
+  // Temel Gıda
+  bugday_unu:      { name:"Buğday Unu",     emo:"🌾", base:4.50, cat:"temel", unit:"Kilo", lv:1 },
+  ayicicek_yagi:   { name:"Ayçiçek Yağı",   emo:"🌻", base:8.50, cat:"temel", unit:"Litre", lv:1 },
+  zeytinyagi:      { name:"Zeytinyağı",     emo:"🫒", base:12.0, cat:"temel", unit:"Litre", lv:2 },
+  misir_unu:       { name:"Mısır Unu",      emo:"🌽", base:5.20, cat:"temel", unit:"Kilo", lv:1 },
+  siyah_cay:       { name:"Siyah Çay",      emo:"🍵", base:14.0, cat:"temel", unit:"Kilo", lv:2 },
+  yesil_cay:       { name:"Yeşil Çay",      emo:"🍃", base:18.0, cat:"temel", unit:"Kilo", lv:3 },
+  seker:           { name:"Şeker",          emo:"🍬", base:6.80, cat:"temel", unit:"Kilo", lv:1 },
+  findik_yagi:     { name:"Fındık Yağı",    emo:"🥜", base:22.0, cat:"temel", unit:"Litre", lv:4 },
 
-// ---------- Sabitler ----------
-export const CONFIG = {
-  LIFE_REGEN_MS: 30 * 60 * 1000,    // 30 dakikada 1 can
-  ENERGY_REGEN_MS: 5 * 60 * 1000,   // 5 dakikada 1 enerji
-  XP_PER_LEVEL: 250,                // Her oyuncu seviyesi
-  WHEEL_COOLDOWN_MS: 24 * 60 * 60 * 1000, // Çarkı 24 saatte bir
-  MAX_DAILY_STREAK: 30,
-  WORLDS: [
-    { id: 1, name: "Tatlı Krallık", levels: 30, color: "#ff5fa2" },
-    { id: 2, name: "Çikolata Ormanı", levels: 30, color: "#7a4a2a" },
-    { id: 3, name: "Şekerli Vadi", levels: 30, color: "#ffb627" },
-    { id: 4, name: "Karamel Kalesi", levels: 30, color: "#c97a3a" },
-    { id: 5, name: "Donut Adası", levels: 30, color: "#f471b5" },
-    { id: 6, name: "Pasta Diyarı", levels: 30, color: "#a78bfa" }
-  ],
-  POWERUPS: {
-    hammer:     { name: "Çekiç",          desc: "Tek bir kareyi parçala.",       price: 250 },
-    bomb:       { name: "Bomba",          desc: "3x3 alanı patlat.",             price: 450 },
-    rainbow:    { name: "Gökkuşağı",      desc: "Aynı renkleri toplar.",         price: 600 },
-    shuffle:    { name: "Karıştır",       desc: "Tahtayı yeniden karıştır.",     price: 200 },
-    extraMoves: { name: "+5 Hamle",       desc: "Hamle hakkı ekler.",            price: 300 },
-    timeFreeze: { name: "Zaman Donut",    desc: "Süreyi 10 sn dondurur.",        price: 350 },
-    magnet:     { name: "Mıknatıs",       desc: "Aynı renkleri çeker.",          price: 400 },
-    doubleScore:{ name: "Çift Skor",      desc: "Tur boyunca 2x puan.",          price: 500 }
-  },
-  WHEEL_REWARDS: [
-    { type: "gold",   amount: 50,  weight: 30, label: "50 Altın" },
-    { type: "gold",   amount: 200, weight: 12, label: "200 Altın" },
-    { type: "gold",   amount: 1000,weight: 2,  label: "1000 Altın" },
-    { type: "lives",  amount: 5,   weight: 18, label: "5 Can" },
-    { type: "gems",   amount: 5,   weight: 8,  label: "5 Elmas" },
-    { type: "gems",   amount: 25,  weight: 3,  label: "25 Elmas" },
-    { type: "powerup",item: "hammer",  amount: 1, weight: 10, label: "Çekiç" },
-    { type: "powerup",item: "bomb",    amount: 1, weight: 7,  label: "Bomba" },
-    { type: "powerup",item: "rainbow", amount: 1, weight: 5,  label: "Gökkuşağı" },
-    { type: "powerup",item: "shuffle", amount: 1, weight: 5,  label: "Karıştır" }
-  ],
-  DAILY_REWARDS: [
-    { day: 1,  type: "gold",  amount: 100 },
-    { day: 2,  type: "gold",  amount: 150 },
-    { day: 3,  type: "lives", amount: 3 },
-    { day: 4,  type: "gold",  amount: 250 },
-    { day: 5,  type: "gems",  amount: 5 },
-    { day: 6,  type: "powerup", item: "bomb", amount: 1 },
-    { day: 7,  type: "gold",  amount: 1000 },
-    { day: 8,  type: "gold",  amount: 200 },
-    { day: 9,  type: "lives", amount: 5 },
-    { day: 10, type: "gems",  amount: 10 },
-    { day: 11, type: "gold",  amount: 300 },
-    { day: 12, type: "powerup", item: "rainbow", amount: 1 },
-    { day: 13, type: "gold",  amount: 400 },
-    { day: 14, type: "gems",  amount: 25 },
-    { day: 15, type: "gold",  amount: 1500 },
-    { day: 16, type: "powerup", item: "magnet", amount: 1 },
-    { day: 17, type: "gold",  amount: 350 },
-    { day: 18, type: "lives", amount: 10 },
-    { day: 19, type: "gems",  amount: 15 },
-    { day: 20, type: "gold",  amount: 800 },
-    { day: 21, type: "powerup", item: "doubleScore", amount: 1 },
-    { day: 22, type: "gold",  amount: 500 },
-    { day: 23, type: "gems",  amount: 20 },
-    { day: 24, type: "powerup", item: "extraMoves", amount: 2 },
-    { day: 25, type: "gold",  amount: 1200 },
-    { day: 26, type: "lives", amount: 8 },
-    { day: 27, type: "gems",  amount: 30 },
-    { day: 28, type: "powerup", item: "timeFreeze", amount: 1 },
-    { day: 29, type: "gold",  amount: 2000 },
-    { day: 30, type: "gems",  amount: 100 }
-  ],
-  SHOP_PACKS: [
-    { id: "gold_10",    label: "10 Altın",   price_try: 99.99,  reward: { gold: 10 } },
-    { id: "gold_50",    label: "50 Altın",   price_try: 349.99, reward: { gold: 50 } },
-    { id: "gold_100",   label: "100 Altın",  price_try: 699.99, reward: { gold: 100 } },
-    { id: "gold_250",   label: "250 Altın",  price_try: 1299.99,reward: { gold: 250 } },
-    { id: "gold_500",   label: "500 Altın",  price_try: 2499.99,reward: { gold: 500 } },
-    { id: "gold_1000",  label: "1000 Altın", price_try: 4499.99,reward: { gold: 1000 } },
-    { id: "weekly",     label: "Haftalık Teklif", price_try: 229.99,
-      reward: { gold: 50, lives: 5, powerups: { rainbow: 1 } } },
-    { id: "starter",    label: "Başlangıç Paketi", price_try: 449.99,
-      reward: { gold: 50, gems: 10, powerups: { hammer: 2 } } },
-    { id: "mega",       label: "Mega Paket",       price_try: 899.99,
-      reward: { gold: 100, gems: 25, lives: 10, powerups: { bomb: 2, rainbow: 1 } } }
-  ],
-  ACHIEVEMENTS: [
-    { id: "first_smash",   name: "İlk Vuruş",       desc: "İlk bölümü tamamla.",          gold: 50 },
-    { id: "ten_levels",    name: "Acemi Çırak",     desc: "10 bölüm tamamla.",            gold: 200 },
-    { id: "fifty_levels",  name: "Tatlıcı",         desc: "50 bölüm tamamla.",            gold: 500 },
-    { id: "world_clear_1", name: "Krallık Fatihi",  desc: "1. dünyayı bitir.",            gold: 1000 },
-    { id: "combo_master",  name: "Kombo Ustası",    desc: "8'li kombo yap.",              gold: 300 },
-    { id: "smash_1000",    name: "Pasta Avcısı",    desc: "1000 pasta parçala.",          gold: 750 },
-    { id: "daily_7",       name: "Sadık Oyuncu",    desc: "7 gün üst üste giriş.",        gold: 400 },
-    { id: "wheel_lucky",   name: "Şanslı",          desc: "Çarkta 1000 altın kazan.",     gold: 0 },
-    { id: "vip_member",    name: "VIP Tatlı",       desc: "VIP üye ol.",                  gold: 0 }
-  ],
-  MISSIONS: [
-    { id: "play_3",      desc: "3 bölüm oyna",                target: 3,   reward: { gold: 100 } },
-    { id: "win_5",       desc: "5 bölüm kazan",               target: 5,   reward: { gold: 200 } },
-    { id: "smash_50",    desc: "50 pasta parçala",            target: 50,  reward: { gold: 150 } },
-    { id: "combo_5",     desc: "5'li kombo yap",              target: 1,   reward: { gold: 120 } },
-    { id: "use_powerup", desc: "Bir güçlendirici kullan",     target: 1,   reward: { gold: 80 } }
-  ]
+  // Kahvaltılık & Süt
+  tavuk_yumurtasi: { name:"Tavuk Yumurtası",emo:"🥚", base:1.20, cat:"kahvalti", unit:"Adet", lv:1 },
+  hindi_yumurtasi: { name:"Hindi Yumurtası",emo:"🥚", base:2.40, cat:"kahvalti", unit:"Adet", lv:5 },
+  kaz_yumurtasi:   { name:"Kaz Yumurtası",  emo:"🥚", base:3.80, cat:"kahvalti", unit:"Adet", lv:6 },
+  inek_sutu:       { name:"İnek Sütü",      emo:"🥛", base:5.50, cat:"kahvalti", unit:"Litre", lv:1 },
+  keci_sutu:       { name:"Keçi Sütü",      emo:"🥛", base:9.20, cat:"kahvalti", unit:"Litre", lv:3 },
+  beyaz_peynir:    { name:"Beyaz Peynir",   emo:"🧀", base:32.0, cat:"kahvalti", unit:"Kilo", lv:2 },
+  kasar_peyniri:   { name:"Kaşar Peyniri",  emo:"🧀", base:48.0, cat:"kahvalti", unit:"Kilo", lv:3 },
+  zeytin:          { name:"Zeytin",         emo:"🫒", base:18.5, cat:"kahvalti", unit:"Kilo", lv:2 },
+  petek_bal:       { name:"Petek Bal",      emo:"🍯", base:85.0, cat:"kahvalti", unit:"Kilo", lv:5 },
+  suzme_bal:       { name:"Süzme Bal",      emo:"🍯", base:65.0, cat:"kahvalti", unit:"Kilo", lv:4 },
+  polen:           { name:"Polen",          emo:"🌼", base:32.0, cat:"kahvalti", unit:"Kilo", lv:5 },
+
+  // Meyve & Sebze
+  domates:         { name:"Domates",        emo:"🍅", base:8.50, cat:"meyve", unit:"Kilo", lv:1 },
+  patates:         { name:"Patates",        emo:"🥔", base:6.00, cat:"meyve", unit:"Kilo", lv:1 },
+  sogan:           { name:"Soğan",          emo:"🧅", base:5.50, cat:"meyve", unit:"Kilo", lv:1 },
+  elma:            { name:"Elma",           emo:"🍎", base:9.00, cat:"meyve", unit:"Kilo", lv:1 },
+  uzum:            { name:"Üzüm",           emo:"🍇", base:14.0, cat:"meyve", unit:"Kilo", lv:2 },
+  kiraz:           { name:"Kiraz",          emo:"🍒", base:24.0, cat:"meyve", unit:"Kilo", lv:3 },
+  kayisi:          { name:"Kayısı",         emo:"🍑", base:16.0, cat:"meyve", unit:"Kilo", lv:2 },
+  findik:          { name:"Fındık",         emo:"🥜", base:55.0, cat:"meyve", unit:"Kilo", lv:4 },
+
+  // Et Ürünleri
+  tavuk_eti:       { name:"Tavuk Eti",      emo:"🍗", base:48.0, cat:"et", unit:"Kilo", lv:3 },
+  dana_eti:        { name:"Dana Eti",       emo:"🥩", base:185.0,cat:"et", unit:"Kilo", lv:5 },
+  kuzu_eti:        { name:"Kuzu Eti",       emo:"🥩", base:220.0,cat:"et", unit:"Kilo", lv:6 },
+
+  // Madenler
+  altin:           { name:"Altın",          emo:"🥇", base:2400.0,cat:"maden", unit:"Gram", lv:30 },
+  gumus:           { name:"Gümüş",          emo:"🥈", base:32.0, cat:"maden", unit:"Gram", lv:30 },
+  bakir:           { name:"Bakır",          emo:"🟫", base:2.20, cat:"maden", unit:"Kilo", lv:30 },
+  demir:           { name:"Demir",          emo:"⚙️", base:1.80, cat:"maden", unit:"Kilo", lv:30 },
+  kromit:          { name:"Krom",           emo:"⛏️", base:4.50, cat:"maden", unit:"Kilo", lv:30 },
+
+  // Fabrika ürünleri
+  ekmek:           { name:"Ekmek",          emo:"🍞", base:5.00, cat:"firin", unit:"Adet", lv:2 },
+  pasta:           { name:"Pasta",          emo:"🎂", base:120.0,cat:"firin", unit:"Adet", lv:4 },
+  dondurma:        { name:"Dondurma",       emo:"🍦", base:18.0, cat:"firin", unit:"Adet", lv:3 },
+  kimyasal_cozucu: { name:"Kimyasal Çözücü",emo:"⚗️", base:15.0, cat:"sanayi",unit:"Litre", lv:10 },
+  cimento:         { name:"Çimento",        emo:"🧱", base:3.50, cat:"sanayi",unit:"Kilo", lv:8 },
+  yun:             { name:"Yün",            emo:"🧶", base:28.0, cat:"sanayi",unit:"Kilo", lv:5 },
+  keten_kumas:     { name:"Keten Kumaş",    emo:"🧵", base:65.0, cat:"sanayi",unit:"m²", lv:6 },
+  eldiven:         { name:"Çift Eldiven",   emo:"🧤", base:42.0, cat:"sanayi",unit:"Çift", lv:5 },
+};
+window.URUNLER = URUNLER;
+
+const URUN_KATEGORI = {
+  temel: "Temel Gıda",
+  kahvalti: "Kahvaltılık ve Süt",
+  meyve: "Meyve ve Sebze",
+  et: "Et Ürünleri",
+  firin: "Fırın",
+  sanayi: "Sanayi",
+  maden: "Madenler"
 };
 
-// ---------- İç yardımcılar ----------
-function requireUser() {
-  if (!Session.user) throw new Error("Önce giriş yapmalısın.");
-  return Session.user.uid;
-}
-function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+/* ============== KRİPTO LİSTESİ ============== */
+const KRIPTO = [
+  { sym:"VGN", name:"Vortigon",   color:"#0ea5e9", base:54000, supply:350000000, vol:0.04 },
+  { sym:"NNX", name:"Neonix",     color:"#eab308", base:430000, supply:120000000, vol:0.05 },
+  { sym:"STC", name:"Solstice",   color:"#fb923c", base:75,    supply:9000000000, vol:0.06 },
+  { sym:"HYN", name:"Hyperion",   color:"#7c3aed", base:0.0055,supply:8e11, vol:0.08 },
+  { sym:"CLM", name:"Celestium",  color:"#22c55e", base:61000, supply:80000000, vol:0.04 },
+  { sym:"AST", name:"Astrium",    color:"#ef4444", base:617,   supply:1500000000, vol:0.05 },
+  { sym:"GLX", name:"Galactix",   color:"#dc2626", base:18.9,  supply:9e9, vol:0.05 },
+  { sym:"ZTH", name:"Zenithium",  color:"#6366f1", base:28.3,  supply:3e9, vol:0.04 },
+  { sym:"XEN", name:"Xenon",      color:"#f97316", base:68500000, supply:21000, vol:0.03 },
+  { sym:"ORN", name:"Orionium",   color:"#3b82f6", base:3350000, supply:500000, vol:0.04 },
+  { sym:"ZPH", name:"Zephyria",   color:"#06b6d4", base:14000, supply:1e8, vol:0.05 },
+  { sym:"MTX", name:"Meteorix",   color:"#f43f5e", base:1.47,  supply:5e10, vol:0.07 },
+  { sym:"LMX", name:"Luminex",    color:"#e11d48", base:94000, supply:8e7, vol:0.04 },
+  { sym:"ECP", name:"Eclipsium",  color:"#1e40af", base:3.64,  supply:2e10, vol:0.06 },
+  { sym:"ASL", name:"Astrolis",   color:"#10b981", base:0.137, supply:5e11, vol:0.07 },
+  { sym:"CMX", name:"Cometrix",   color:"#ec4899", base:1.05,  supply:4e10, vol:0.07 },
+  { sym:"QSR", name:"Quasarium",  color:"#a855f7", base:202,   supply:6e8, vol:0.05 },
+  { sym:"SLR", name:"Solara",     color:"#f59e0b", base:467000,supply:1e7, vol:0.04 },
+  { sym:"PAR", name:"Partion",    color:"#8b5cf6", base:351000,supply:1.2e7, vol:0.04 },
+  { sym:"NBL", name:"Nebulon",    color:"#14b8a6", base:1677,  supply:8e8, vol:0.06 },
+  { sym:"QNT", name:"Quantix",    color:"#0891b2", base:42.5,  supply:2e9, vol:0.05 },
+  { sym:"VRX", name:"Vortexa",    color:"#7e22ce", base:8800,  supply:5e7, vol:0.05 },
+  { sym:"OMG", name:"Omegium",    color:"#be123c", base:0.42,  supply:1e11, vol:0.08 },
+  { sym:"PLX", name:"Pulsex",     color:"#0d9488", base:165,   supply:9e8, vol:0.05 },
+  { sym:"NOV", name:"Novarium",   color:"#1d4ed8", base:1240000, supply:3e6, vol:0.04 },
+];
+window.KRIPTO = KRIPTO;
 
-async function patch(path, obj) {
-  const uid = requireUser();
-  await FB.update(FB.ref(FB.db, FB.PATHS[path](uid)), obj);
-}
-async function readPath(path) {
-  const uid = requireUser();
-  const snap = await FB.get(FB.ref(FB.db, FB.PATHS[path](uid)));
-  return snap.val() || {};
-}
+/* ============== İHRACAT ŞABLONLARI ============== */
+const IHRACAT_SIRKETLER = [
+  { name:"Siam Group Co., Ltd.",      country:"Tayland",   flag:"🇹🇭" },
+  { name:"Volga Holdings OOO",        country:"Rusya",     flag:"🇷🇺" },
+  { name:"Azteca Group SA de CV",     country:"Meksika",   flag:"🇲🇽" },
+  { name:"Royal Union Ltd.",          country:"İngiltere", flag:"🇬🇧" },
+  { name:"Alpine Partners AG",        country:"İsviçre",   flag:"🇨🇭" },
+  { name:"Lumière Groupe SAS",        country:"Fransa",    flag:"🇫🇷" },
+  { name:"Kaiser Handels GmbH",       country:"Almanya",   flag:"🇩🇪" },
+  { name:"Sakura Trading K.K.",       country:"Japonya",   flag:"🇯🇵" },
+  { name:"Nile Commerce Co.",         country:"Mısır",     flag:"🇪🇬" },
+  { name:"Pampas SRL",                country:"Arjantin",  flag:"🇦🇷" },
+  { name:"Maple Leaf Inc.",           country:"Kanada",    flag:"🇨🇦" },
+  { name:"Liberty Trade LLC",         country:"ABD",       flag:"🇺🇸" },
+  { name:"Outback Pty Ltd.",          country:"Avustralya",flag:"🇦🇺" },
+  { name:"Iberia Comercial SA",       country:"İspanya",   flag:"🇪🇸" },
+  { name:"Hellas Emporiki AE",        country:"Yunanistan",flag:"🇬🇷" },
+];
 
-// ---------- Can / Enerji yenileme ----------
-export async function regenerateLivesAndEnergy() {
-  if (!Session.data) return;
-  const e = { ...(Session.data.economy || {}) };
-  const now = Date.now();
-  const maxL = e.maxLives || 5;
-  const maxE = e.maxEnergy || 30;
-  let changed = false;
+/* ============== INIT ============== */
+function initEkonomi(){
+  // Kripto fiyat döngüsü (sadece bir kullanıcı çalıştırsın diye admin değil ama hep çalışır)
+  initCryptoEngine();
+  // İhracat talep listesi yenileme
+  initExportEngine();
+  // İhale döngüsü
+  initAuctionEngine();
+  // Banka periyodik ödemeler
+  initBankEngine();
+  // Pazar otomatik satışları
+  initMarketSalesEngine();
+}
+window.initEkonomi = initEkonomi;
 
-  if (e.lives < maxL) {
-    const last = e.lastLifeAt || now;
-    const passed = Math.floor((now - last) / CONFIG.LIFE_REGEN_MS);
-    if (passed > 0) {
-      e.lives = clamp((e.lives || 0) + passed, 0, maxL);
-      e.lastLifeAt = last + passed * CONFIG.LIFE_REGEN_MS;
-      changed = true;
-    }
-  } else {
-    e.lastLifeAt = now;
-    changed = true;
+/* ============================================================
+   KRİPTO MOTORU — fiyatları her 30 saniyede bir günceller
+   ============================================================ */
+async function initCryptoEngine(){
+  // İlk kurulum
+  const exists = await dbGet('crypto/prices');
+  if (!exists){
+    const init = {};
+    KRIPTO.forEach(k => {
+      init[k.sym] = { current: k.base, prev: k.base, ts: now() };
+    });
+    await dbSet('crypto/prices', init);
   }
 
-  if (e.energy < maxE) {
-    const last = e.lastEnergyAt || now;
-    const passed = Math.floor((now - last) / CONFIG.ENERGY_REGEN_MS);
-    if (passed > 0) {
-      e.energy = clamp((e.energy || 0) + passed, 0, maxE);
-      e.lastEnergyAt = last + passed * CONFIG.ENERGY_REGEN_MS;
-      changed = true;
-    }
-  } else {
-    e.lastEnergyAt = now;
-    changed = true;
-  }
+  // Fiyatları dinle
+  if (GZ.pricesUnsub) GZ.pricesUnsub();
+  const ref = db.ref('crypto/prices');
+  ref.on('value', s => { GZ.prices = s.val() || {}; if (GZ.currentTab === 'kripto') renderKripto(); });
+  GZ.pricesUnsub = () => ref.off();
 
-  if (changed) await patch("economy", e);
-  return e;
+  // Sadece bir tarayıcının fiyat tick'ini yapması için lock kullanırız
+  setInterval(tickCrypto, 30000);
+  setTimeout(tickCrypto, 2000);
 }
 
-// Saniye cinsinden bir sonraki can geri sayımı
-export function nextLifeCountdownMs() {
-  const e = Session.data?.economy; if (!e) return 0;
-  const maxL = e.maxLives || 5;
-  if ((e.lives || 0) >= maxL) return 0;
-  const last = e.lastLifeAt || Date.now();
-  const delta = (last + CONFIG.LIFE_REGEN_MS) - Date.now();
-  return Math.max(0, delta);
-}
-
-// ---------- Para işlemleri ----------
-export async function addGold(amount, reason = "") {
-  const e = Session.data?.economy || {};
-  const next = (e.gold || 0) + Math.max(0, Math.floor(amount));
-  await patch("economy", { gold: next });
-  await logEvent("gold_added", { amount, reason });
-}
-export async function spendGold(amount, reason = "") {
-  const e = Session.data?.economy || {};
-  if ((e.gold || 0) < amount) throw new Error("Altının yetmiyor.");
-  await patch("economy", { gold: (e.gold || 0) - Math.floor(amount) });
-  await logEvent("gold_spent", { amount, reason });
-}
-export async function addGems(amount) {
-  const e = Session.data?.economy || {};
-  await patch("economy", { gems: (e.gems || 0) + Math.max(0, Math.floor(amount)) });
-}
-export async function addLives(amount) {
-  const e = Session.data?.economy || {};
-  const maxL = e.maxLives || 5;
-  await patch("economy", { lives: clamp((e.lives || 0) + amount, 0, maxL) });
-}
-export async function consumeLife() {
-  const e = Session.data?.economy || {};
-  if ((e.lives || 0) <= 0) throw new Error("Canın bitti! Bekle ya da satın al.");
-  await patch("economy", { lives: e.lives - 1, lastLifeAt: Date.now() });
-}
-
-// ---------- Envanter (güçlendiriciler) ----------
-export async function addPowerup(item, amount = 1) {
-  if (!CONFIG.POWERUPS[item]) throw new Error("Bilinmeyen güçlendirici: " + item);
-  const inv = Session.data?.inventory || {};
-  await patch("inventory", { [item]: (inv[item] || 0) + amount });
-}
-export async function buyPowerup(item) {
-  const def = CONFIG.POWERUPS[item];
-  if (!def) throw new Error("Geçersiz ürün.");
-  await spendGold(def.price, "buy_" + item);
-  await addPowerup(item, 1);
-}
-export async function usePowerup(item) {
-  const inv = Session.data?.inventory || {};
-  if ((inv[item] || 0) <= 0) throw new Error("Bu güçlendiriciden yok.");
-  await patch("inventory", { [item]: inv[item] - 1 });
-  await logEvent("powerup_used", { item });
-}
-
-// ---------- XP & Seviye ----------
-export async function addXP(amount) {
-  const p = Session.data?.profile || {};
-  let xp = (p.xp || 0) + Math.max(0, Math.floor(amount));
-  let level = p.level || 1;
-  while (xp >= CONFIG.XP_PER_LEVEL) {
-    xp -= CONFIG.XP_PER_LEVEL;
-    level += 1;
-    await addGold(50 + level * 10, "level_up");
-  }
-  await patch("profile", { xp, level });
-}
-
-// ---------- İlerleme (Bölüm tamamlama) ----------
-export async function completeLevel({ world, level, score, stars, smashed, combo }) {
-  const prog = Session.data?.progress || { world: 1, level: 1, stars: 0, totalScore: 0 };
-  const updates = {
-    totalScore: (prog.totalScore || 0) + (score || 0),
-    cakesSmashed: (prog.cakesSmashed || 0) + (smashed || 0),
-    bestCombo: Math.max(prog.bestCombo || 0, combo || 0)
-  };
-  // Bir sonraki bölüme aç
-  const sameOrNext = (world > prog.world) || (world === prog.world && level >= prog.level);
-  if (sameOrNext) {
-    const w = CONFIG.WORLDS.find(w => w.id === world);
-    const lastLevelOfWorld = w ? w.levels : 30;
-    if (level >= lastLevelOfWorld) {
-      updates.world = world + 1; updates.level = 1;
-    } else {
-      updates.world = world; updates.level = level + 1;
-    }
-  }
-  // Yıldızları topla (basit)
-  updates.stars = (prog.stars || 0) + Math.max(0, Math.min(3, stars || 0));
-  await patch("progress", updates);
-  await addXP(20 + (stars || 0) * 10);
-  // Görevler
-  await tickMission("win_5", 1);
-  await tickMission("smash_50", smashed || 0);
-  if ((combo || 0) >= 5) await tickMission("combo_5", 1);
-  // Başarımlar
-  await checkAchievements();
-}
-
-// ---------- Mini Pasta Smash mantığı (yardımcı saf fonksiyonlar) ----------
-// ui-manager.js bunu çağırır. Şebeke (grid) üzerinde aynı renkli komşuları
-// bulup parçalar. Bu modül DOM'a dokunmaz, sadece veri döndürür.
-export const Board = {
-  COLORS: ["#ff5fa2", "#ffb627", "#7c3aed", "#22d3ee", "#84cc16", "#f97316"],
-
-  newBoard(rows = 8, cols = 8) {
-    const grid = [];
-    for (let r = 0; r < rows; r++) {
-      const row = [];
-      for (let c = 0; c < cols; c++) row.push(this.randomColor());
-      grid.push(row);
-    }
-    return grid;
-  },
-  randomColor() {
-    return this.COLORS[Math.floor(Math.random() * this.COLORS.length)];
-  },
-  // Aynı renkli bağlı bileşeni bul
-  findGroup(grid, r, c) {
-    const target = grid[r]?.[c]; if (!target) return [];
-    const rows = grid.length, cols = grid[0].length;
-    const seen = Array.from({ length: rows }, () => Array(cols).fill(false));
-    const stack = [[r, c]]; const group = [];
-    while (stack.length) {
-      const [y, x] = stack.pop();
-      if (y < 0 || y >= rows || x < 0 || x >= cols) continue;
-      if (seen[y][x]) continue;
-      if (grid[y][x] !== target) continue;
-      seen[y][x] = true; group.push([y, x]);
-      stack.push([y+1,x],[y-1,x],[y,x+1],[y,x-1]);
-    }
-    return group;
-  },
-  // Bir grubu parçala, üstten yer çek, boşlukları yeniden doldur
-  smashGroup(grid, group) {
-    if (group.length < 2) return { grid, score: 0, smashed: 0 };
-    const cols = grid[0].length, rows = grid.length;
-    const score = Math.round(Math.pow(group.length, 1.6)) * 10;
-    const newGrid = grid.map(r => r.slice());
-    for (const [y, x] of group) newGrid[y][x] = null;
-    // Çek
-    for (let x = 0; x < cols; x++) {
-      const stack = [];
-      for (let y = rows - 1; y >= 0; y--) if (newGrid[y][x]) stack.push(newGrid[y][x]);
-      for (let y = rows - 1; y >= 0; y--) newGrid[y][x] = stack.shift() || this.randomColor();
-    }
-    return { grid: newGrid, score, smashed: group.length };
-  }
-};
-
-// ---------- Günlük Ödüller ----------
-export async function claimDailyReward() {
-  const eco = Session.data?.economy || {};
-  const daily = Session.data?.daily || { claimedDays: {} };
-  const now = Date.now();
-  const last = eco.lastDailyClaimAt || 0;
-  // 20 saatten kısa süre olduysa hala bekleme süresi var
-  if (now - last < 20 * 60 * 60 * 1000) {
-    throw new Error("Bir sonraki günlük ödül için bekle.");
-  }
-  // Streak hesabı: son hak ediş 48 saatten yeniyse devam, değilse 1'den başla
-  let streakDay = (now - last < 48 * 60 * 60 * 1000) ? Math.min(CONFIG.MAX_DAILY_STREAK, (eco.streakDay || 0) + 1) : 1;
-  const reward = CONFIG.DAILY_REWARDS[streakDay - 1] || CONFIG.DAILY_REWARDS[0];
-  await applyReward(reward);
-  await patch("economy", { lastDailyClaimAt: now, streakDay });
-  const claimed = { ...(daily.claimedDays || {}) }; claimed[streakDay] = now;
-  await patch("daily", { claimedDays: claimed });
-  return { day: streakDay, reward };
-}
-
-// ---------- Çark ----------
-export function pickWheelReward() {
-  const total = CONFIG.WHEEL_REWARDS.reduce((s, r) => s + r.weight, 0);
-  let n = Math.random() * total;
-  for (const r of CONFIG.WHEEL_REWARDS) { n -= r.weight; if (n <= 0) return r; }
-  return CONFIG.WHEEL_REWARDS[0];
-}
-export async function spinWheel() {
-  const w = Session.data?.wheel || { totalSpins: 0 };
-  const eco = Session.data?.economy || {};
-  const now = Date.now();
-  if ((eco.wheelSpinAt || 0) + CONFIG.WHEEL_COOLDOWN_MS > now) {
-    throw new Error("Çarkı çevirmek için bekle.");
-  }
-  const reward = pickWheelReward();
-  await applyReward(reward);
-  await patch("economy", { wheelSpinAt: now });
-  await patch("wheel", { totalSpins: (w.totalSpins || 0) + 1, lastReward: reward });
-  return reward;
-}
-
-// ---------- Mağaza ----------
-export async function buyShopPack(packId) {
-  const pack = CONFIG.SHOP_PACKS.find(p => p.id === packId);
-  if (!pack) throw new Error("Paket bulunamadı.");
-  // Bu örnekte gerçek ödeme yok; ödülü doğrudan ver (UI uyarı verir).
-  if (pack.reward.gold)  await addGold(pack.reward.gold, "shop");
-  if (pack.reward.gems)  await addGems(pack.reward.gems);
-  if (pack.reward.lives) await addLives(pack.reward.lives);
-  if (pack.reward.powerups) {
-    for (const [k, v] of Object.entries(pack.reward.powerups)) await addPowerup(k, v);
-  }
-  return pack;
-}
-
-// ---------- Ödülleri uygula (genel) ----------
-export async function applyReward(r) {
-  if (!r) return;
-  if (r.type === "gold")    await addGold(r.amount || 0, "reward");
-  if (r.type === "gems")    await addGems(r.amount || 0);
-  if (r.type === "lives")   await addLives(r.amount || 0);
-  if (r.type === "powerup") await addPowerup(r.item, r.amount || 1);
-}
-
-// ---------- Görevler ----------
-export async function tickMission(id, amount = 1) {
-  const m = Session.data?.missions || {};
-  const cur = m[id] || { progress: 0, claimed: false };
-  const def = CONFIG.MISSIONS.find(x => x.id === id);
-  if (!def) return;
-  cur.progress = Math.min(def.target, (cur.progress || 0) + amount);
-  m[id] = cur;
-  await patch("user", { missions: m });
-}
-export async function claimMission(id) {
-  const m = Session.data?.missions || {};
-  const cur = m[id]; const def = CONFIG.MISSIONS.find(x => x.id === id);
-  if (!def || !cur || cur.progress < def.target) throw new Error("Görev henüz tamam değil.");
-  if (cur.claimed) throw new Error("Bu görev zaten alındı.");
-  if (def.reward.gold) await addGold(def.reward.gold, "mission_" + id);
-  cur.claimed = true; m[id] = cur;
-  await patch("user", { missions: m });
-}
-
-// ---------- Başarımlar ----------
-export async function checkAchievements() {
-  const a = Session.data?.achievements || {};
-  const prog = Session.data?.progress || {};
-  const eco = Session.data?.economy || {};
-  const profile = Session.data?.profile || {};
-  const giveIf = async (id, cond) => {
-    if (cond && !a[id]) {
-      a[id] = { unlockedAt: Date.now() };
-      const def = CONFIG.ACHIEVEMENTS.find(x => x.id === id);
-      if (def?.gold) await addGold(def.gold, "ach_" + id);
-    }
-  };
-  await giveIf("first_smash",  (prog.totalScore || 0) > 0 || (prog.level || 1) > 1);
-  await giveIf("ten_levels",   ((prog.world - 1) * 30 + (prog.level - 1)) >= 10);
-  await giveIf("fifty_levels", ((prog.world - 1) * 30 + (prog.level - 1)) >= 50);
-  await giveIf("world_clear_1", (prog.world || 1) >= 2);
-  await giveIf("combo_master",  (prog.bestCombo || 0) >= 8);
-  await giveIf("smash_1000",    (prog.cakesSmashed || 0) >= 1000);
-  await giveIf("daily_7",       (eco.streakDay || 0) >= 7);
-  await giveIf("vip_member",    !!profile.vip);
-  await patch("achievements", a);
-}
-
-// ---------- Liderlik tablosu ----------
-export async function submitScore(score) {
-  const uid = requireUser();
-  const profile = Session.data?.profile || {};
-  await FB.set(FB.ref(FB.db, `${FB.PATHS.leaderboard()}/${uid}`), {
-    nick: profile.displayName || "Oyuncu",
-    avatar: profile.avatar || "default",
-    country: profile.country || "TR",
-    score,
-    updatedAt: Date.now()
+async function tickCrypto(){
+  // Lock al — son 25 sn'de kim tick yaptıysa o devam etsin
+  const lockRef = db.ref('crypto/_tickLock');
+  const r = await lockRef.transaction(cur => {
+    if (cur && (now() - cur.ts) < 25000) return; // başka biri yaptı
+    return { uid: GZ.uid, ts: now() };
   });
-}
-export async function getTopLeaderboard(limit = 25) {
-  const q = FB.query(FB.ref(FB.db, FB.PATHS.leaderboard()), FB.orderByChild("score"), FB.limitToLast(limit));
-  const snap = await FB.get(q);
-  const arr = [];
-  snap.forEach(c => arr.push({ uid: c.key, ...c.val() }));
-  return arr.sort((a,b) => (b.score||0) - (a.score||0));
+  if (!r.committed) return;
+
+  // Fiyatları güncelle
+  const updates = {};
+  for (const k of KRIPTO){
+    const cur = (GZ.prices[k.sym]?.current) || k.base;
+    // Genelde aşağı eğilimli (kullanıcı: "adamı zarara götürmemiz lazım"), bazen yukarı
+    // %60 düşüş, %40 yükseliş; volatilite kripto bazlı
+    const direction = Math.random() < 0.55 ? -1 : 1;
+    const change = direction * (Math.random() * k.vol);
+    let next = cur * (1 + change);
+    // Tabanın %10'u altına / 5 katı üstüne çıkmasın
+    next = Math.max(k.base * 0.1, Math.min(k.base * 5, next));
+    updates[`${k.sym}/prev`] = cur;
+    updates[`${k.sym}/current`] = next;
+    updates[`${k.sym}/ts`] = now();
+  }
+  await db.ref('crypto/prices').update(updates);
 }
 
-// ---------- Posta kutusu ----------
-export async function sendMail(toUid, subject, body, reward = null) {
-  const node = FB.push(FB.ref(FB.db, FB.PATHS.mailbox(toUid)));
-  await FB.set(node, { subject, body, reward, fromUid: Session.user?.uid || null, createdAt: Date.now(), read: false, claimed: false });
-}
-export async function claimMail(mailId) {
-  const uid = requireUser();
-  const r = FB.ref(FB.db, `${FB.PATHS.mailbox(uid)}/${mailId}`);
-  const snap = await FB.get(r);
-  if (!snap.exists()) throw new Error("Posta yok.");
-  const m = snap.val();
-  if (m.claimed) throw new Error("Zaten alındı.");
-  if (m.reward) await applyReward(m.reward);
-  await FB.update(r, { claimed: true, read: true });
-}
-
-// ---------- Ayarlar ----------
-export async function saveSettings(partial) {
-  const s = Session.data?.settings || {};
-  await patch("settings", { ...s, ...partial });
+/* ============================================================
+   İHRACAT MOTORU
+   ============================================================ */
+async function initExportEngine(){
+  // Eğer talepler yoksa veya hepsi eski ise yenile
+  const list = await dbGet('exports/list');
+  if (!list || Object.keys(list).length < 15 || (now() - (await dbGet('exports/_renewedAt')||0)) > 30*60*1000){
+    await renewExports();
+  }
+  // 30 dk'da bir lock'lı yenile
+  setInterval(async () => {
+    const r = await db.ref('exports/_renewLock').transaction(cur => {
+      if (cur && (now() - cur) < 25*60*1000) return;
+      return now();
+    });
+    if (r.committed) await renewExports();
+  }, 60*1000);
 }
 
-// ---------- Hediye kodu (placeholder; ileride aktifleşecek) ----------
-export async function redeemGiftCode(code) {
-  if (!code || code.length < 4) throw new Error("Kod geçersiz.");
-  // Gelecekte sunucu tarafında doğrulanacak; şimdilik basit ödüller:
+async function renewExports(){
+  const updates = {};
+  const items = Object.keys(URUNLER);
+  for (let i=0;i<20;i++){
+    const sirket = IHRACAT_SIRKETLER[Math.floor(Math.random()*IHRACAT_SIRKETLER.length)];
+    const itemKey = items[Math.floor(Math.random()*items.length)];
+    const u = URUNLER[itemKey];
+    const demand = (Math.floor(Math.random()*8)+1) * 500000;
+    const price = +(u.base * (1.5 + Math.random()*1.5)).toFixed(2); // taban x 1.5-3
+    const minOrder = Math.max(2000, Math.floor(demand * 0.005));
+    const id = 'ex_' + Math.random().toString(36).slice(2,10);
+    updates[id] = {
+      id, sirket: sirket.name, country: sirket.country, flag: sirket.flag,
+      item: itemKey, demand, fulfilled: 0,
+      pricePerUnit: price, minOrder,
+      createdAt: now()
+    };
+  }
+  await db.ref('exports/list').set(updates);
+  await db.ref('exports/_renewedAt').set(now());
+}
+
+/* Kullanıcı bir ihracat talebine gönderim yapsın */
+async function exportShip(exId, qty){
+  const ex = await dbGet(`exports/list/${exId}`);
+  if (!ex) return toast('Talep bulunamadı', 'error');
+  if (qty < ex.minOrder) return toast(`Min sipariş: ${fmtInt(ex.minOrder)} ${URUNLER[ex.item].unit}`, 'warn');
+  const remaining = ex.demand - (ex.fulfilled||0);
+  if (qty > remaining) qty = remaining;
+  if (qty <= 0) return toast('Talep doldu', 'warn');
+
+  // Kullanıcının bu üründen depoda var mı? (Lojistik depolardan tüketir)
+  const total = await getTotalStock(GZ.uid, ex.item);
+  if (total < qty) return toast(`Yeterli stok yok. Var: ${fmtInt(total)} ${URUNLER[ex.item].unit}`, 'error');
+
+  // Stok düş
+  await consumeStock(GZ.uid, ex.item, qty);
+  // Ödeme al
+  const earn = +(qty * ex.pricePerUnit).toFixed(2);
+  await addCash(GZ.uid, earn, 'export');
+  await addXP(GZ.uid, Math.floor(earn / 100));
+  // İhracat fulfillment güncelle
+  await dbUpdate(`exports/list/${exId}`, { fulfilled: (ex.fulfilled||0) + qty });
+
+  toast(`💰 +${cashFmt(earn)} ihracat geliri`, 'success');
+  if (GZ.currentTab === 'ihracat') render('ihracat');
+  if (GZ.currentTab === 'lojistik') render('lojistik');
+}
+window.exportShip = exportShip;
+
+/* ============================================================
+   İHALE MOTORU
+   ============================================================ */
+async function initAuctionEngine(){
+  // İhaleler yoksa oluştur
+  const list = await dbGet('auctions/list');
+  if (!list || Object.keys(list).length < 5){
+    await createAuctions();
+  }
+  // Bitenleri sonlandır + yenile
+  setInterval(processAuctions, 5000);
+}
+
+async function createAuctions(){
+  const updates = {};
+  const items = Object.keys(URUNLER);
+  for (let i=0;i<6;i++){
+    const sirket = IHRACAT_SIRKETLER[Math.floor(Math.random()*IHRACAT_SIRKETLER.length)];
+    const itemKey = items[Math.floor(Math.random()*items.length)];
+    const u = URUNLER[itemKey];
+    const qty = (Math.floor(Math.random()*6)+1) * 100000;
+    const minBid = +(u.base * (1.2 + Math.random()*0.8)).toFixed(2);
+    const id = 'au_' + Math.random().toString(36).slice(2,10);
+    const duration = (Math.floor(Math.random()*5)+1) * 60 * 1000; // 1-5 dk
+    updates[id] = {
+      id, sirket: sirket.name, country: sirket.country, flag: sirket.flag,
+      item: itemKey, qty, minBid, currentBid: minBid,
+      currentBidder: null, currentBidderName: null,
+      endsAt: now() + duration, createdAt: now(), finalized: false
+    };
+  }
+  await db.ref('auctions/list').update(updates);
+}
+
+async function processAuctions(){
+  const list = await dbGet('auctions/list') || {};
+  const ids = Object.keys(list);
+  const expired = ids.filter(id => list[id].endsAt < now() && !list[id].finalized);
+
+  // Lock — sadece bir kullanıcı sonlandırsın
+  if (expired.length){
+    const r = await db.ref('auctions/_finLock').transaction(cur => {
+      if (cur && (now() - cur) < 4000) return;
+      return now();
+    });
+    if (r.committed){
+      for (const id of expired){
+        const a = list[id];
+        await dbUpdate(`auctions/list/${id}`, { finalized: true });
+        if (a.currentBidder){
+          // Kazanan stok alır, parası daha önce çekildi (teklif ederken)
+          await addStock(a.currentBidder, a.item, a.qty, 'mainWarehouse');
+          await pushNotif(a.currentBidder, `🏆 İhaleyi kazandın: ${fmtInt(a.qty)} ${URUNLER[a.item].unit} ${URUNLER[a.item].name}`);
+        }
+        // Bittiğinde yenisini oluşturmak için sil
+        await db.ref(`auctions/list/${id}`).remove();
+      }
+      // Yeni ihaleler ekle
+      const remaining = Object.keys(list).filter(id=>!list[id].finalized).length;
+      if (remaining < 5) await createAuctions();
+    }
+  }
+  if (GZ.currentTab === 'ihale') renderIhale();
+}
+
+/* Teklif ver */
+async function placeBid(auId, bidAmount){
+  const a = await dbGet(`auctions/list/${auId}`);
+  if (!a) return toast('İhale bulunamadı', 'error');
+  if (a.finalized) return toast('İhale bitti', 'warn');
+  if (a.endsAt < now()) return toast('İhale süresi doldu', 'warn');
+  if (bidAmount <= a.currentBid) return toast(`En düşük teklif: ${cashFmt(a.currentBid + 0.01)}`, 'warn');
+
+  const totalCost = bidAmount * a.qty;
+  // Önceki teklifi iade et + yeni teklifi al — transactional bir flow yapalım
+  const ok = await spendCash(GZ.uid, totalCost, 'auction-bid');
+  if (!ok) return toast(`Yetersiz bakiye. Gerekli: ${cashFmt(totalCost)}`, 'error');
+
+  // Önceki teklif sahibine iade
+  if (a.currentBidder && a.currentBidder !== GZ.uid){
+    await addCash(a.currentBidder, a.currentBid * a.qty, 'auction-refund');
+    await pushNotif(a.currentBidder, `İhalede teklifin geçildi, paran iade edildi.`);
+  } else if (a.currentBidder === GZ.uid){
+    // Aynı kullanıcı yeniden teklif verdi: önceki tutarı iade et
+    await addCash(GZ.uid, a.currentBid * a.qty, 'auction-self-refund');
+  }
+
+  await dbUpdate(`auctions/list/${auId}`, {
+    currentBid: bidAmount,
+    currentBidder: GZ.uid,
+    currentBidderName: GZ.data.username,
+    endsAt: Math.max(a.endsAt, now() + 30000) // son 30 sn'de teklif gelirse uzat
+  });
+  toast('Teklif kaydedildi', 'success');
+}
+window.placeBid = placeBid;
+
+/* ============================================================
+   BANKA MOTORU
+   ============================================================ */
+async function initBankEngine(){
+  // Her dakika kullanıcının bankasını kontrol et: yatırım faizi & ödeme tarihleri
+  setInterval(processBankUser, 60000);
+  setTimeout(processBankUser, 5000);
+}
+
+async function processBankUser(){
+  if (!GZ.uid || !GZ.data) return;
+  const bank = await dbGet(`bank/${GZ.uid}`);
+  if (!bank) return;
+
+  const t = now();
+
+  // Yatırım hesabına faiz: günlük %0.3 (yıllık ~%109 ama oyun)
+  if (bank.investment > 0){
+    const elapsedMs = t - (bank.investmentDate || t);
+    if (elapsedMs > 60000){
+      const days = elapsedMs / (24*3600*1000);
+      const interest = bank.investment * 0.003 * days; // birikmiş
+      // SADECE her tam dakika için yaz
+      await dbUpdate(`bank/${GZ.uid}`, {
+        investment: +(bank.investment + interest).toFixed(2),
+        investmentDate: t
+      });
+    }
+  }
+
+  // İşletme gideri (haftalık) — sadece dolduğunda bir kez
+  if (t > (bank.nextBusinessExpense||t+1)){
+    const businesses = await countBusinesses(GZ.uid);
+    const expense = businesses * 200; // her işletme 200₺/hafta
+    if (expense > 0){
+      const ok = await spendCash(GZ.uid, expense, 'business-exp');
+      if (ok){
+        await pushNotif(GZ.uid, `🏢 İşletme gideri ödendi: ${cashFmt(expense)}`);
+      } else {
+        // Para yoksa — borç olarak ekle
+        await dbUpdate(`bank/${GZ.uid}`, { loan: (bank.loan||0) + expense });
+        await pushNotif(GZ.uid, `⚠️ İşletme gideri ödenemedi, ${cashFmt(expense)} kredi olarak eklendi.`);
+      }
+    }
+    await dbUpdate(`bank/${GZ.uid}`, { nextBusinessExpense: t + 7*24*3600*1000 });
+  }
+
+  // Çalışan maaşları (haftalık)
+  if (t > (bank.nextSalary||t+1)){
+    const employees = await countEmployees(GZ.uid);
+    const salary = employees * 350;
+    if (salary > 0){
+      const ok = await spendCash(GZ.uid, salary, 'salary');
+      if (ok) await pushNotif(GZ.uid, `👥 Çalışan maaşları ödendi: ${cashFmt(salary)}`);
+      else {
+        await dbUpdate(`bank/${GZ.uid}`, { loan: (bank.loan||0) + salary });
+        await pushNotif(GZ.uid, `⚠️ Maaşlar ödenemedi, ${cashFmt(salary)} krediye eklendi.`);
+      }
+    }
+    await dbUpdate(`bank/${GZ.uid}`, { nextSalary: t + 7*24*3600*1000 });
+  }
+}
+
+async function bankDeposit(amount){
+  if (amount <= 0) return toast('Geçersiz tutar','error');
+  const ok = await spendCash(GZ.uid, amount, 'bank-deposit');
+  if (!ok) return toast('Yetersiz bakiye', 'error');
+  await db.ref(`bank/${GZ.uid}/balance`).transaction(c => (c||0)+amount);
+  toast(`+${cashFmt(amount)} hesaba yatırıldı`, 'success');
+}
+window.bankDeposit = bankDeposit;
+
+async function bankWithdraw(amount){
+  if (amount <= 0) return toast('Geçersiz tutar','error');
+  const r = await db.ref(`bank/${GZ.uid}/balance`).transaction(c => {
+    if ((c||0) < amount) return;
+    return c - amount;
+  });
+  if (!r.committed) return toast('Yetersiz hesap bakiyesi','error');
+  await addCash(GZ.uid, amount, 'bank-withdraw');
+  toast(`+${cashFmt(amount)} hesaptan çekildi`, 'success');
+}
+window.bankWithdraw = bankWithdraw;
+
+async function bankInvest(amount){
+  if (amount <= 0) return toast('Geçersiz tutar','error');
+  const ok = await spendCash(GZ.uid, amount, 'invest');
+  if (!ok) return toast('Yetersiz bakiye', 'error');
+  await db.ref(`bank/${GZ.uid}`).transaction(b => {
+    b = b || { investment:0, investmentDate: now() };
+    b.investment = (b.investment||0) + amount;
+    b.investmentDate = now();
+    return b;
+  });
+  toast(`+${cashFmt(amount)} yatırım yapıldı`, 'success');
+}
+window.bankInvest = bankInvest;
+
+async function bankInvestWithdraw(amount){
+  if (amount <= 0) return toast('Geçersiz tutar','error');
+  const r = await db.ref(`bank/${GZ.uid}/investment`).transaction(c => {
+    if ((c||0) < amount) return;
+    return +(c - amount).toFixed(2);
+  });
+  if (!r.committed) return toast('Yetersiz yatırım', 'error');
+  await addCash(GZ.uid, amount, 'invest-withdraw');
+  toast(`+${cashFmt(amount)} yatırım çekildi`, 'success');
+}
+window.bankInvestWithdraw = bankInvestWithdraw;
+
+async function bankBorrow(amount){
+  if (amount <= 0) return toast('Geçersiz tutar','error');
+  const lv = (GZ.data.level||1);
+  const max = lv * 5000;
+  const cur = (await dbGet(`bank/${GZ.uid}/loan`))||0;
+  if (cur + amount > max) return toast(`Kredi limitiniz: ${cashFmt(max)}`, 'warn');
+  await db.ref(`bank/${GZ.uid}/loan`).transaction(c => (c||0)+amount);
+  await addCash(GZ.uid, amount, 'borrow');
+  toast(`+${cashFmt(amount)} kredi çekildi`, 'success');
+}
+window.bankBorrow = bankBorrow;
+
+async function bankRepay(amount){
+  if (amount <= 0) return toast('Geçersiz tutar','error');
+  const ok = await spendCash(GZ.uid, amount, 'repay');
+  if (!ok) return toast('Yetersiz bakiye', 'error');
+  await db.ref(`bank/${GZ.uid}/loan`).transaction(c => Math.max(0,(c||0)-amount));
+  toast(`-${cashFmt(amount)} kredi ödendi`, 'success');
+}
+window.bankRepay = bankRepay;
+
+/* ============================================================
+   PAZAR — DÜKKAN OTOMATİK SATIŞ MOTORU
+   YALNIZCA REYONA ÜRÜN EKLENMİŞSE SATIŞ OLUR (kafasına göre satış YOK)
+   ============================================================ */
+async function initMarketSalesEngine(){
+  setInterval(processSales, 90000); // her 90 sn
+  setTimeout(processSales, 7000);
+}
+
+async function processSales(){
+  if (!GZ.uid) return;
+  // Kullanıcının dükkanlarını gez
+  const shops = await dbGet(`businesses/${GZ.uid}/shops`) || {};
+  const profitRate = (await dbGet(`businesses/${GZ.uid}/profitRate`)) || 0.20;
+
+  for (const sid of Object.keys(shops)){
+    const shop = shops[sid];
+    const shelves = shop.shelves || {};
+    let totalSale = 0;
+    const updates = {};
+    for (const item of Object.keys(shelves)){
+      const sh = shelves[item];
+      // **REYONDA STOK YOKSA SATIŞ YOK**
+      if (!sh || (sh.stock||0) <= 0) continue;
+      if (!sh.price || sh.price <= 0) continue;
+
+      const u = URUNLER[item];
+      if (!u) continue;
+
+      // Fiyat-talep eğrisi: fiyat tabanın 1.5x üstünde ise satış %50 düşer
+      const ratio = sh.price / u.base;
+      let demandFactor = 1;
+      if (ratio < 1) demandFactor = 1.5;
+      else if (ratio < 1.5) demandFactor = 1;
+      else if (ratio < 2) demandFactor = 0.6;
+      else if (ratio < 3) demandFactor = 0.3;
+      else demandFactor = 0.1;
+
+      // Açılış bonus: ilk 24 saatte +5x
+      const since = now() - (shop.createdAt||now());
+      const opening = since < 24*3600*1000 ? 5 : 1;
+
+      const baseRate = 6 * demandFactor * opening * (shop.level||1);
+      const sold = Math.min(sh.stock, Math.floor(baseRate * (0.7 + Math.random()*0.6)));
+      if (sold <= 0) continue;
+
+      const revenue = +(sold * sh.price).toFixed(2);
+      totalSale += revenue;
+
+      updates[`${sid}/shelves/${item}/stock`] = sh.stock - sold;
+      updates[`${sid}/shelves/${item}/totalSold`] = (sh.totalSold||0) + sold;
+      updates[`${sid}/shelves/${item}/totalRevenue`] = +((sh.totalRevenue||0) + revenue).toFixed(2);
+    }
+
+    if (totalSale > 0){
+      // Para ekle, XP ekle
+      await addCash(GZ.uid, totalSale, 'shop-sale');
+      await addXP(GZ.uid, Math.floor(totalSale/50));
+      await db.ref(`businesses/${GZ.uid}/shops`).update(updates);
+    }
+  }
+  // Bahçe / Çiftlik / Fabrika / Maden hasatlarını işle
+  await processProductions();
+}
+
+async function processProductions(){
+  // Bahçeler hasada hazır mı?
+  const gardens = await dbGet(`businesses/${GZ.uid}/gardens`) || {};
+  const farms   = await dbGet(`businesses/${GZ.uid}/farms`) || {};
+  const factories = await dbGet(`businesses/${GZ.uid}/factories`) || {};
+  const mines   = await dbGet(`businesses/${GZ.uid}/mines`) || {};
+
+  const t = now();
+  // Bahçe & çiftlik & fabrika & maden ortak: harvestAt geldiyse stok ekle
+  const allLists = [
+    { col:'gardens', items: gardens },
+    { col:'farms', items: farms },
+    { col:'factories', items: factories },
+    { col:'mines', items: mines }
+  ];
+  for (const grp of allLists){
+    for (const id of Object.keys(grp.items)){
+      const it = grp.items[id];
+      if (it.crop && it.harvestAt && t >= it.harvestAt && !it.harvested){
+        // Hasada hazır — kullanıcı tıklayınca alacak; otomatik EKLEMİYORUZ
+        // Sadece bayrak göster
+        if (!it.ready){
+          await dbUpdate(`businesses/${GZ.uid}/${grp.col}/${id}`, { ready: true });
+        }
+      }
+    }
+  }
+}
+
+/* ============================================================
+   STOK / DEPO YARDIMCILARI
+   ============================================================ */
+// Tüm depolardaki + reyonlardaki + hammadde stoğu = toplam
+async function getTotalStock(uid, item){
+  let total = 0;
+  const wh = await dbGet(`businesses/${uid}/warehouses`) || {};
+  for (const city of Object.keys(wh)){
+    total += (wh[city].items?.[item]) || 0;
+  }
+  // Ana depo
+  const main = (await dbGet(`businesses/${uid}/mainWarehouse/${item}`)) || 0;
+  total += main;
+  return total;
+}
+window.getTotalStock = getTotalStock;
+
+async function addStock(uid, item, qty, target='mainWarehouse'){
+  if (qty <= 0) return;
+  if (target === 'mainWarehouse'){
+    await db.ref(`businesses/${uid}/mainWarehouse/${item}`).transaction(c => (c||0)+qty);
+  } else {
+    await db.ref(`businesses/${uid}/warehouses/${target}/items/${item}`).transaction(c => (c||0)+qty);
+  }
+}
+window.addStock = addStock;
+
+async function consumeStock(uid, item, qty){
+  // Önce mainWarehouse'tan, sonra şehirlerden tüket
+  let need = qty;
+  const main = (await dbGet(`businesses/${uid}/mainWarehouse/${item}`)) || 0;
+  if (main >= need){
+    await db.ref(`businesses/${uid}/mainWarehouse/${item}`).set(main - need);
+    return true;
+  } else {
+    if (main > 0){
+      need -= main;
+      await db.ref(`businesses/${uid}/mainWarehouse/${item}`).set(0);
+    }
+    const wh = await dbGet(`businesses/${uid}/warehouses`) || {};
+    for (const city of Object.keys(wh)){
+      const cur = (wh[city].items?.[item]) || 0;
+      if (cur <= 0) continue;
+      if (cur >= need){
+        await db.ref(`businesses/${uid}/warehouses/${city}/items/${item}`).set(cur - need);
+        return true;
+      } else {
+        need -= cur;
+        await db.ref(`businesses/${uid}/warehouses/${city}/items/${item}`).set(0);
+      }
+    }
+    if (need > 0) return false;
+    return true;
+  }
+}
+window.consumeStock = consumeStock;
+
+async function countBusinesses(uid){
+  const shops = await dbGet(`businesses/${uid}/shops`) || {};
+  const gardens = await dbGet(`businesses/${uid}/gardens`) || {};
+  const farms = await dbGet(`businesses/${uid}/farms`) || {};
+  const factories = await dbGet(`businesses/${uid}/factories`) || {};
+  const mines = await dbGet(`businesses/${uid}/mines`) || {};
+  return Object.keys(shops).length + Object.keys(gardens).length + Object.keys(farms).length + Object.keys(factories).length + Object.keys(mines).length;
+}
+
+async function countEmployees(uid){
+  const shops = await dbGet(`businesses/${uid}/shops`) || {};
+  let total = 0;
+  for (const id of Object.keys(shops)) total += (shops[id].employees||1);
+  return total;
+}
+
+/* ============================================================
+   REYON / DÜKKAN İŞLEMLERİ
+   ============================================================ */
+async function buyShop(type, city){
+  const costs = { market: 5000, elektronik: 12000, mobilya: 18000, kuyumcu: 35000,
+                  beyazesya: 22000, otomotiv: 60000, benzin: 45000 };
+  const lvReq = { market:1, elektronik:5, mobilya:8, kuyumcu:15, beyazesya:10, otomotiv:18, benzin:12 };
+  const cost = costs[type];
+  const lv = GZ.data.level||1;
+  if (lv < lvReq[type]) return toast(`${lvReq[type]}. seviyede açılır`, 'warn');
+  const ok = await spendCash(GZ.uid, cost, 'buy-shop');
+  if (!ok) return toast('Yetersiz bakiye', 'error');
+  const id = 'sh_' + Math.random().toString(36).slice(2,8);
+  await dbSet(`businesses/${GZ.uid}/shops/${id}`, {
+    id, type, city, level:1, employees:1, createdAt: now(), shelves:{}
+  });
+  toast(`${type} açıldı!`, 'success');
+}
+window.buyShop = buyShop;
+
+async function addShelf(shopId, itemKey){
+  const item = URUNLER[itemKey];
+  if (!item) return toast('Geçersiz ürün','error');
+  if ((GZ.data.level||1) < item.lv) return toast(`${item.lv}. seviyede açılır`, 'warn');
+  const exist = await dbGet(`businesses/${GZ.uid}/shops/${shopId}/shelves/${itemKey}`);
+  if (exist) return toast('Bu reyon zaten var','warn');
+  const cost = 500;
+  const ok = await spendCash(GZ.uid, cost, 'add-shelf');
+  if (!ok) return toast(`Reyon kurulum: ${cashFmt(cost)} gerekli`, 'error');
+  await dbSet(`businesses/${GZ.uid}/shops/${shopId}/shelves/${itemKey}`, {
+    item: itemKey, stock:0, max:50, price: +(item.base * 1.2).toFixed(2),
+    cost: 0, totalSold:0, totalRevenue:0
+  });
+  toast('Reyon eklendi', 'success');
+}
+window.addShelf = addShelf;
+
+async function buyShelfStock(shopId, itemKey, qty){
+  const sh = await dbGet(`businesses/${GZ.uid}/shops/${shopId}/shelves/${itemKey}`);
+  if (!sh) return toast('Reyon bulunamadı','error');
+  const u = URUNLER[itemKey];
+  if (qty <= 0) return toast('Geçersiz miktar','error');
+  if (sh.stock + qty > sh.max) qty = sh.max - sh.stock;
+  if (qty <= 0) return toast('Reyon dolu','warn');
+  const cost = +(qty * u.base).toFixed(2);
+  const ok = await spendCash(GZ.uid, cost, 'shelf-stock');
+  if (!ok) return toast(`Yetersiz bakiye (${cashFmt(cost)})`, 'error');
+  await dbUpdate(`businesses/${GZ.uid}/shops/${shopId}/shelves/${itemKey}`, {
+    stock: sh.stock + qty,
+    cost: +((sh.cost*sh.stock + cost)/(sh.stock+qty)).toFixed(2) // ortalama maliyet
+  });
+  toast(`+${qty} ${u.unit} eklendi`, 'success');
+}
+window.buyShelfStock = buyShelfStock;
+
+async function setShelfPrice(shopId, itemKey, price){
+  if (price <= 0) return toast('Geçersiz fiyat','error');
+  await dbUpdate(`businesses/${GZ.uid}/shops/${shopId}/shelves/${itemKey}`, { price });
+  toast('Fiyat güncellendi', 'success');
+}
+window.setShelfPrice = setShelfPrice;
+
+async function deleteShelf(shopId, itemKey){
+  await db.ref(`businesses/${GZ.uid}/shops/${shopId}/shelves/${itemKey}`).remove();
+  toast('Reyon kapatıldı','success');
+}
+window.deleteShelf = deleteShelf;
+
+async function upgradeShop(shopId){
+  const shop = await dbGet(`businesses/${GZ.uid}/shops/${shopId}`);
+  if (!shop) return;
+  const next = (shop.level||1)+1;
+  const cost = next * 5000;
+  const ok = await spendCash(GZ.uid, cost, 'upgrade-shop');
+  if (!ok) return toast(`Yetersiz bakiye (${cashFmt(cost)})`, 'error');
+  await dbUpdate(`businesses/${GZ.uid}/shops/${shopId}`, {
+    level: next,
+    employees: (shop.employees||1)+1
+  });
+  toast(`Dükkan Lv ${next}`, 'success');
+}
+window.upgradeShop = upgradeShop;
+
+/* ============================================================
+   BAHÇE / ÇİFTLİK / FABRİKA / MADEN
+   ============================================================ */
+async function buyProductionUnit(kind){
   const map = {
-    "SERKAN":   { gold: 500, gems: 5,  lives: 5 },
-    "WELCOME":  { gold: 200, lives: 3 },
-    "CAKEPARTY":{ gold: 1000, gems: 10 }
+    gardens:    { cost:3000, lv:2,  name:"Bahçe" },
+    farms:     { cost:8000, lv:5,  name:"Çiftlik" },
+    factories: { cost:25000,lv:8,  name:"Fabrika" },
+    mines:     { cost:80000,lv:30, name:"Maden" }
   };
-  const reward = map[code.toUpperCase()];
-  if (!reward) throw new Error("Bu kod tanınmıyor.");
-  if (reward.gold) await addGold(reward.gold, "gift_" + code);
-  if (reward.gems) await addGems(reward.gems);
-  if (reward.lives) await addLives(reward.lives);
-  return reward;
+  const m = map[kind]; if (!m) return;
+  if ((GZ.data.level||1) < m.lv) return toast(`${m.lv}. seviyede açılır`, 'warn');
+  const ok = await spendCash(GZ.uid, m.cost, 'buy-prod');
+  if (!ok) return toast('Yetersiz bakiye', 'error');
+  const id = kind.slice(0,2) + '_' + Math.random().toString(36).slice(2,8);
+  await dbSet(`businesses/${GZ.uid}/${kind}/${id}`, {
+    id, level:1, createdAt: now(), crop:null, harvestAt:null, ready:false
+  });
+  toast(`${m.name} açıldı`, 'success');
 }
+window.buyProductionUnit = buyProductionUnit;
 
-// ---------- Etkinlik / olay log (analitik amaçlı) ----------
-export async function logEvent(name, payload = {}) {
-  try {
-    const uid = Session.user?.uid || "anon";
-    const node = FB.push(FB.ref(FB.db, `events/log/${uid}`));
-    await FB.set(node, { name, payload, t: Date.now() });
-  } catch (_) { /* sessiz geç */ }
+async function plantCrop(kind, unitId, itemKey){
+  const u = URUNLER[itemKey];
+  if (!u) return toast('Geçersiz ürün','error');
+  if ((GZ.data.level||1) < u.lv) return toast(`${u.lv}. seviyede açılır`,'warn');
+  const cropCost = +(u.base * 0.4 * 100).toFixed(2); // 100 birim ekim maliyeti
+  const ok = await spendCash(GZ.uid, cropCost, 'plant');
+  if (!ok) return toast(`Yetersiz bakiye (${cashFmt(cropCost)})`, 'error');
+  const grow = (kind==='gardens'? 5 : kind==='farms'? 8 : kind==='factories'? 4 : 12) * 60 * 1000;
+  await dbUpdate(`businesses/${GZ.uid}/${kind}/${unitId}`, {
+    crop: itemKey,
+    harvestAt: now() + grow,
+    ready: false
+  });
+  toast(`${u.name} ekildi`, 'success');
 }
+window.plantCrop = plantCrop;
 
-// Tarayıcıdan kolay erişim
-if (typeof window !== "undefined") {
-  window.Eco = {
-    CONFIG, addGold, spendGold, addGems, addLives, consumeLife,
-    addPowerup, buyPowerup, usePowerup, addXP, completeLevel,
-    Board, claimDailyReward, spinWheel, buyShopPack, applyReward,
-    tickMission, claimMission, checkAchievements, submitScore, getTopLeaderboard,
-    sendMail, claimMail, saveSettings, redeemGiftCode, regenerateLivesAndEnergy, nextLifeCountdownMs
-  };
+async function harvest(kind, unitId){
+  const u = await dbGet(`businesses/${GZ.uid}/${kind}/${unitId}`);
+  if (!u || !u.crop) return;
+  if (now() < u.harvestAt) return toast(`Henüz hazır değil`, 'warn');
+  const yieldQty = (u.level||1) * 100; // her seviyede 100 birim
+  await addStock(GZ.uid, u.crop, yieldQty, 'mainWarehouse');
+  await dbUpdate(`businesses/${GZ.uid}/${kind}/${unitId}`, {
+    crop:null, harvestAt:null, ready:false
+  });
+  await addXP(GZ.uid, Math.floor(yieldQty * URUNLER[u.crop].base / 50));
+  toast(`+${yieldQty} ${URUNLER[u.crop].unit} ${URUNLER[u.crop].name} hasat edildi`, 'success');
 }
+window.harvest = harvest;
+
+async function upgradeProductionUnit(kind, unitId){
+  const u = await dbGet(`businesses/${GZ.uid}/${kind}/${unitId}`);
+  if (!u) return;
+  const cost = (u.level||1) * 2500;
+  const ok = await spendCash(GZ.uid, cost, 'upgrade-prod');
+  if (!ok) return toast('Yetersiz bakiye','error');
+  await dbUpdate(`businesses/${GZ.uid}/${kind}/${unitId}`, { level:(u.level||1)+1 });
+  toast(`Yükseltildi → Lv ${(u.level||1)+1}`, 'success');
+}
+window.upgradeProductionUnit = upgradeProductionUnit;
+
+/* ============================================================
+   LOJİSTİK — DEPO
+   ============================================================ */
+async function buyWarehouse(city, payment){
+  const exist = await dbGet(`businesses/${GZ.uid}/warehouses/${city}`);
+  if (exist) return toast('Bu şehirde deponuz zaten var','warn');
+  if (payment === 'diamond'){
+    const ok = await spendDiamonds(GZ.uid, 100);
+    if (!ok) return toast('Yetersiz elmas (100 gerekli)','error');
+  } else {
+    const ok = await spendCash(GZ.uid, 25000, 'warehouse');
+    if (!ok) return toast('Yetersiz bakiye (25.000 ₺ gerekli)','error');
+  }
+  await dbSet(`businesses/${GZ.uid}/warehouses/${city}`, {
+    city, capacity: 100000, items: {}, createdAt: now()
+  });
+  toast(`${city} deposu açıldı`, 'success');
+}
+window.buyWarehouse = buyWarehouse;
+
+async function transferStock(item, qty, fromCity, toCity){
+  // basit transfer
+  const f = await dbGet(`businesses/${GZ.uid}/warehouses/${fromCity}/items/${item}`) || 0;
+  if (f < qty) return toast('Yetersiz stok','error');
+  await db.ref(`businesses/${GZ.uid}/warehouses/${fromCity}/items/${item}`).set(f - qty);
+  await db.ref(`businesses/${GZ.uid}/warehouses/${toCity}/items/${item}`).transaction(c => (c||0)+qty);
+  toast('Transfer tamam', 'success');
+}
+window.transferStock = transferStock;
+
+/* ============================================================
+   KRİPTO ALIM-SATIM
+   ============================================================ */
+async function buyCrypto(sym, tlAmount){
+  if (tlAmount <= 0) return toast('Geçersiz tutar','error');
+  const price = GZ.prices[sym]?.current;
+  if (!price) return toast('Fiyat alınamadı','error');
+  const ok = await spendCash(GZ.uid, tlAmount, 'crypto-buy');
+  if (!ok) return toast('Yetersiz bakiye','error');
+  const fee = tlAmount * 0.005;
+  const qty = (tlAmount - fee) / price;
+  await db.ref(`crypto/holdings/${GZ.uid}/${sym}`).transaction(c => (c||0)+qty);
+  toast(`+${qty.toFixed(4)} ${sym}`, 'success');
+}
+window.buyCrypto = buyCrypto;
+
+async function sellCrypto(sym, qty){
+  if (qty <= 0) return toast('Geçersiz miktar','error');
+  const price = GZ.prices[sym]?.current;
+  if (!price) return toast('Fiyat alınamadı','error');
+  const cur = (await dbGet(`crypto/holdings/${GZ.uid}/${sym}`)) || 0;
+  if (cur < qty) return toast('Yetersiz miktar','error');
+  await db.ref(`crypto/holdings/${GZ.uid}/${sym}`).set(cur - qty);
+  const tl = qty * price * 0.995;
+  await addCash(GZ.uid, tl, 'crypto-sell');
+  toast(`+${cashFmt(tl)}`, 'success');
+}
+window.sellCrypto = sellCrypto;
+
+/* ============================================================
+   MARKA
+   ============================================================ */
+async function createBrand(name){
+  if (!name || name.length<3 || name.length>20) return toast('İsim 3-20 karakter olmalı','error');
+  if (!/^[a-zA-Z0-9_ ]+$/.test(name)) return toast('Sadece harf/rakam','error');
+  const lv = GZ.data.level||1;
+  if (lv < 10) return toast('10. seviyede açılır','warn');
+  const ok = await spendCash(GZ.uid, 25000, 'brand');
+  if (!ok) return toast('25.000 ₺ gerekli','error');
+  const id = 'br_' + Math.random().toString(36).slice(2,8);
+  await dbSet(`brands/${id}`, {
+    id, name, leader: GZ.uid, leaderName: GZ.data.username,
+    members: { [GZ.uid]: { joinedAt: now(), role:'leader' } },
+    points: 100, power: 1, createdAt: now()
+  });
+  await dbUpdate(`users/${GZ.uid}`, { brand: id });
+  toast(`Marka kuruldu: ${name}`, 'success');
+}
+window.createBrand = createBrand;
+
+async function joinBrand(id){
+  const b = await dbGet(`brands/${id}`);
+  if (!b) return toast('Marka bulunamadı','error');
+  if (Object.keys(b.members||{}).length >= 20) return toast('Marka dolu','warn');
+  await dbSet(`brands/${id}/members/${GZ.uid}`, { joinedAt: now(), role:'member' });
+  await dbUpdate(`users/${GZ.uid}`, { brand: id });
+  toast('Markaya katıldın', 'success');
+}
+window.joinBrand = joinBrand;
+
+async function leaveBrand(){
+  const id = GZ.data.brand;
+  if (!id) return;
+  const b = await dbGet(`brands/${id}`);
+  if (b && b.leader === GZ.uid){
+    // Lider çıkıyorsa marka dağılır
+    await db.ref(`brands/${id}`).remove();
+  } else {
+    await db.ref(`brands/${id}/members/${GZ.uid}`).remove();
+  }
+  await dbUpdate(`users/${GZ.uid}`, { brand: null });
+  toast('Markadan ayrıldın', 'success');
+}
+window.leaveBrand = leaveBrand;
+
+/* ============================================================
+   MAĞAZA — Elmas paketleri & robot
+   ============================================================ */
+const ELMAS_PAKETLERI = [
+  { id:'p1', dia:50,    tl:60,   bonus:0   },
+  { id:'p2', dia:200,   tl:300,  bonus:20  },
+  { id:'p3', dia:500,   tl:600,  bonus:80  },
+  { id:'p4', dia:1200,  tl:1200, bonus:300 },
+  { id:'p5', dia:3000,  tl:2400, bonus:1000},
+  { id:'p6', dia:10000, tl:6000, bonus:5000}
+];
+window.ELMAS_PAKETLERI = ELMAS_PAKETLERI;
+
+const ROBOT_PAKETLERI = [
+  { id:'r_h', name:'Saatlik Robot',   diamonds:30,   hours:1   },
+  { id:'r_d', name:'Günlük Robot',    diamonds:200,  hours:24  },
+  { id:'r_w', name:'Haftalık Robot',  diamonds:1000, hours:168 },
+  { id:'r_m', name:'Aylık Robot',     diamonds:3500, hours:720 }
+];
+window.ROBOT_PAKETLERI = ROBOT_PAKETLERI;
+
+async function buyRobot(rid){
+  const r = ROBOT_PAKETLERI.find(x=>x.id===rid);
+  if (!r) return;
+  const ok = await spendDiamonds(GZ.uid, r.diamonds);
+  if (!ok) return toast('Yetersiz elmas','error');
+  const cur = await dbGet(`users/${GZ.uid}/robotUntil`) || 0;
+  const start = Math.max(now(), cur);
+  await dbUpdate(`users/${GZ.uid}`, { robotUntil: start + r.hours*3600*1000 });
+  toast(`Robot aktif: ${r.hours} saat`, 'success');
+}
+window.buyRobot = buyRobot;
+
+/* ============================================================
+   BİLDİRİMLER
+   ============================================================ */
+async function pushNotif(uid, msg){
+  const id = await dbPush(`notifs/${uid}`, { msg, ts: now(), read:false });
+  return id;
+}
+window.pushNotif = pushNotif;
