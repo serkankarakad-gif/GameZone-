@@ -1,0 +1,442 @@
+/* ==========================================================================
+   giriş.js — Kayıt / Giriş / E-posta Doğrulama / Ban Kontrolü
+   GÜVENLİK: Cihaz Parmak İzi · Şüpheli Giriş Tespiti · Rate Limiting
+             IP/Cihaz Kayıtları · Hesap Ele Geçirme Koruması
+   ========================================================================== */
+
+(function(){
+
+  /* ============================================================
+     GÜVENLİK ALTYAPISI
+     ============================================================ */
+
+  // --- Cihaz Parmak İzi ---
+  function getDeviceFingerprint(){
+    const parts = [
+      navigator.userAgent, navigator.language,
+      screen.width + 'x' + screen.height, screen.colorDepth,
+      new Date().getTimezoneOffset(),
+      navigator.hardwareConcurrency || 0,
+      navigator.platform || '',
+      (navigator.plugins || []).length
+    ];
+    let hash = 0;
+    const str = parts.join('|');
+    for (let i = 0; i < str.length; i++){
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash).toString(36);
+  }
+
+  // --- Giriş Rate Limiting (Kaba Kuvvet Koruması) ---
+  const LOGIN_LIMIT = 5;
+  const LOGIN_WINDOW = 15 * 60 * 1000; // 15 dk
+  function checkLoginRateLimit(email){
+    const key = 'login_attempts_' + btoa(email).slice(0,20);
+    let data = JSON.parse(localStorage.getItem(key) || '{"count":0,"since":0}');
+    const nowMs = Date.now();
+    if (nowMs - data.since > LOGIN_WINDOW){ data = { count: 0, since: nowMs }; }
+    data.count++;
+    data.since = data.since || nowMs;
+    localStorage.setItem(key, JSON.stringify(data));
+    if (data.count > LOGIN_LIMIT){
+      const remaining = Math.ceil((data.since + LOGIN_WINDOW - nowMs) / 60000);
+      return { blocked: true, remaining };
+    }
+    return { blocked: false, remaining: LOGIN_LIMIT - data.count };
+  }
+  function clearLoginRateLimit(email){
+    localStorage.removeItem('login_attempts_' + btoa(email).slice(0,20));
+  }
+
+  // --- Kayıt Rate Limiting ---
+  function checkRegisterRateLimit(){
+    const key = 'reg_attempts';
+    let data = JSON.parse(localStorage.getItem(key) || '{"count":0,"since":0}');
+    const nowMs = Date.now();
+    if (nowMs - data.since > 60*60*1000){ data = { count: 0, since: nowMs }; }
+    data.count++;
+    data.since = data.since || nowMs;
+    localStorage.setItem(key, JSON.stringify(data));
+    return data.count > 3;
+  }
+
+  // --- Yeni Cihaz Tespiti & Bildirim ---
+  async function recordLoginDevice(uid){
+    const fp = getDeviceFingerprint();
+    const ua = navigator.userAgent.slice(0, 200);
+    const knownKey = 'known_fp_' + uid;
+    const knownFps = JSON.parse(localStorage.getItem(knownKey) || '[]');
+
+    try {
+      await db.ref('security/logins/' + uid).push({
+        fp, ua, ts: firebase.database.ServerValue.TIMESTAMP, lang: navigator.language,
+        tz: Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+      });
+      if (!knownFps.includes(fp)){
+        await db.ref('notifs/' + uid).push({
+          type:'security', icon:'🔐',
+          title:'Yeni Cihazdan Giriş',
+          body:'Hesabına yeni bir cihaz/tarayıcıdan giriş yapıldı. Sen değilsen şifreni hemen değiştir!',
+          ts: firebase.database.ServerValue.TIMESTAMP, read: false
+        });
+        knownFps.push(fp);
+        if (knownFps.length > 10) knownFps.shift();
+        localStorage.setItem(knownKey, JSON.stringify(knownFps));
+      }
+    } catch(e){ console.warn('Device log error:', e); }
+  }
+
+  // --- Şifre Gücü ---
+  function checkPasswordStrength(pass){
+    let score = 0;
+    if (pass.length >= 8)  score++;
+    if (pass.length >= 12) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^a-zA-Z0-9]/.test(pass)) score++;
+    return score;
+  }
+  function passwordStrengthLabel(score){
+    return ['Çok Zayıf','Zayıf','Orta','İyi','Güçlü','Çok Güçlü'][score] || 'Zayıf';
+  }
+
+  // --- Şifre Göster/Gizle ---
+  function addPasswordToggle(inputId){
+    const inp = document.getElementById(inputId);
+    if (!inp || inp.dataset.toggled) return;
+    inp.dataset.toggled = '1';
+    const wrap = inp.parentElement;
+    wrap.style.position = 'relative';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.innerHTML = '👁';
+    btn.style.cssText = 'position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted);z-index:2;line-height:1';
+    btn.addEventListener('click', () => {
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      btn.innerHTML = inp.type === 'password' ? '👁' : '🙈';
+    });
+    wrap.appendChild(btn);
+  }
+
+  // --- Geçici E-posta Engelleme ---
+  const BLOCKED_DOMAINS = ['mailinator.com','guerrillamail.com','10minutemail.com','tempmail.com','throwam.com','yopmail.com','fakeinbox.com','dispostable.com','trashmail.com','sharklasers.com'];
+  function isEmailAllowed(email){
+    const domain = (email.split('@')[1] || '').toLowerCase();
+    return !BLOCKED_DOMAINS.includes(domain);
+  }
+
+  // --- Oturum Zaman Aşımı ---
+  function updateLastActive(){
+    if (GZ.uid) localStorage.setItem('last_active_' + GZ.uid, Date.now().toString());
+  }
+  function checkSessionTimeout(){
+    if (!GZ.uid) return;
+    const last = parseInt(localStorage.getItem('last_active_' + GZ.uid) || '0');
+    if (last && Date.now() - last > 30 * 24 * 3600 * 1000){
+      auth.signOut();
+      toast('Uzun süredir giriş yapılmadığı için oturum kapatıldı.', 'warn');
+    }
+  }
+  setInterval(updateLastActive, 60000);
+
+  /* ============================================================
+     EKRAN / PANEL YÖNETİMİ
+     ============================================================ */
+  const splash = document.getElementById('splash');
+  const authScreen = document.getElementById('authScreen');
+  const gameScreen = document.getElementById('gameScreen');
+  const banScreen  = document.getElementById('banScreen');
+
+  $$('.auth-tab').forEach(b => b.addEventListener('click', () => {
+    showAuthPanel(b.dataset.tab);
+    $$('.auth-tab').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+  }));
+
+  function showAuthPanel(name){
+    $$('.auth-panel').forEach(p=>p.classList.remove('active'));
+    const map = { login:'loginPanel', register:'registerPanel', verify:'verifyPanel', forgot:'forgotPanel' };
+    const el = document.getElementById(map[name]);
+    if (el) el.classList.add('active');
+  }
+
+  setTimeout(() => {
+    addPasswordToggle('loginPass');
+    addPasswordToggle('regPass');
+    addPasswordToggle('regPass2');
+  }, 400);
+
+  // Şifre güç göstergesi
+  document.addEventListener('input', e => {
+    if (e.target.id !== 'regPass') return;
+    const pass = e.target.value;
+    const score = checkPasswordStrength(pass);
+    let bar = document.getElementById('passStrengthBar');
+    let lbl = document.getElementById('passStrengthLbl');
+    if (!bar){
+      bar = document.createElement('div');
+      bar.id = 'passStrengthBar';
+      bar.style.cssText = 'height:4px;border-radius:2px;transition:.3s;margin-top:4px;width:0%';
+      e.target.parentElement.appendChild(bar);
+      lbl = document.createElement('div');
+      lbl.id = 'passStrengthLbl';
+      lbl.style.cssText = 'font-size:11px;margin-top:2px;font-weight:600';
+      e.target.parentElement.appendChild(lbl);
+    }
+    const colors = ['#dc2626','#ef4444','#f59e0b','#16a34a','#15803d','#0d5c32'];
+    bar.style.background = colors[score] || '#dc2626';
+    bar.style.width = (score * 20) + '%';
+    if (lbl){ lbl.textContent = passwordStrengthLabel(score); lbl.style.color = colors[score] || '#dc2626'; }
+  });
+
+  /* =================== KAYIT =================== */
+  $('#btnRegister').addEventListener('click', async () => {
+    const username = $('#regUsername').value.trim();
+    const email    = $('#regEmail').value.trim().toLowerCase();
+    const pass     = $('#regPass').value;
+    const pass2    = $('#regPass2').value;
+    const agree    = $('#regAgree').checked;
+
+    if (username.length < 3 || username.length > 16) return toast('Kullanıcı adı 3-16 karakter olmalı', 'error');
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) return toast('Kullanıcı adı sadece harf, rakam, alt çizgi içerebilir', 'error');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast('Geçersiz e-posta', 'error');
+    if (!isEmailAllowed(email)) return toast('Geçici e-posta servisleri kabul edilmiyor', 'error');
+    if (pass.length < 6) return toast('Şifre en az 6 karakter olmalı', 'error');
+    if (pass !== pass2) return toast('Şifreler aynı değil', 'error');
+    if (!agree) return toast('Kuralları kabul etmelisin', 'error');
+    if (checkPasswordStrength(pass) < 2) return toast('Şifre çok zayıf! En az 1 büyük harf veya rakam ekle.', 'warn');
+    if (checkRegisterRateLimit()) return toast('Çok fazla kayıt denemesi. 1 saat sonra tekrar dene.', 'error');
+
+    const existing = await dbGet('usernames/' + username.toLowerCase());
+    if (existing) return toast('Bu kullanıcı adı alınmış', 'error');
+
+    const btn = $('#btnRegister');
+    btn.disabled = true; btn.textContent = 'Kaydediliyor...';
+
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(email, pass);
+      const uid = cred.user.uid;
+      const fp = getDeviceFingerprint();
+
+      // ---- 20.000 TL BAŞLANGIÇ ----
+      const userObj = {
+        username, usernameLower: username.toLowerCase(), email,
+        level:1, xp:0, money:20000, diamonds:10,
+        location:'İstanbul', online:true,
+        lastSeen: firebase.database.ServerValue.TIMESTAMP,
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        banned:false, verified:false, bio:'', netWorth:20000,
+        registrationFp: fp,
+        registrationUa: navigator.userAgent.slice(0,200)
+      };
+      await dbSet('users/' + uid, userObj);
+      await dbSet('usernames/' + username.toLowerCase(), uid);
+
+      await dbSet('bank/' + uid, {
+        balance:0, investment:0, investmentDate: now(), loan:0,
+        nextBusinessExpense: now()+7*24*3600*1000,
+        nextSalary: now()+7*24*3600*1000
+      });
+
+      await db.ref('security/logins/' + uid).push({
+        fp, ua: navigator.userAgent.slice(0,200),
+        ts: firebase.database.ServerValue.TIMESTAMP, type:'register'
+      });
+      localStorage.setItem('known_fp_' + uid, JSON.stringify([fp]));
+
+      const actionSettings = {
+        url: window.location.origin + window.location.pathname + '?verified=1',
+        handleCodeInApp: false
+      };
+      await cred.user.sendEmailVerification(actionSettings);
+
+      $('#verifyEmailText').textContent = email + ' adresine doğrulama bağlantısı gönderdik. Gelen kutusu ve spam klasörünü kontrol et.';
+      showAuthPanel('verify');
+      toast('Kayıt başarılı! E-postanı doğrula 📧', 'success');
+    } catch(e){
+      console.error(e);
+      let msg = 'Bir hata oluştu';
+      if (e.code === 'auth/email-already-in-use') msg = 'Bu e-posta zaten kayıtlı';
+      else if (e.code === 'auth/invalid-email') msg = 'Geçersiz e-posta';
+      else if (e.code === 'auth/weak-password') msg = 'Şifre çok zayıf';
+      toast(msg, 'error');
+    }
+    btn.disabled = false; btn.textContent = 'Kayıt Ol';
+  });
+
+  /* =================== GİRİŞ =================== */
+  $('#btnLogin').addEventListener('click', async () => {
+    const email = $('#loginEmail').value.trim().toLowerCase();
+    const pass  = $('#loginPass').value;
+    if (!email || !pass) return toast('E-posta ve şifre gir', 'error');
+
+    const rl = checkLoginRateLimit(email);
+    if (rl.blocked) return toast('Çok fazla hatalı giriş. ' + rl.remaining + ' dakika bekle.', 'error');
+
+    const btn = $('#btnLogin');
+    btn.disabled = true; btn.textContent = 'Giriş yapılıyor...';
+
+    try {
+      const cred = await auth.signInWithEmailAndPassword(email, pass);
+      clearLoginRateLimit(email);
+      await recordLoginDevice(cred.user.uid);
+      updateLastActive();
+    } catch(e){
+      console.error(e);
+      let msg = 'Giriş başarısız';
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') msg = 'E-posta veya şifre yanlış (kalan: ' + (rl.remaining - 1) + ')';
+      else if (e.code === 'auth/user-not-found') msg = 'Bu e-posta kayıtlı değil';
+      else if (e.code === 'auth/too-many-requests') msg = 'Firebase hesabı geçici kilitlendi. Şifreni sıfırla veya bekle.';
+      else if (e.code === 'auth/user-disabled') msg = 'Hesabınız devre dışı bırakılmıştır.';
+      toast(msg, 'error');
+    }
+    btn.disabled = false; btn.textContent = 'Giriş Yap';
+  });
+
+  /* =================== ŞİFREMİ UNUTTUM =================== */
+  $('#btnForgot').addEventListener('click', () => {
+    $('#forgotEmail').value = $('#loginEmail').value;
+    showAuthPanel('forgot');
+  });
+  $('#btnForgotBack').addEventListener('click', () => showAuthPanel('login'));
+  $('#btnForgotSend').addEventListener('click', async () => {
+    const email = $('#forgotEmail').value.trim().toLowerCase();
+    if (!email) return toast('E-posta gir', 'error');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast('Geçersiz e-posta formatı', 'error');
+    try {
+      const actionSettings = {
+        url: window.location.origin + window.location.pathname + '?reset=1',
+        handleCodeInApp: false
+      };
+      await auth.sendPasswordResetEmail(email, actionSettings);
+      toast('✅ Şifre sıfırlama bağlantısı gönderildi. Gelen kutunu kontrol et.', 'success');
+      setTimeout(()=>showAuthPanel('login'), 2000);
+    } catch(e){
+      if (e.code === 'auth/user-not-found') toast('Bu e-posta sistemde kayıtlı değil.', 'error');
+      else toast('Gönderim hatası: ' + (e.message || 'bilinmeyen'), 'error');
+    }
+  });
+
+  /* =================== DOĞRULAMA =================== */
+  $('#btnVerifyCheck').addEventListener('click', async () => {
+    if (!auth.currentUser) return showAuthPanel('login');
+    await auth.currentUser.reload();
+    if (auth.currentUser.emailVerified){
+      await dbUpdate('users/' + auth.currentUser.uid, { verified: true });
+      toast('✅ Hesabın doğrulandı! Hoş geldin.', 'success');
+      enterGame();
+    } else {
+      toast('E-posta henüz doğrulanmamış. Bağlantıya tıklamayı denedin mi?', 'warn');
+    }
+  });
+  $('#btnVerifyResend').addEventListener('click', async () => {
+    if (!auth.currentUser) return;
+    try {
+      await auth.currentUser.sendEmailVerification({
+        url: window.location.origin + window.location.pathname + '?verified=1'
+      });
+      toast('📧 Doğrulama e-postası tekrar gönderildi.', 'success');
+    } catch(e){
+      if (e.code === 'auth/too-many-requests') toast('Çok sık istek. Birkaç dakika bekle.', 'warn');
+      else toast('Hata: ' + (e.message||''), 'error');
+    }
+  });
+  $('#btnVerifyLogout').addEventListener('click', async () => {
+    await auth.signOut(); showAuthPanel('login');
+  });
+  $('#btnBanLogout').addEventListener('click', async () => {
+    await auth.signOut(); location.reload();
+  });
+
+  /* =================== AUTH STATE =================== */
+  auth.onAuthStateChanged(async (user) => {
+    splash.classList.remove('hidden');
+    if (!user){
+      authScreen.classList.add('active');
+      gameScreen.classList.remove('active');
+      banScreen.classList.remove('active');
+      splash.classList.add('hidden');
+      GZ.user = null; GZ.uid = null;
+      return;
+    }
+
+    GZ.user = user; GZ.uid = user.uid;
+    checkSessionTimeout();
+
+    if (!user.emailVerified){
+      $('#verifyEmailText').textContent = user.email + ' adresine doğrulama bağlantısı gönderildi. Bağlantıya tıkla ve butona bas.';
+      authScreen.classList.add('active');
+      gameScreen.classList.remove('active');
+      showAuthPanel('verify');
+      splash.classList.add('hidden');
+      return;
+    }
+
+    let userData = await dbGet('users/' + user.uid);
+    if (!userData){
+      const username = user.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g,'').slice(0,16) || 'Oyuncu';
+      userData = {
+        username, usernameLower: username.toLowerCase(), email: user.email,
+        level:1, xp:0, money:20000, diamonds:10,
+        location:'İstanbul', online:true,
+        lastSeen: firebase.database.ServerValue.TIMESTAMP,
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        banned:false, verified:true, bio:'', netWorth:20000
+      };
+      await dbSet('users/' + user.uid, userData);
+    }
+
+    const banned = await dbGet('users/' + user.uid + '/banned');
+    if (banned){
+      authScreen.classList.remove('active');
+      gameScreen.classList.remove('active');
+      banScreen.classList.add('active');
+      splash.classList.add('hidden');
+      const reason = await dbGet('users/' + user.uid + '/banReason');
+      if (reason) $('#banReason').textContent = reason;
+      return;
+    }
+
+    if (!userData?.verified){
+      await dbUpdate('users/' + user.uid, { verified:true });
+    }
+
+    enterGame();
+  });
+
+  async function enterGame(){
+    authScreen.classList.remove('active');
+    banScreen.classList.remove('active');
+    gameScreen.classList.add('active');
+    setupPresence(GZ.uid);
+    updateLastActive();
+
+    const userRef = db.ref('users/' + GZ.uid);
+    const cb = userRef.on('value', s => {
+      GZ.data = s.val() || {};
+      renderTopbar();
+      if (GZ.data.banned){ location.reload(); }
+    });
+    GZ.listeners.push({ ref:userRef, cb });
+
+    if (typeof initEkonomi === 'function') initEkonomi();
+    if (typeof initUI === 'function') initUI();
+    splash.classList.add('hidden');
+  }
+
+  function renderTopbar(){
+    const d = GZ.data || {};
+    $('#cashTxt').textContent = cashFmt(d.money||0);
+    $('#diaTxt').textContent  = fmtInt(d.diamonds||0);
+    $('#lvlPill').textContent = 'Lv ' + (d.level||1);
+    const need = xpForLevel(d.level||1);
+    const pct = Math.min(100, Math.floor(((d.xp||0)/need)*100));
+    $('#xpFill').style.width = pct + '%';
+    $('#xpText').textContent = (d.xp||0) + '/' + need;
+  }
+
+  setTimeout(()=>{ if (!auth.currentUser) splash.classList.add('hidden'); }, 1500);
+
+})();

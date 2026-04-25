@@ -10,6 +10,8 @@ function initUI(){
     b.addEventListener('click', () => openTopbarModal(b.dataset.open));
   });
   switchTab('dukkan');
+  // Dinamik konsolu başlat
+  if (typeof initKonsol === 'function') setTimeout(initKonsol, 100);
 
   // Bildirim sayısı
   db.ref(`notifs/${GZ.uid}`).on('value', s => {
@@ -1465,7 +1467,7 @@ async function resetAccount(){
   await db.ref(`crypto/holdings/${GZ.uid}`).remove();
   await db.ref(`friends/${GZ.uid}`).remove();
   await dbUpdate(`users/${GZ.uid}`, {
-    money: 6000, diamonds: 10, level:1, xp:0, location:'İstanbul', netWorth: 6000
+    money: 20000, diamonds: 10, level:1, xp:0, location:'İstanbul', netWorth: 20000
   });
   await dbSet(`bank/${GZ.uid}`, {
     balance:0, investment:0, investmentDate: now(), loan:0,

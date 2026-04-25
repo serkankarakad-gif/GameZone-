@@ -338,3 +338,176 @@ input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none}
   .modal-bg{align-items:center}
   .modal{max-height:80vh;border-radius:20px}
 }
+
+/* ============================================================
+   DİNAMİK ALT KONSOL (konsol-manager.js)
+   ============================================================ */
+
+/* Ana konsol kutusu */
+.dynamic-konsol {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--card);
+  border-top: 2px solid var(--primary);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.12);
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  transition: height .2s ease, transform .3s ease;
+  min-height: 56px;
+  height: 64px;
+  max-height: 75vh;
+}
+.dynamic-konsol.hidden-konsol {
+  transform: translateY(100%);
+  pointer-events: none;
+}
+
+/* Tutamak çubuğu */
+.dk-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px 2px;
+  flex-shrink: 0;
+  cursor: ns-resize;
+  position: relative;
+  gap: 8px;
+}
+.dk-handle-bar {
+  width: 40px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  flex: 1;
+  max-width: 40px;
+}
+.dk-edit-btn, .dk-hide-btn {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.dk-edit-btn:active, .dk-hide-btn:active { background: var(--blue-l); }
+
+/* Sekme şeridi */
+.dk-strip {
+  display: flex;
+  overflow-x: auto;
+  flex-shrink: 0;
+  padding: 4px 6px 6px;
+  gap: 2px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.dk-strip::-webkit-scrollbar { display: none; }
+
+.dk-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  color: var(--muted);
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  min-width: 60px;
+  transition: background .15s, color .15s, transform .1s;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.dk-btn:active { transform: scale(.93); }
+.dk-btn.active {
+  color: var(--primary);
+  background: var(--blue-l);
+}
+.dk-icon { font-size: 18px; line-height: 1; }
+.dk-label { font-size: 10px; font-weight: 600; white-space: nowrap; }
+
+/* Düzenleme paneli */
+.dk-edit-panel {
+  flex-direction: column;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  max-height: 50vh;
+  overflow-y: auto;
+  background: var(--bg);
+  border-radius: 0 0 0 0;
+}
+.dk-edit-info {
+  font-size: 11px; color: var(--muted);
+  margin-bottom: 8px; text-align: center;
+  font-weight: 600;
+}
+.dk-edit-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dk-edit-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: grab;
+  transition: background .15s, opacity .15s;
+}
+.dk-edit-item.dragging { opacity: .4; }
+.dk-edit-item.drag-over { background: var(--blue-l); border-color: var(--primary); }
+.dk-drag-handle { font-size: 16px; color: var(--muted); cursor: grab; }
+.dk-edit-icon { font-size: 20px; }
+.dk-edit-lbl { flex: 1; font-weight: 600; font-size: 13px; }
+
+.dk-done-btn {
+  margin-top: 10px;
+  background: var(--primary);
+  color: #fff;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  width: 100%;
+  border: none; cursor: pointer;
+}
+
+/* Konsolu göster butonu (konsol gizlenince çıkar) */
+.dk-show-btn {
+  position: fixed;
+  bottom: 12px; left: 50%; transform: translateX(-50%);
+  background: var(--primary);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 24px;
+  font-weight: 700;
+  font-size: 13px;
+  border: none; cursor: pointer;
+  z-index: 950;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+  display: none;
+  align-items: center; gap: 6px;
+  animation: fadeIn .2s;
+}
+
+/* appMain'in konsol yüksekliği kadar alt boşluk bırakması */
+#appMain {
+  padding-bottom: 80px;
+}
+
+/* Şifre gücü göstergesi */
+#passStrengthBar { margin-top: 4px; }
+#passStrengthLbl { font-size: 11px; margin-top: 2px; font-weight: 600; }
+
+/* Responsive */
+@media(min-width: 768px) {
+  .dynamic-konsol { max-width: 720px; left: 50%; right: auto; transform: translateX(-50%); border-radius: 18px 18px 0 0; }
+  .dynamic-konsol.hidden-konsol { transform: translateX(-50%) translateY(100%); }
+}
