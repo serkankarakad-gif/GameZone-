@@ -511,3 +511,112 @@ input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none}
   .dynamic-konsol { max-width: 720px; left: 50%; right: auto; transform: translateX(-50%); border-radius: 18px 18px 0 0; }
   .dynamic-konsol.hidden-konsol { transform: translateX(-50%) translateY(100%); }
 }
+
+/* ══════════════════════════════════════════════════════
+   GÜVENLİK UI BİLEŞENLERİ
+   ══════════════════════════════════════════════════════ */
+
+/* Güvenlik uyarı kutusu */
+.security-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--blue-l);
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.security-notice.warn {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+.security-notice.danger {
+  background: var(--red-l);
+  border-color: var(--red);
+}
+.security-notice .sec-icon {
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.security-notice p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text);
+  flex: 1;
+}
+
+/* 2FA kurulum kartı (profilde) */
+.twofa-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.twofa-card.active-2fa {
+  border-color: var(--green);
+  background: var(--green-l);
+}
+.twofa-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.twofa-icon {
+  font-size: 28px;
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: var(--blue-l);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.twofa-body { flex: 1; min-width: 0; }
+.twofa-title { font-weight: 700; font-size: 14px; }
+.twofa-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.twofa-badge {
+  font-size: 11px; font-weight: 700;
+  padding: 3px 8px; border-radius: 10px;
+  background: var(--green); color: #fff;
+}
+.twofa-badge.off {
+  background: var(--muted); color: #fff;
+}
+
+/* Güvenlik puanı barı */
+.sec-score-wrap {
+  margin: 8px 0 14px;
+}
+.sec-score-bar {
+  height: 8px;
+  background: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.sec-score-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width .5s ease;
+}
+.sec-score-lbl {
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  display: flex; justify-content: space-between;
+}
+
+/* SMS kodu input */
+input[type="number"]#loginSmsCode,
+input[type="number"]#smsCodeInput {
+  font-size: 28px;
+  text-align: center;
+  letter-spacing: 10px;
+  font-weight: 800;
+  padding: 16px;
+}
+
+/* reCAPTCHA konteyneri gizle (invisible) */
+#recaptcha2fa, #recaptchaLogin { display: none; }
+
+/* Şifre güç barı */
+#psBar, #cpStrBar { transition: width .3s, background .3s; }

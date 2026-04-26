@@ -1384,12 +1384,24 @@ async function openMyProfile(){
   const u = GZ.data;
   const bank = await dbGet(`bank/${GZ.uid}`) || {};
   const friends = await dbGet(`friends/${GZ.uid}`) || {};
+  const twoFA = u.twoFactorEnabled || false;
+
+  // Güvenlik puanı hesapla
+  let secScore = 0;
+  if (u.verified) secScore += 25;
+  if (twoFA) secScore += 40;
+  if (u.email && u.email.includes('@')) secScore += 20;
+  if (u.level > 1) secScore += 15;
+  const secColor = secScore >= 80 ? '#16a34a' : secScore >= 50 ? '#f59e0b' : '#dc2626';
+  const secLabel = secScore >= 80 ? 'Yüksek' : secScore >= 50 ? 'Orta' : 'Düşük';
+
   showModal('👤 Profilim', `
     <div class="tac mb-12">
       <div style="width:80px;height:80px;font-size:36px;margin:0 auto 8px;background:var(--blue-l);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--primary)">${(u.username||'?')[0].toUpperCase()}</div>
       <h3>${u.username}</h3>
       <p class="small muted">${u.email}</p>
     </div>
+
     <div class="stats-grid">
       <div class="stat-box"><div class="lbl">Seviye</div><div class="val">${u.level||1}</div></div>
       <div class="stat-box"><div class="lbl">Konum</div><div class="val" style="font-size:13px">${u.location||'-'}</div></div>
@@ -1399,7 +1411,44 @@ async function openMyProfile(){
       <div class="stat-box"><div class="lbl">Arkadaş</div><div class="val">${Object.keys(friends).length}</div></div>
     </div>
 
-    <div class="section-title">Hakkımda (Hayat Hikâyesi)</div>
+    <!-- HESAP GÜVENLİĞİ BÖLÜMÜ -->
+    <div class="section-title">🛡️ Hesap Güvenliği</div>
+    <div class="sec-score-wrap">
+      <div class="sec-score-bar"><div class="sec-score-fill" style="width:${secScore}%;background:${secColor}"></div></div>
+      <div class="sec-score-lbl"><span>Güvenlik Puanı</span><span style="color:${secColor};font-weight:800">${secScore}/100 — ${secLabel}</span></div>
+    </div>
+
+    <!-- 2FA Kartı -->
+    <div class="twofa-card ${twoFA ? 'active-2fa' : ''}">
+      <div class="twofa-row">
+        <div class="twofa-icon">📱</div>
+        <div class="twofa-body">
+          <div class="twofa-title">SMS İki Adımlı Doğrulama</div>
+          <div class="twofa-sub">${twoFA ? (u.twoFactorPhone || 'Aktif') : 'Her girişte SMS kodu istenir'}</div>
+        </div>
+        <span class="twofa-badge ${twoFA ? '' : 'off'}">${twoFA ? '✓ AKTİF' : 'KAPALI'}</span>
+      </div>
+      <div class="flex gap-8 mt-12">
+        ${twoFA
+          ? `<button class="btn-danger" style="flex:1" onclick="disable2FA()">Devre Dışı Bırak</button>`
+          : `<button class="btn-primary" style="flex:1" onclick="open2FASetup()">🔐 Aktifleştir</button>`
+        }
+      </div>
+    </div>
+
+    <!-- E-posta & Şifre Değiştir -->
+    <div class="card">
+      <div class="row-between mb-8">
+        <span>✉️ E-posta Değiştir</span>
+        <button class="btn-mini primary" onclick="changeEmail()">Değiştir</button>
+      </div>
+      <div class="row-between">
+        <span>🔑 Şifre Değiştir</span>
+        <button class="btn-mini primary" onclick="changePassword()">Değiştir</button>
+      </div>
+    </div>
+
+    <div class="section-title">Hakkımda</div>
     <div class="input-group">
       <textarea id="bioText" rows="3" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px" placeholder="Kısaca kendinden bahset...">${escapeHtml(u.bio||'')}</textarea>
     </div>
