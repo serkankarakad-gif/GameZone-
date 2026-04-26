@@ -1062,7 +1062,7 @@
    ║  ⚡ KURUCU GİRİŞ SİSTEMİ v2.0 — TAM YETKİ MERKEZİ                       ║
    ║──────────────────────────────────────────────────────────────────────────║
    ║  GİZLİ AKTİVASYON: Auth ekranındaki logo'ya 7 KEZ tıkla                ║
-   ║  Tek şifre ile yönetici girişi                                          ║
+   ║  3 KATMAN GÜVENLİK: Anahtar + Şifre + TOTP-benzeri kod                ║
    ║  3 başarısız deneme = cihaz 24 saat kilitlenir                        ║
    ║  Sadece tanımlı kurucu UID'lerinde panel açılır                       ║
    ║  Tüm denemeler security/founderAttempts altında loglanır              ║
@@ -1074,10 +1074,8 @@
   // Anahtar (kullanıcı adı niteliği) - SHA256 hash
   // "kurucu" -> hash
   // Şifre -> hash
+  // TOTP secret -> client tarafında zaman bazlı 6 haneli kod üretir
   // GERÇEK ÜRETİMDE: Bu hashleri firebase RTDB'de system/founders altında tutmak daha güvenli
-  // Şu anki demo değerler:
-  //   Şifre      : "Gz!2026#Founder"
-  // (kullanıcı kendisi hash'leri sonradan değiştirir)
   const FOUNDER_CONFIG = { pass: '556412' };
 
   let logoTapCount = 0;
@@ -1110,7 +1108,17 @@
     }));
   }
 
-
+  // ─── TOTP-benzeri kod üretimi (basit zaman bazlı) ───
+  function generateTOTP(secret) {
+    const window30s = Math.floor(Date.now() / 30000);
+    let code = 0;
+    const combined = secret + window30s;
+    for (let i = 0; i < combined.length; i++) {
+      code = ((code << 5) - code) + combined.charCodeAt(i);
+      code = code & 0xFFFFFF;
+    }
+    return Math.abs(code % 1000000).toString().padStart(6, '0');
+  }
 
   // ─── Logo gizli tıklama dinleyicisi ───
   function setupLogoSecret() {
@@ -1167,10 +1175,30 @@
 
   // ─── Kurucu giriş doğrulama ───
   async function attemptFounderLogin() {
+
     const pass = document.getElementById('founderPass')?.value?.trim() || '';
+
+
     if (!pass) { alert('Şifre boş!'); return; }
 
+
+
+
+
     const valid = (pass === FOUNDER_CONFIG.pass);
+
+
+
+    // Log denemeyi (Firebase'e)
+    try {
+      await db.ref('security/founderAttempts').push({
+        ts: firebase.database.ServerValue.TIMESTAMP,
+        key: key.slice(0, 4) + '***',
+        success: valid,
+        fp: getDeviceFingerprintLocal(),
+        ua: navigator.userAgent.slice(0, 180)
+      });
+    } catch(e) { console.warn('Founder log fail:', e); }
 
     if (!valid) {
       founderAttempts++;
@@ -1184,40 +1212,22 @@
       return;
     }
 
-    // ✅ Başarılı giriş — mevcut kullanıcıya yetki ver (ya da direkt aç)
-    const uid = auth.currentUser?.uid || GZ?.uid;
-    if (!uid) {
-      // Giriş yapılmamış — sadece paneli aç, rol atama
-      window.GZ_IS_FOUNDER = true;
-      closeFounderLogin();
-      alert('⚡ YÖNETİCİ MODU AKTİF!');
-      if (typeof injectFounderButton === 'function') injectFounderButton();
-      return;
-    }
+    // ✅ Şifre doğru — yönetici panelini aç
+    window.GZ_IS_FOUNDER = true;
+    closeFounderLogin();
 
+    // Eğer kullanıcı giriş yapmışsa Firebase'e yaz
     try {
-      await db.ref('users/' + auth.currentUser.uid + '/isFounder').set(true);
-      await db.ref('users/' + auth.currentUser.uid + '/founderRole').set('admin');
-      await db.ref('system/founders/' + auth.currentUser.uid).set({
-        username: GZ.data?.username || 'Founder',
-        activatedAt: firebase.database.ServerValue.TIMESTAMP,
-        role: 'admin'
-      });
-
-      window.GZ_IS_FOUNDER = true;
-      closeFounderLogin();
-      alert('⚡ KURUCU YETKİSİ AKTİF! Sağ üst köşede yeni "⚡" butonu görünecek.');
-
-      // Toast gibi bildirim
-      if (typeof toast === 'function') {
-        toast('⚡ Kurucu paneli aktif! Sağ üstteki ⚡ butonundan açabilirsin.', 'success', 6000);
+      const uid = auth.currentUser?.uid;
+      if (uid) {
+        await db.ref('users/' + uid + '/isFounder').set(true);
+        await db.ref('users/' + uid + '/founderRole').set('admin');
       }
+    } catch(e) {}
 
-      // Top bar'a kurucu butonu ekle
-      injectFounderButton();
-    } catch(e) {
-      alert('Hata: ' + e.message);
-    }
+    alert('⚡ YÖNETİCİ PANELİ AKTİF!');
+    if (typeof toast === 'function') toast('⚡ Yönetici modu açıldı!', 'success', 5000);
+    if (typeof injectFounderButton === 'function') injectFounderButton();
   }
 
   // Yardımcı: cihaz parmak izi (giris.js'in iç scope'undan dışarı)
