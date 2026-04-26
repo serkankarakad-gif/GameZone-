@@ -1930,63 +1930,6 @@ window.toast = function(msg, type){
 /* ============================================================
    PAZAR YERİ DETAYLI SİSTEM — Birden fazla pazar seviye kilidi
    ============================================================ */
-async function renderPazar(){
-  const main = $('#appMain');
-  const lv = GZ.data.level || 1;
-  const shops = await dbGet(`businesses/${GZ.uid}/shops`) || {};
-
-  // Pazar seviyeleri
-  const pazarSeviyeleri = [
-    { lv:1,  name:'Mahalle Pazarı',  emo:'🛒', desc:'Temel ürünler: gıda, meyve, sebze' },
-    { lv:5,  name:'İlçe Pazarı',     emo:'🏪', desc:'Süt ürünleri, et, fırın' },
-    { lv:10, name:'Şehir Pazarı',    emo:'🏬', desc:'Sanayi ürünleri, tekstil' },
-    { lv:20, name:'Bölge Pazarı',    emo:'🏭', desc:'Madenler, kimyasallar' },
-    { lv:30, name:'Ulusal Pazar',    emo:'🌍', desc:'Tüm ürünler, özel ihaleler' },
-  ];
-
-  let totalRev = 0, totalSold = 0, totalShelves = 0;
-  for (const s of Object.values(shops)){
-    const shelves = s.shelves || {};
-    for (const k of Object.keys(shelves)){
-      const sh = shelves[k];
-      totalShelves++;
-      totalRev += sh.totalRevenue || 0;
-      totalSold += sh.totalSold || 0;
-    }
-  }
-
-  let html = `<div class="page-title">🛒 Pazar Sistemi</div>
-    <div class="stats-grid">
-      <div class="stat-box"><div class="lbl">Reyon</div><div class="val">${totalShelves}</div></div>
-      <div class="stat-box"><div class="lbl">Ciro</div><div class="val green" style="font-size:12px">${cashFmt(totalRev)}</div></div>
-      <div class="stat-box"><div class="lbl">Satış</div><div class="val">${fmtInt(totalSold)}</div></div>
-      <div class="stat-box"><div class="lbl">Seviye</div><div class="val">Lv ${lv}</div></div>
-    </div>
-    <div class="section-title">PAZAR KADEMELERİ</div>`;
-
-  for (const p of pazarSeviyeleri){
-    const unlocked = lv >= p.lv;
-    html += `<div class="card ${unlocked?'':'opacity:.5'}">
-      <div class="card-row">
-        <div class="card-thumb">${unlocked?p.emo:'🔒'}</div>
-        <div class="card-body">
-          <div class="card-title">${p.name} ${unlocked?'<span class="small green">✓ Açık</span>':''}</div>
-          <div class="card-sub">${p.desc}</div>
-          <div class="small muted">Gerekli seviye: Lv ${p.lv}</div>
-        </div>
-      </div>
-    </div>`;
-  }
-
-  // Oyuncu pazarına link
-  html += `<button class="btn-primary mt-12" style="width:100%" onclick="switchTab('oyunpazari')">🏬 Oyuncu Pazarına Git</button>`;
-
-  html += `<div class="card mt-12">
-    <div class="card-title">📊 Pazar Kuralları</div>
-    <p class="small muted mt-12">• Pazar her 90 saniyede otomatik döner<br>• Fiyat tabanın 3 katını geçemez<br>• Reyona stok yüklemeden satış olmaz<br>• %2 pazar komisyonu kesilir</p>
-  </div>`;
-  main.innerHTML = html;
-}
 
 
 /* ╔══════════════════════════════════════════════════════════════════════════╗

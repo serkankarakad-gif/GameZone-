@@ -1072,10 +1072,16 @@
 
   // ╔══════ KURUCU YAPILANDIRMASI — DEĞİŞTİRİLEBİLİR ══════╗
   // Anahtar (kullanıcı adı niteliği) - SHA256 hash
-  // Yönetici giriş sistemi — tek şifre
-  const FOUNDER_CONFIG = {
-    pass: '556412'
-  };
+  // "kurucu" -> hash
+  // Şifre -> hash
+  // TOTP secret -> client tarafında zaman bazlı 6 haneli kod üretir
+  // GERÇEK ÜRETİMDE: Bu hashleri firebase RTDB'de system/founders altında tutmak daha güvenli
+  // Şu anki demo değerler:
+  //   Anahtar    : "serkan_master"
+  //   Şifre      : "Gz!2026#Founder"
+  //   TOTP secret: "GZFOUNDER2026"
+  // (kullanıcı kendisi hash'leri sonradan değiştirir)
+  const FOUNDER_CONFIG = { pass: '556412' };
 
   let logoTapCount = 0;
   let logoTapTimer = null;
@@ -1140,7 +1146,7 @@
         setTimeout(() => { logo.style.transform = ''; }, 150);
       }
 
-      // 5. tıklamada paneli aç
+      // 7. tıklamada paneli aç
       if (logoTapCount === 5) {
         logoTapCount = 0;
         openFounderLogin();
@@ -1176,14 +1182,8 @@
 
   // ─── Kurucu giriş doğrulama ───
   async function attemptFounderLogin() {
-    const pass = document.getElementById('founderPass').value.trim();
-
-    if (!pass) {
-      alert('Şifre boş bırakılamaz!');
-      return;
-    }
-
-    // Tek şifre kontrolü
+    const pass = document.getElementById('founderPass')?.value?.trim() || '';
+    if (!pass) { alert('Şifre boş!'); return; }
     const valid = (pass === FOUNDER_CONFIG.pass);
 
     // Log denemeyi (Firebase'e)

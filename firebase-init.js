@@ -124,28 +124,38 @@ async function addXP(uid, amount){
     await dbUpdate(`users/${uid}`, { level: lv, xp });
     if (uid === GZ.uid){
       toast(`🎉 Seviye atladın! Yeni seviye: ${lv}`, 'success', 4000);
+      if (window.SoundManager) SoundManager.play('levelup');
+      if (typeof checkAndGrantAchievement === 'function'){
+        if (lv >= 10) await checkAndGrantAchievement(uid, 'lv10');
+        if (lv >= 25) await checkAndGrantAchievement(uid, 'lv25');
+        if (lv >= 50) await checkAndGrantAchievement(uid, 'lv50');
+      }
     }
   }
 }
+window.addXP = addXP;
 
 /* Toplam servet (sıralama için) */
 async function calcNetWorth(uid){
   const u = await dbGet(`users/${uid}`);
   if (!u) return 0;
   let total = (u.money||0);
-  // Banka bakiyesi
   const bank = await dbGet(`bank/${uid}`);
   if (bank){
     total += (bank.balance||0) + (bank.investment||0) - (bank.loan||0);
   }
-  // Kripto
   const holdings = await dbGet(`crypto/holdings/${uid}`) || {};
   for (const sym of Object.keys(holdings)){
     const p = await dbGet(`crypto/prices/${sym}/current`);
     total += (holdings[sym] || 0) * (p || 0);
   }
+  if (uid === GZ.uid && typeof checkAndGrantAchievement === 'function'){
+    if (total >= 1000000)    checkAndGrantAchievement(uid, 'rich_1');
+    if (total >= 1000000000) checkAndGrantAchievement(uid, 'rich_2');
+  }
   return total;
 }
+window.calcNetWorth = calcNetWorth;
 
 /* Online/offline durum */
 function setupPresence(uid){
@@ -172,36 +182,3 @@ const ILLER = [
 ];
 window.ILLER = ILLER;
 
-/* ============================================================
-   GELİŞTİRİLMİŞ LEVEL UP — ses + başarım kontrolü
-   ============================================================ */
-const _origAddXP = window.addXP;
-window.addXP = async function(uid, amount){
-  if (typeof _origAddXP === 'function'){
-    const uBefore = await dbGet(`users/${uid}`);
-    const lvBefore = uBefore?.level || 1;
-    await _origAddXP(uid, amount);
-    const uAfter = await dbGet(`users/${uid}`);
-    const lvAfter = uAfter?.level || 1;
-    if (lvAfter > lvBefore && uid === GZ.uid){
-      if (window.SoundManager) SoundManager.play('levelup');
-      // Başarım kontrolü
-      if (typeof checkAndGrantAchievement === 'function'){
-        if (lvAfter >= 10) await checkAndGrantAchievement(uid, 'lv10');
-        if (lvAfter >= 25) await checkAndGrantAchievement(uid, 'lv25');
-        if (lvAfter >= 50) await checkAndGrantAchievement(uid, 'lv50');
-      }
-    }
-  }
-};
-
-/* NET WORTH — servet başarımı */
-const _origCalcNetWorth = window.calcNetWorth;
-window.calcNetWorth = async function(uid){
-  const nw = typeof _origCalcNetWorth === 'function' ? await _origCalcNetWorth(uid) : 0;
-  if (uid === GZ.uid && typeof checkAndGrantAchievement === 'function'){
-    if (nw >= 1000000)       await checkAndGrantAchievement(uid, 'rich_1');
-    if (nw >= 1000000000)    await checkAndGrantAchievement(uid, 'rich_2');
-  }
-  return nw;
-};
