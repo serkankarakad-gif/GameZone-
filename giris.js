@@ -1062,7 +1062,7 @@
    ║  ⚡ KURUCU GİRİŞ SİSTEMİ v2.0 — TAM YETKİ MERKEZİ                       ║
    ║──────────────────────────────────────────────────────────────────────────║
    ║  GİZLİ AKTİVASYON: Auth ekranındaki logo'ya 7 KEZ tıkla                ║
-   ║  3 KATMAN GÜVENLİK: Anahtar + Şifre + TOTP-benzeri kod                ║
+   ║  Tek şifre ile yönetici girişi                                          ║
    ║  3 başarısız deneme = cihaz 24 saat kilitlenir                        ║
    ║  Sadece tanımlı kurucu UID'lerinde panel açılır                       ║
    ║  Tüm denemeler security/founderAttempts altında loglanır              ║
@@ -1074,12 +1074,9 @@
   // Anahtar (kullanıcı adı niteliği) - SHA256 hash
   // "kurucu" -> hash
   // Şifre -> hash
-  // TOTP secret -> client tarafında zaman bazlı 6 haneli kod üretir
   // GERÇEK ÜRETİMDE: Bu hashleri firebase RTDB'de system/founders altında tutmak daha güvenli
   // Şu anki demo değerler:
-  //   Anahtar    : "serkan_master"
   //   Şifre      : "Gz!2026#Founder"
-  //   TOTP secret: "GZFOUNDER2026"
   // (kullanıcı kendisi hash'leri sonradan değiştirir)
   const FOUNDER_CONFIG = { pass: '556412' };
 
@@ -1113,17 +1110,7 @@
     }));
   }
 
-  // ─── TOTP-benzeri kod üretimi (basit zaman bazlı) ───
-  function generateTOTP(secret) {
-    const window30s = Math.floor(Date.now() / 30000);
-    let code = 0;
-    const combined = secret + window30s;
-    for (let i = 0; i < combined.length; i++) {
-      code = ((code << 5) - code) + combined.charCodeAt(i);
-      code = code & 0xFFFFFF;
-    }
-    return Math.abs(code % 1000000).toString().padStart(6, '0');
-  }
+
 
   // ─── Logo gizli tıklama dinleyicisi ───
   function setupLogoSecret() {
@@ -1169,10 +1156,8 @@
     const panel = document.getElementById('founderLoginPanel');
     if (!panel) return;
     panel.classList.add('active');
-    document.getElementById('founderKey').value = '';
     document.getElementById('founderPass').value = '';
-    document.getElementById('founderTotp').value = '';
-    document.getElementById('founderKey').focus();
+    document.getElementById('founderPass').focus();
   }
 
   function closeFounderLogin() {
@@ -1184,18 +1169,8 @@
   async function attemptFounderLogin() {
     const pass = document.getElementById('founderPass')?.value?.trim() || '';
     if (!pass) { alert('Şifre boş!'); return; }
-    const valid = (pass === FOUNDER_CONFIG.pass);
 
-    // Log denemeyi (Firebase'e)
-    try {
-      await db.ref('security/founderAttempts').push({
-        ts: firebase.database.ServerValue.TIMESTAMP,
-        key: key.slice(0, 4) + '***',
-        success: valid,
-        fp: getDeviceFingerprintLocal(),
-        ua: navigator.userAgent.slice(0, 180)
-      });
-    } catch(e) { console.warn('Founder log fail:', e); }
+    const valid = (pass === FOUNDER_CONFIG.pass);
 
     if (!valid) {
       founderAttempts++;
@@ -1209,10 +1184,14 @@
       return;
     }
 
-    // ✅ Başarılı! Mevcut auth user için founder rolü uygula
-    if (!auth.currentUser) {
-      alert('⚠️ Önce normal hesabınla giriş yapmalısın, sonra logo\'ya tıklayıp kurucu girişi yapabilirsin!');
+    // ✅ Başarılı giriş — mevcut kullanıcıya yetki ver (ya da direkt aç)
+    const uid = auth.currentUser?.uid || GZ?.uid;
+    if (!uid) {
+      // Giriş yapılmamış — sadece paneli aç, rol atama
+      window.GZ_IS_FOUNDER = true;
       closeFounderLogin();
+      alert('⚡ YÖNETİCİ MODU AKTİF!');
+      if (typeof injectFounderButton === 'function') injectFounderButton();
       return;
     }
 
@@ -1299,7 +1278,7 @@
     if (btnClose) btnClose.addEventListener('click', closeFounderLogin);
 
     // Enter ile giriş
-    ['founderKey','founderPass','founderTotp'].forEach(id => {
+    ['founderPass'].forEach(id => {
       const inp = document.getElementById(id);
       if (inp) {
         inp.addEventListener('keypress', e => {
