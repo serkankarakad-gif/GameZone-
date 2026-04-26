@@ -12,21 +12,51 @@
         },
         "diamonds": {
           ".write": false
+        },
+        "netWorth": {
+          ".write": "auth != null && auth.uid === $uid"
+        },
+        "weeklyRevenue": {
+          ".write": "auth != null && auth.uid === $uid"
+        },
+        "lastDailyBonus": {
+          ".write": "auth != null && auth.uid === $uid"
+        },
+        "dailyTasks": {
+          "$date": {
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        },
+        "achievements": {
+          ".read": "auth != null",
+          "$achId": {
+            ".write": "auth != null && auth.uid === $uid"
+          }
         }
       }
     },
+
     "usernames": {
       ".read": "auth != null",
       "$name": {
         ".write": "auth != null && (!data.exists() || data.val() === auth.uid)"
       }
     },
+
     "bank": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid"
       }
     },
+
+    "businesses": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
     "security": {
       "logins": {
         "$uid": {
@@ -53,16 +83,22 @@
         }
       }
     },
+
     "notifs": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null"
       }
     },
+
     "crypto": {
       "prices": {
         ".read": "auth != null",
-        ".write": false
+        ".write": "auth != null"
+      },
+      "_tickLock": {
+        ".read": "auth != null",
+        ".write": "auth != null"
       },
       "holdings": {
         "$uid": {
@@ -71,29 +107,85 @@
         }
       }
     },
-    "leaderboard": {
-      ".read": "auth != null",
-      ".write": false
+
+    "exports": {
+      "list": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
     },
-    "chat": {
+
+    "auctions": {
       ".read": "auth != null",
       ".write": "auth != null"
     },
+
+    "chat": {
+      "global": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "$msgId": {
+          ".validate": "newData.hasChildren(['uid','username','message','ts']) && newData.child('message').val().length <= 200 && newData.child('uid').val() === auth.uid"
+        }
+      }
+    },
+
     "brands": {
       ".read": "auth != null",
       "$bid": {
         ".write": "auth != null"
       }
     },
-    "auctions": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
+
     "friends": {
       "$uid": {
         ".read": "auth != null",
         ".write": "auth != null && auth.uid === $uid"
       }
+    },
+
+    "loans": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$loanId": {
+        ".validate": "newData.hasChildren(['from','to','amount','paid','createdAt']) && newData.child('from').val() === auth.uid"
+      }
+    },
+
+    "feedback": {
+      ".read": false,
+      ".write": "auth != null",
+      "$fbId": {
+        ".validate": "newData.hasChildren(['uid','username','text','ts']) && newData.child('uid').val() === auth.uid && newData.child('text').val().length >= 10"
+      }
+    },
+
+    "playerMarket": {
+      ".read": "auth != null",
+      "$listingId": {
+        ".write": "auth != null",
+        ".validate": "!newData.exists() || (newData.hasChildren(['id','sellerUid','item','qty','remaining','price','isPublic','createdAt']) && newData.child('price').val() > 0 && newData.child('qty').val() > 0 && newData.child('remaining').val() <= newData.child('qty').val())"
+      }
+    },
+
+    "pvp": {
+      ".read": "auth != null",
+      "$pvpId": {
+        ".write": "auth != null",
+        ".validate": "!newData.exists() || newData.hasChildren(['id','creator','bet','status','createdAt'])"
+      }
+    },
+
+    "mini": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "leaderboard": {
+      ".read": "auth != null",
+      ".write": false
     }
   }
 }

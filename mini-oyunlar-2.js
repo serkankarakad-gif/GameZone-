@@ -1176,3 +1176,42 @@ window.sdkCheck = async () => {
 
 console.log('[mini-oyunlar-2] 25 beceri/zeka oyunu yüklendi');
 })();
+
+/* ============================================================
+   PvP UI — Render (mini-oyunlar sekmesinde gösterilir)
+   ============================================================ */
+if (typeof window.renderPvpSection === 'undefined'){
+  window.renderPvpSection = async function(){
+    const challenges = await dbGet('pvp') || {};
+    const open = Object.values(challenges).filter(c=>c.status==='waiting' && c.creator !== GZ.uid);
+    let html = `<div class="section-title">⚔️ PvP Meydan Okumalar</div>`;
+    html += `<button class="btn-primary mb-12" style="width:100%" onclick="askCreatePvp()">+ Meydan Oku</button>`;
+    if (open.length === 0){
+      html += `<p class="small muted tac">Şu an açık meydan okuma yok</p>`;
+    } else {
+      for (const ch of open){
+        html += `<div class="card">
+          <div class="card-row">
+            <div class="card-thumb">⚔️</div>
+            <div class="card-body">
+              <div class="card-title">${escapeHtml(ch.creatorName)}'nin Meydan Okuması</div>
+              <div class="card-sub">Bahis: <b class="green">${cashFmt(ch.bet)}</b> × 2 = ${cashFmt(ch.bet*2*0.95)} (kazanç)</div>
+            </div>
+          </div>
+          <button class="btn-primary mt-12" style="width:100%" onclick="joinPvpChallenge('${ch.id}').then(()=>render('oyunlar'))">Kabul Et</button>
+        </div>`;
+      }
+    }
+    return html;
+  };
+  window.askCreatePvp = function(){
+    showModal('⚔️ Meydan Oku', `
+      <p class="small muted mb-8">Bahis koy, rakip kabul etsin — zar atan kazanır. Kazanç %5 komisyon düşülür.</p>
+      <div class="input-group">
+        <label>Bahis Miktarı (₺)</label>
+        <input type="number" id="pvpBet" value="1000" min="500" step="100">
+      </div>
+      <button class="btn-primary" onclick="createPvpChallenge(parseInt($('#pvpBet').value)).then(()=>{closeModal();render('oyunlar')})">Meydan Oku</button>
+    `);
+  };
+}

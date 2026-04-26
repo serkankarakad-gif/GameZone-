@@ -165,9 +165,13 @@ async function initCryptoEngine(){
   ref.on('value', s => { GZ.prices = s.val() || {}; if (GZ.currentTab === 'kripto') renderKripto(); });
   GZ.pricesUnsub = () => ref.off();
 
-  // Sadece bir tarayıcının fiyat tick'ini yapması için lock kullanırız
-  setInterval(tickCrypto, 30000);
-  setTimeout(tickCrypto, 2000);
+  // Kripto fiyatı 10-30 dakikada bir güncellenir (gerçekçi borsa simülasyonu)
+  function scheduleCryptoTick(){
+    const delay = (10 + Math.random() * 20) * 60 * 1000; // 10-30 dakika
+    setTimeout(async () => { await tickCrypto(); scheduleCryptoTick(); }, delay);
+  }
+  scheduleCryptoTick();
+  setTimeout(tickCrypto, 3000); // ilk yükleme
 }
 
 async function tickCrypto(){
@@ -718,6 +722,16 @@ window.buyShelfStock = buyShelfStock;
 
 async function setShelfPrice(shopId, itemKey, price){
   if (price <= 0) return toast('Geçersiz fiyat','error');
+  const item = URUNLER[itemKey];
+  if (item){
+    const maxAllowed = +(item.base * 3).toFixed(2);
+    if (price > maxAllowed){
+      return toast(`❌ Maksimum fiyat: ${cashFmt(maxAllowed)} (taban × 3). Bu fiyatta hiç satış olmaz.`, 'error');
+    }
+    if (price < item.base * 0.5){
+      return toast(`⚠️ Çok düşük fiyat! Tabanın yarısından az — zarar edersin.`, 'warn');
+    }
+  }
   await dbUpdate(`businesses/${GZ.uid}/shops/${shopId}/shelves/${itemKey}`, { price });
   toast('Fiyat güncellendi', 'success');
 }
@@ -954,3 +968,224 @@ async function pushNotif(uid, msg){
   return id;
 }
 window.pushNotif = pushNotif;
+
+/* ============================================================
+   OYUNCU PAZARI — Gerçek Zamanlı Alışveriş Sistemi
+   Oyuncular ürün satışa koyar, diğerleri satın alır
+   ============================================================ */
+
+// Oyuncu ürün satışa koyar (açık veya gizli)
+async function listPlayerItem(itemKey, qty, price, isPublic = true){
+  const item = URUNLER[itemKey];
+  if (!item) return toast('Geçersiz ürün', 'error');
+
+  // Fiyat limiti: tabanın %50'si ile 5 katı arası
+  const minP = +(item.base * 0.5).toFixed(2);
+  const maxP = +(item.base * 5).toFixed(2);
+  if (price < minP || price > maxP){
+    return toast(`Fiyat ${cashFmt(minP)} - ${cashFmt(maxP)} arasında olmalı`, 'error');
+  }
+  if (qty <= 0) return toast('Geçersiz miktar', 'error');
+
+  // Stoktan düş
+  const ok = await consumeStock(GZ.uid, itemKey, qty);
+  if (!ok) return toast('Yeterli stok yok', 'error');
+
+  const listingId = 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+  await dbSet(`playerMarket/${listingId}`, {
+    id: listingId,
+    sellerUid: GZ.uid,
+    sellerName: GZ.data.username,
+    item: itemKey,
+    qty,
+    remaining: qty,
+    price,
+    isPublic,
+    createdAt: now(),
+    sold: 0
+  });
+  toast(`${item.emo} ${item.name} satışa çıkarıldı!`, 'success');
+  await pushNotif(GZ.uid, `📦 ${qty} ${item.unit} ${item.name} — ${cashFmt(price)}/${item.unit} fiyatıyla satışa çıktı`);
+}
+window.listPlayerItem = listPlayerItem;
+
+// Oyuncu ilanı iptal eder — kalan stok geri döner
+async function cancelPlayerListing(listingId){
+  const listing = await dbGet(`playerMarket/${listingId}`);
+  if (!listing) return toast('İlan bulunamadı', 'error');
+  if (listing.sellerUid !== GZ.uid) return toast('Bu ilan sana ait değil', 'error');
+  if (listing.remaining > 0){
+    await addStock(GZ.uid, listing.item, listing.remaining, 'mainWarehouse');
+  }
+  await db.ref(`playerMarket/${listingId}`).remove();
+  toast('İlan kaldırıldı, stok geri eklendi', 'success');
+}
+window.cancelPlayerListing = cancelPlayerListing;
+
+// Oyuncu ilanından satın alır
+async function buyFromPlayerMarket(listingId, qty){
+  const listing = await dbGet(`playerMarket/${listingId}`);
+  if (!listing) return toast('İlan artık mevcut değil', 'error');
+  if (!listing.isPublic && listing.sellerUid !== GZ.uid) return toast('Bu ilan gizli', 'error');
+  if (qty <= 0 || qty > listing.remaining) return toast(`Maksimum ${listing.remaining} alabilirsin`, 'error');
+
+  const total = +(qty * listing.price).toFixed(2);
+  const ok = await spendCash(GZ.uid, total, 'player-market-buy');
+  if (!ok) return toast('Yetersiz bakiye', 'error');
+
+  // Stoğu alıcıya ver
+  await addStock(GZ.uid, listing.item, qty, 'mainWarehouse');
+  // Parayı satıcıya ver (%2 komisyon kesilir)
+  const commission = +(total * 0.02).toFixed(2);
+  await addCash(listing.sellerUid, total - commission, 'player-market-sale');
+  await addXP(GZ.uid, Math.floor(qty * URUNLER[listing.item].base / 100));
+
+  // İlanı güncelle
+  const newRemaining = listing.remaining - qty;
+  if (newRemaining <= 0){
+    await db.ref(`playerMarket/${listingId}`).remove();
+  } else {
+    await dbUpdate(`playerMarket/${listingId}`, {
+      remaining: newRemaining,
+      sold: (listing.sold || 0) + qty
+    });
+  }
+
+  toast(`✅ ${qty} ${URUNLER[listing.item].unit} ${URUNLER[listing.item].name} satın alındı!`, 'success');
+  await pushNotif(listing.sellerUid, `💰 ${GZ.data.username}, ${qty} ${URUNLER[listing.item].unit} ${URUNLER[listing.item].name} satın aldı (+${cashFmt(total - commission)})`);
+}
+window.buyFromPlayerMarket = buyFromPlayerMarket;
+
+/* ============================================================
+   VERGİ & MAAŞ — Pazar Günü Otomatik Kesinti
+   Cumartesi günü geldiğinde sistem maaş ve vergiyi keser
+   ============================================================ */
+async function processTaxAndSalaryIfDue(){
+  const bank = await dbGet(`bank/${GZ.uid}`) || {};
+  const t = now();
+  const today = new Date(t);
+  const isSaturday = today.getDay() === 6; // 0=Pazar, 6=Cumartesi
+
+  // Maaş: sadece cumartesi ve 7 gün geçtiyse
+  if (isSaturday && t > (bank.nextSalary || 0)){
+    const employees = await countEmployees(GZ.uid);
+    const salary = employees * 350;
+    const shops = await dbGet(`businesses/${GZ.uid}/shops`) || {};
+    const gardens = await dbGet(`businesses/${GZ.uid}/gardens`) || {};
+    const farms = await dbGet(`businesses/${GZ.uid}/farms`) || {};
+    const factories = await dbGet(`businesses/${GZ.uid}/factories`) || {};
+    const mines = await dbGet(`businesses/${GZ.uid}/mines`) || {};
+
+    // İşletme gideri
+    const bizCount = Object.keys(shops).length + Object.keys(gardens).length +
+                     Object.keys(farms).length + Object.keys(factories).length + Object.keys(mines).length;
+    const expense = bizCount * 200;
+
+    // Vergi: kârın %8'i (geçen haftanın geliri hesaplanamıyorsa sabit)
+    const taxBase = (GZ.data.weeklyRevenue || 0);
+    const tax = +(taxBase * 0.08).toFixed(2);
+
+    const totalDue = salary + expense + tax;
+    if (totalDue > 0){
+      const ok = await spendCash(GZ.uid, totalDue, 'weekly-payment');
+      if (ok){
+        await pushNotif(GZ.uid, `📅 Cumartesi kesintisi: Maaş ${cashFmt(salary)} + Gider ${cashFmt(expense)} + Vergi ${cashFmt(tax)} = ${cashFmt(totalDue)}`);
+      } else {
+        await dbUpdate(`bank/${GZ.uid}`, { loan: (bank.loan||0) + totalDue });
+        await pushNotif(GZ.uid, `⚠️ Haftalık ödeme yapılamadı (${cashFmt(totalDue)}), krediye eklendi`);
+      }
+      // Haftalık geliri sıfırla
+      await dbUpdate(`users/${GZ.uid}`, { weeklyRevenue: 0 });
+    }
+    // Bir sonraki cumartesi için ayarla
+    const nextSat = new Date(t);
+    nextSat.setDate(nextSat.getDate() + (7 - nextSat.getDay() + 6) % 7 || 7);
+    nextSat.setHours(0, 0, 0, 0);
+    await dbUpdate(`bank/${GZ.uid}`, {
+      nextSalary: nextSat.getTime(),
+      nextBusinessExpense: nextSat.getTime()
+    });
+  }
+}
+window.processTaxAndSalaryIfDue = processTaxAndSalaryIfDue;
+
+/* ============================================================
+   BAŞARIMLAR SİSTEMİ
+   ============================================================ */
+const ACHIEVEMENTS = [
+  { id:'first_sale',     name:'İlk Satış',        emo:'🎉', desc:'İlk ürününü sat',                  xp:100 },
+  { id:'merchant_1',    name:'Küçük Tüccar',      emo:'🛒', desc:'1.000 ₺ kazanç',                   xp:200 },
+  { id:'merchant_2',    name:'Tüccar',            emo:'💼', desc:'100.000 ₺ kazanç',                 xp:500 },
+  { id:'merchant_3',    name:'Büyük Tüccar',      emo:'💰', desc:'1.000.000 ₺ kazanç',               xp:1500 },
+  { id:'shop_5',        name:'Dükkan Zinciri',    emo:'🏪', desc:'5 dükkan aç',                      xp:400 },
+  { id:'crypto_win',    name:'Kripto Zengini',    emo:'📈', desc:'Kripto\'dan 50.000 ₺ kazan',       xp:300 },
+  { id:'export_10',     name:'İhracatçı',         emo:'🚢', desc:'10 ihracat işlemi',                xp:350 },
+  { id:'harvest_100',   name:'Çiftçi',            emo:'🌾', desc:'100 hasat yap',                    xp:250 },
+  { id:'lv10',          name:'Deneyimli',         emo:'⭐', desc:'Seviye 10\'a ulaş',               xp:600 },
+  { id:'lv25',          name:'Usta',              emo:'🌟', desc:'Seviye 25\'e ulaş',               xp:1000 },
+  { id:'lv50',          name:'Efsane',            emo:'💫', desc:'Seviye 50\'ye ulaş',              xp:2500 },
+  { id:'brand_leader',  name:'Marka Lideri',      emo:'🏢', desc:'Marka kur',                        xp:500 },
+  { id:'market_seller', name:'Pazar Satıcısı',    emo:'🏬', desc:'Oyuncu pazarına 10 ilan koy',     xp:300 },
+  { id:'rich_1',        name:'Milyoner',          emo:'💎', desc:'Net servet 1.000.000 ₺',           xp:1000 },
+  { id:'rich_2',        name:'Milyarder',         emo:'👑', desc:'Net servet 1.000.000.000 ₺',       xp:5000 },
+];
+window.ACHIEVEMENTS = ACHIEVEMENTS;
+
+async function checkAndGrantAchievement(uid, achievementId){
+  const already = await dbGet(`users/${uid}/achievements/${achievementId}`);
+  if (already) return;
+  const ach = ACHIEVEMENTS.find(a => a.id === achievementId);
+  if (!ach) return;
+  await dbSet(`users/${uid}/achievements/${achievementId}`, { ts: now() });
+  await addXP(uid, ach.xp);
+  await pushNotif(uid, `🏅 Başarım kazandın: ${ach.emo} ${ach.name} — +${ach.xp} XP`);
+  // Toast göster (eğer bu kullanıcıysa)
+  if (uid === GZ.uid) toast(`🏅 ${ach.emo} ${ach.name}!`, 'success');
+}
+window.checkAndGrantAchievement = checkAndGrantAchievement;
+
+/* ============================================================
+   GÜNLÜK GÖREVLER
+   ============================================================ */
+const DAILY_TASKS = [
+  { id:'sell_100', name:'Günlük Satış',       desc:'100 birim herhangi bir ürün sat',      reward:500,   xp:50  },
+  { id:'harvest_3',name:'Hasat Ustası',       desc:'3 hasat yap',                          reward:1000,  xp:100 },
+  { id:'trade_1',  name:'Tüccar Ruhu',        desc:'Oyuncu pazarından 1 satın al',         reward:750,   xp:75  },
+  { id:'chat_5',   name:'Sosyal Kelebek',     desc:'Sohbette 5 mesaj gönder',              reward:200,   xp:30  },
+  { id:'crypto_1', name:'Kripto Günü',        desc:'Kripto al veya sat (min 1000 ₺)',      reward:800,   xp:80  },
+  { id:'login',    name:'Günlük Giriş',       desc:'Oyuna giriş yap',                      reward:100,   xp:20  },
+];
+window.DAILY_TASKS = DAILY_TASKS;
+
+async function checkDailyLogin(){
+  const today = new Date().toDateString();
+  const lastLogin = await dbGet(`users/${GZ.uid}/lastDailyBonus`);
+  if (lastLogin === today) return;
+  await dbUpdate(`users/${GZ.uid}`, { lastDailyBonus: today });
+  await addCash(GZ.uid, 100, 'daily-login');
+  await addXP(GZ.uid, 20);
+  toast('🎁 Günlük giriş bonusu: +100 ₺ +20 XP', 'success');
+  await checkAndGrantAchievement(GZ.uid, 'login');
+}
+window.checkDailyLogin = checkDailyLogin;
+
+async function updateDailyTask(taskId, increment = 1){
+  const today = new Date().toDateString();
+  const key = `users/${GZ.uid}/dailyTasks/${today}/${taskId}`;
+  const task = DAILY_TASKS.find(t => t.id === taskId);
+  if (!task) return;
+  const cur = (await dbGet(key)) || { count: 0, done: false };
+  if (cur.done) return;
+  const newCount = (cur.count || 0) + increment;
+  const targets = { sell_100:100, harvest_3:3, trade_1:1, chat_5:5, crypto_1:1, login:1 };
+  const target = targets[taskId] || 1;
+  if (newCount >= target){
+    await dbSet(key, { count: newCount, done: true });
+    await addCash(GZ.uid, task.reward, 'daily-task');
+    await addXP(GZ.uid, task.xp);
+    toast(`✅ Görev tamamlandı: ${task.name} → +${cashFmt(task.reward)} +${task.xp} XP`, 'success');
+  } else {
+    await dbSet(key, { count: newCount, done: false });
+  }
+}
+window.updateDailyTask = updateDailyTask;

@@ -34,35 +34,38 @@
     {
       id: 'ticaret', name: 'TİCARET', icon: '💼', color: '#1e5cb8',
       items: [
-        { id: 'dukkan',   icon: '🏪', label: 'Dükkanlar',  desc: 'Reyon kur, ürün sat' },
-        { id: 'pazar',    icon: '🛒', label: 'Pazar',      desc: 'Otomatik satış istatistikleri' },
-        { id: 'lojistik', icon: '🚚', label: 'Lojistik',   desc: '81 ilde depo ağı' },
-        { id: 'ihracat',  icon: '🚢', label: 'İhracat',    desc: 'Yabancı şirketlere sat' },
-        { id: 'ihale',    icon: '⚖️', label: 'İhaleler',   desc: 'Canlı geri sayımlı teklif' },
-        { id: 'kripto',   icon: '📈', label: 'Kripto Borsa', desc: 'Al-sat, dalgalanma' },
+        { id: 'dukkan',    icon: '🏪', label: 'Dükkanlar',     desc: 'Reyon kur, ürün sat' },
+        { id: 'pazar',     icon: '🛒', label: 'Pazar',         desc: 'Pazar kademeleri & satış' },
+        { id: 'oyunpazari',icon: '🏬', label: 'Oyuncu Pazarı', desc: 'Diğer oyunculardan al-sat', highlight: true },
+        { id: 'lojistik',  icon: '🚚', label: 'Lojistik',      desc: '81 ilde depo ağı' },
+        { id: 'ihracat',   icon: '🚢', label: 'İhracat',       desc: 'Yabancı şirketlere sat' },
+        { id: 'ihale',     icon: '⚖️', label: 'İhaleler',      desc: 'Canlı geri sayımlı teklif' },
+        { id: 'kripto',    icon: '📈', label: 'Kripto Borsa',  desc: 'Al-sat, dalgalanma' },
       ]
     },
     {
       id: 'sosyal', name: 'SOSYAL', icon: '👥', color: '#7c3aed',
       items: [
-        { id: 'marka',    icon: '🏢', label: 'Markalar',  desc: 'Klan kur veya katıl (Lv 10+)' },
-        { id: 'liderlik', icon: '🏆', label: 'Liderlik',  desc: 'En zenginler tablosu' },
-        { id: 'sehirler', icon: '🏙️', label: 'Şehirler',  desc: '81 il, taşın' },
-        { id: 'haberler', icon: '📰', label: 'Haberler',  desc: 'Güncel piyasa & ihaleler' },
+        { id: 'marka',     icon: '🏢', label: 'Markalar',   desc: 'Klan kur veya katıl (Lv 10+)' },
+        { id: 'liderlik',  icon: '🏆', label: 'Liderlik',   desc: 'En zenginler tablosu' },
+        { id: 'sehirler',  icon: '🏙️', label: 'Şehirler',   desc: '81 il, taşın' },
+        { id: 'haberler',  icon: '📰', label: 'Haberler',   desc: 'Güncel piyasa & ihaleler' },
       ]
     },
     {
       id: 'eglence', name: 'EĞLENCE', icon: '🎮', color: '#f59e0b',
       items: [
-        { id: 'oyunlar',  icon: '🎮', label: 'Mini Oyunlar', desc: '50 oyun, seviye sistemli', highlight: true },
-        { id: 'magaza',   icon: '💎', label: 'Elmas Mağaza',  desc: 'Elmas paketleri & robot' },
+        { id: 'oyunlar',   icon: '🎮', label: 'Mini Oyunlar',    desc: '50 oyun, seviye sistemli', highlight: true },
+        { id: 'gorevler',  icon: '📋', label: 'Günlük Görevler', desc: 'Her gün yeni görev, ödül kazan' },
+        { id: 'basarimlar',icon: '🏅', label: 'Başarımlar',      desc: '15 başarım, XP ödüllü' },
+        { id: 'magaza',    icon: '💎', label: 'Elmas Mağaza',    desc: 'Elmas paketleri & robot' },
       ]
     },
     {
       id: 'bilgi', name: 'BİLGİ', icon: '📚', color: '#6b7280',
       items: [
-        { id: 'hikaye',   icon: '📖', label: 'Hikaye',  desc: 'Oyun ve geliştiriciler hakkında' },
-        { id: 'sss',      icon: '❓', label: 'SSS',     desc: 'Sıkça sorulan sorular' },
+        { id: 'hikaye',    icon: '📖', label: 'Hikaye',  desc: 'Oyun ve geliştiriciler hakkında' },
+        { id: 'sss',       icon: '❓', label: 'SSS',     desc: 'Sıkça sorulan sorular' },
       ]
     },
   ];

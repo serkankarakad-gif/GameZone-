@@ -171,3 +171,37 @@ const ILLER = [
   "Kırıkkale","Batman","Şırnak","Bartın","Ardahan","Iğdır","Yalova","Karabük","Kilis","Osmaniye","Düzce"
 ];
 window.ILLER = ILLER;
+
+/* ============================================================
+   GELİŞTİRİLMİŞ LEVEL UP — ses + başarım kontrolü
+   ============================================================ */
+const _origAddXP = window.addXP;
+window.addXP = async function(uid, amount){
+  if (typeof _origAddXP === 'function'){
+    const uBefore = await dbGet(`users/${uid}`);
+    const lvBefore = uBefore?.level || 1;
+    await _origAddXP(uid, amount);
+    const uAfter = await dbGet(`users/${uid}`);
+    const lvAfter = uAfter?.level || 1;
+    if (lvAfter > lvBefore && uid === GZ.uid){
+      if (window.SoundManager) SoundManager.play('levelup');
+      // Başarım kontrolü
+      if (typeof checkAndGrantAchievement === 'function'){
+        if (lvAfter >= 10) await checkAndGrantAchievement(uid, 'lv10');
+        if (lvAfter >= 25) await checkAndGrantAchievement(uid, 'lv25');
+        if (lvAfter >= 50) await checkAndGrantAchievement(uid, 'lv50');
+      }
+    }
+  }
+};
+
+/* NET WORTH — servet başarımı */
+const _origCalcNetWorth = window.calcNetWorth;
+window.calcNetWorth = async function(uid){
+  const nw = typeof _origCalcNetWorth === 'function' ? await _origCalcNetWorth(uid) : 0;
+  if (uid === GZ.uid && typeof checkAndGrantAchievement === 'function'){
+    if (nw >= 1000000)       await checkAndGrantAchievement(uid, 'rich_1');
+    if (nw >= 1000000000)    await checkAndGrantAchievement(uid, 'rich_2');
+  }
+  return nw;
+};

@@ -53,6 +53,9 @@ function render(tab){
   const main = $('#appMain');
   main.innerHTML = `<div style="padding:40px;text-align:center"><div class="spinner" style="margin:0 auto"></div></div>`;
   switch(tab){
+    case 'oyunpazari': renderOyunPazari(); break;
+    case 'gorevler':   renderGorevler();   break;
+    case 'basarimlar': renderBasarimlar(); break;
     case 'dukkan':   renderDukkan();   break;
     case 'bahce':    renderProduction('gardens',   'Bahçeler',    '🌱', ['domates','patates','sogan','elma','uzum','kiraz','kayisi','findik','zeytin']); break;
     case 'ciftlik':  renderProduction('farms',     'Çiftlikler',  '🐄', ['inek_sutu','keci_sutu','tavuk_yumurtasi','hindi_yumurtasi','kaz_yumurtasi','tavuk_eti','dana_eti','kuzu_eti','yun']); break;
@@ -325,11 +328,13 @@ window.confirmBuyStock = confirmBuyStock;
 
 function askSetPrice(sid, k, cur){
   const u = URUNLER[k];
+  const maxP = +(u.base * 3).toFixed(2);
   showModal('Satış Fiyatı', `
     <div class="input-group">
       <label>${u.emo} ${u.name}</label>
-      <p class="small muted mb-8">Taban: ${cashFmt(u.base)} • Önerilen: ${cashFmt(u.base*1.5)}</p>
-      <input type="number" id="newPrice" step="0.01" value="${cur}">
+      <p class="small muted mb-8">Taban: ${cashFmt(u.base)} • Önerilen: ${cashFmt(u.base*1.5)} • <span class="red">Maks: ${cashFmt(maxP)}</span></p>
+      <p class="small muted mb-8">⚠️ Tabanın 3 katından fazlası girilirse kaydetmez!</p>
+      <input type="number" id="newPrice" step="0.01" value="${cur}" max="${maxP}">
     </div>
     <button class="btn-primary" onclick="confirmSetPrice('${sid}','${k}')">Kaydet</button>
   `);
@@ -404,7 +409,7 @@ async function renderProduction(kind, title, emoji, allowedItems, lvLock){
   // Geri sayım canlı
   const tabMap = {gardens:'bahce',farms:'ciftlik',factories:'fabrika',mines:'maden'};
   if (Object.values(list).some(i=>i.crop && i.harvestAt && now() < i.harvestAt)){
-    setTimeout(()=>{ if (GZ.currentTab === tabMap[kind]) render(GZ.currentTab); }, 1000);
+    setTimeout(()=>{ if (GZ.currentTab === tabMap[kind]) renderProduction(kind, title, emoji, allowedItems, lvLock); }, 1000);
   }
 }
 
@@ -1576,7 +1581,7 @@ async function resetAccount(){
   });
   toast('Hesap sıfırlandı','success');
   closeModal();
-  setTimeout(()=>location.reload(), 1000);
+  setTimeout(()=>{ GZ.data = {}; switchTab('dukkan'); }, 1000);
 }
 
 /* ============================================================
@@ -1617,3 +1622,368 @@ setInterval(async () => {
   const nw = await calcNetWorth(GZ.uid);
   await dbUpdate(`users/${GZ.uid}`, { netWorth: nw });
 }, 30000);
+
+/* ============================================================
+   OYUNCU PAZARI — Render
+   ============================================================ */
+async function renderOyunPazari(){
+  const main = $('#appMain');
+  let html = `
+    <div class="page-title">🏬 Oyuncu Pazarı</div>
+    <div class="subtabs">
+      <button class="subtab active" onclick="oyunPazariView('all',event)">Tüm İlanlar</button>
+      <button class="subtab" onclick="oyunPazariView('mine',event)">İlanlarım</button>
+      <button class="subtab" onclick="oyunPazariView('sell',event)">+ Sat</button>
+    </div>
+    <div id="oyunPazariList"><div class="spinner" style="margin:20px auto"></div></div>
+  `;
+  main.innerHTML = html;
+  oyunPazariView('all');
+}
+window.renderOyunPazari = renderOyunPazari;
+
+async function oyunPazariView(view, ev){
+  if (ev){ $$('.subtab').forEach(b=>b.classList.remove('active')); ev.target.classList.add('active'); }
+  const list = $('#oyunPazariList'); if (!list) return;
+
+  if (view === 'sell'){
+    // Stoktan satışa koy
+    const mainWH = await dbGet(`businesses/${GZ.uid}/mainWarehouse`) || {};
+    const stok = Object.entries(mainWH).filter(([k,v])=>v>0);
+    if (stok.length === 0){
+      list.innerHTML = emptyState('📦','Ana deponda ürün yok','Önce üretim yap, sonra sat');
+      return;
+    }
+    let html = '<div class="section-title">Depodaki Ürünler</div>';
+    for (const [k,v] of stok){
+      const u = URUNLER[k]; if (!u) continue;
+      html += `
+        <div class="card">
+          <div class="card-row">
+            <div class="card-thumb">${u.emo}</div>
+            <div class="card-body">
+              <div class="card-title">${u.name}</div>
+              <div class="card-sub">Stok: ${fmtInt(v)} ${u.unit} • Taban: ${cashFmt(u.base)}</div>
+            </div>
+            <button class="btn-mini primary" onclick="askListPlayerItem('${k}',${v})">Sat</button>
+          </div>
+        </div>
+      `;
+    }
+    list.innerHTML = html;
+    return;
+  }
+
+  if (view === 'mine'){
+    const all = await dbGet('playerMarket') || {};
+    const mine = Object.values(all).filter(l=>l.sellerUid===GZ.uid);
+    if (mine.length === 0){ list.innerHTML = emptyState('🏬','Aktif ilanın yok','Depodaki ürünleri sat'); return; }
+    let html = '';
+    for (const l of mine){
+      const u = URUNLER[l.item]; if (!u) continue;
+      html += `
+        <div class="card">
+          <div class="card-row">
+            <div class="card-thumb">${u.emo}</div>
+            <div class="card-body">
+              <div class="card-title">${u.name} <span class="small muted">${l.isPublic?'🌐 Açık':'🔒 Gizli'}</span></div>
+              <div class="card-sub">${cashFmt(l.price)}/${u.unit} • Kalan: ${fmtInt(l.remaining)}/${fmtInt(l.qty)}</div>
+              <div class="card-sub green">Satılan: ${fmtInt(l.sold||0)} • Kazanç: ${cashFmt((l.sold||0)*l.price*0.98)}</div>
+            </div>
+          </div>
+          <button class="btn-mini danger mt-12" onclick="cancelPlayerListing('${l.id}').then(()=>oyunPazariView('mine'))">İptal Et</button>
+        </div>
+      `;
+    }
+    list.innerHTML = html;
+    return;
+  }
+
+  // Tüm ilanlar
+  const all = await dbGet('playerMarket') || {};
+  const pub = Object.values(all).filter(l=>l.isPublic && l.remaining > 0).sort((a,b)=>a.price-b.price);
+  if (pub.length === 0){ list.innerHTML = emptyState('🏬','Şu an ilan yok','İlk satıcı sen ol!'); return; }
+
+  // Kategorilere grupla
+  const grouped = {};
+  for (const l of pub){
+    const cat = URUNLER[l.item]?.cat || 'diger';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(l);
+  }
+  let html = '';
+  for (const [cat, items] of Object.entries(grouped)){
+    html += `<div class="section-title">${URUN_KATEGORI[cat]||cat.toUpperCase()}</div>`;
+    for (const l of items){
+      const u = URUNLER[l.item]; if (!u) continue;
+      const cheaper = l.price < u.base * 1.2;
+      html += `
+        <div class="card">
+          <div class="card-row">
+            <div class="card-thumb">${u.emo}</div>
+            <div class="card-body">
+              <div class="card-title">${u.name} ${cheaper?'<span class="small green">🔥 Ucuz</span>':''}</div>
+              <div class="card-sub">Satıcı: ${escapeHtml(l.sellerName)} • Kalan: ${fmtInt(l.remaining)} ${u.unit}</div>
+              <div class="card-sub"><b class="green">${cashFmt(l.price)}</b> / ${u.unit} <span class="muted">(Taban: ${cashFmt(u.base)})</span></div>
+            </div>
+          </div>
+          <button class="btn-primary mt-12" style="width:100%" onclick="askBuyFromMarket('${l.id}')">Satın Al</button>
+        </div>
+      `;
+    }
+  }
+  list.innerHTML = html;
+}
+window.oyunPazariView = oyunPazariView;
+
+function askListPlayerItem(itemKey, maxQty){
+  const u = URUNLER[itemKey];
+  showModal(`${u.emo} ${u.name} Satışa Koy`, `
+    <p class="small muted mb-8">Depoda: ${fmtInt(maxQty)} ${u.unit} • Taban: ${cashFmt(u.base)}</p>
+    <p class="small red mb-8">⚠️ Komisyon: %2 (platforma gider)</p>
+    <div class="input-group">
+      <label>Miktar</label>
+      <input type="number" id="pmQty" value="${Math.min(50, maxQty)}" min="1" max="${maxQty}">
+    </div>
+    <div class="input-group">
+      <label>Birim Fiyat (₺)</label>
+      <input type="number" id="pmPrice" step="0.01" value="${+(u.base*1.3).toFixed(2)}">
+    </div>
+    <div class="input-group">
+      <label>Görünürlük</label>
+      <select id="pmPublic">
+        <option value="1">🌐 Herkese Açık</option>
+        <option value="0">🔒 Gizli (link ile)</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="confirmListItem('${itemKey}')">Satışa Çıkar</button>
+  `);
+}
+window.askListPlayerItem = askListPlayerItem;
+
+async function confirmListItem(itemKey){
+  const qty = parseInt($('#pmQty').value);
+  const price = parseFloat($('#pmPrice').value);
+  const isPublic = $('#pmPublic').value === '1';
+  closeModal();
+  await listPlayerItem(itemKey, qty, price, isPublic);
+  oyunPazariView('mine');
+}
+window.confirmListItem = confirmListItem;
+
+async function askBuyFromMarket(listingId){
+  const l = await dbGet(`playerMarket/${listingId}`);
+  if (!l) return toast('İlan bulunamadı','error');
+  const u = URUNLER[l.item];
+  showModal(`${u.emo} Satın Al`, `
+    <p class="small muted mb-8">Satıcı: ${escapeHtml(l.sellerName)} • Kalan: ${fmtInt(l.remaining)} ${u.unit}</p>
+    <p class="small mb-8">Birim: <b class="green">${cashFmt(l.price)}</b></p>
+    <div class="input-group">
+      <label>Miktar</label>
+      <input type="number" id="pmBuyQty" value="1" min="1" max="${l.remaining}">
+    </div>
+    <p class="small muted" id="pmBuyTotal">Toplam: ${cashFmt(l.price)}</p>
+    <button class="btn-primary" onclick="confirmBuyMarket('${listingId}',${l.price})">Satın Al</button>
+  `);
+  $('#pmBuyQty').addEventListener('input', e => {
+    const t = document.getElementById('pmBuyTotal');
+    if (t) t.textContent = `Toplam: ${cashFmt(parseFloat(e.target.value||1)*l.price)}`;
+  });
+}
+window.askBuyFromMarket = askBuyFromMarket;
+
+async function confirmBuyMarket(listingId, price){
+  const qty = parseInt($('#pmBuyQty').value);
+  closeModal();
+  await buyFromPlayerMarket(listingId, qty);
+  await updateDailyTask('trade_1', 1);
+  renderOyunPazari();
+}
+window.confirmBuyMarket = confirmBuyMarket;
+
+/* ============================================================
+   GÜNLÜK GÖREVLER — Render
+   ============================================================ */
+async function renderGorevler(){
+  const main = $('#appMain');
+  const today = new Date().toDateString();
+  const taskData = await dbGet(`users/${GZ.uid}/dailyTasks/${today}`) || {};
+  const targets = { sell_100:100, harvest_3:3, trade_1:1, chat_5:5, crypto_1:1, login:1 };
+
+  let html = `<div class="page-title">📋 Günlük Görevler</div>
+    <p class="small muted mb-12">Her gün sıfırlanır. Görev tamamla, ödül kazan!</p>`;
+
+  for (const task of DAILY_TASKS){
+    const td = taskData[task.id] || { count:0, done:false };
+    const target = targets[task.id] || 1;
+    const pct = Math.min(100, ((td.count||0)/target)*100);
+    html += `
+      <div class="card ${td.done?'style="border-color:var(--green)"':''}">
+        <div class="card-row">
+          <div class="card-thumb">${td.done?'✅':'🎯'}</div>
+          <div class="card-body">
+            <div class="card-title">${task.name} ${td.done?'<span class="small green">TAMAM</span>':''}</div>
+            <div class="card-sub">${task.desc}</div>
+            <div class="shelf-prog mt-8"><div class="shelf-prog-fill" style="width:${pct}%"></div></div>
+            <div class="small muted">${td.count||0} / ${target}</div>
+          </div>
+          <div class="tac" style="min-width:70px">
+            <div class="green bold">${cashFmt(task.reward)}</div>
+            <div class="small muted">+${task.xp} XP</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  main.innerHTML = html;
+}
+window.renderGorevler = renderGorevler;
+
+/* ============================================================
+   BAŞARIMLAR — Render
+   ============================================================ */
+async function renderBasarimlar(){
+  const main = $('#appMain');
+  const earned = await dbGet(`users/${GZ.uid}/achievements`) || {};
+  const total = ACHIEVEMENTS.length;
+  const done = Object.keys(earned).length;
+
+  let html = `<div class="page-title">🏅 Başarımlar</div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="lbl">Kazanılan</div><div class="val green">${done}</div></div>
+      <div class="stat-box"><div class="lbl">Toplam</div><div class="val">${total}</div></div>
+      <div class="stat-box"><div class="lbl">Tamamlama</div><div class="val">%${Math.floor(done/total*100)}</div></div>
+    </div>`;
+
+  for (const ach of ACHIEVEMENTS){
+    const isEarned = !!earned[ach.id];
+    html += `
+      <div class="card ${isEarned?'':'opacity:.6'}">
+        <div class="card-row">
+          <div class="card-thumb" style="${isEarned?'':'filter:grayscale(1)'}">${ach.emo}</div>
+          <div class="card-body">
+            <div class="card-title">${ach.name} ${isEarned?'<span class="small green">✓</span>':''}</div>
+            <div class="card-sub">${ach.desc}</div>
+            ${isEarned?`<div class="small muted">${new Date(earned[ach.id].ts).toLocaleDateString('tr-TR')}</div>`:''}
+          </div>
+          <div class="small muted">+${ach.xp} XP</div>
+        </div>
+      </div>
+    `;
+  }
+  main.innerHTML = html;
+}
+window.renderBasarimlar = renderBasarimlar;
+
+/* ============================================================
+   SES SİSTEMİ — Düzeltilmiş
+   ============================================================ */
+const SoundManager = (() => {
+  const ctx = { ac: null };
+  function getCtx(){
+    if (!ctx.ac) ctx.ac = new (window.AudioContext || window.webkitAudioContext)();
+    return ctx.ac;
+  }
+  function play(type){
+    if (localStorage.getItem('sound') === 'off') return;
+    try {
+      const ac = getCtx();
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      const configs = {
+        success:  { freq:[523,659,784], dur:0.08, vol:0.3, type:'sine' },
+        error:    { freq:[400,300],     dur:0.15, vol:0.3, type:'sawtooth' },
+        warn:     { freq:[440,440],     dur:0.1,  vol:0.2, type:'triangle' },
+        cash:     { freq:[659,784,1047],dur:0.07, vol:0.4, type:'sine' },
+        levelup:  { freq:[523,659,784,1047], dur:0.1, vol:0.4, type:'sine' },
+        click:    { freq:[600],         dur:0.05, vol:0.15, type:'sine' },
+      };
+      const c = configs[type] || configs.click;
+      o.type = c.type;
+      g.gain.setValueAtTime(0, ac.currentTime);
+      g.gain.linearRampToValueAtTime(c.vol, ac.currentTime + 0.01);
+      let t = ac.currentTime;
+      for (let i = 0; i < c.freq.length; i++){
+        o.frequency.setValueAtTime(c.freq[i], t);
+        t += c.dur;
+      }
+      g.gain.setValueAtTime(c.vol, t - 0.01);
+      g.gain.linearRampToValueAtTime(0, t + 0.05);
+      o.start(ac.currentTime);
+      o.stop(t + 0.1);
+    } catch(e) { /* Sessiz hata */ }
+  }
+  return { play };
+})();
+window.SoundManager = SoundManager;
+
+// Toast'a ses entegrasyonu
+const _origToast = window.toast;
+window.toast = function(msg, type){
+  if (typeof _origToast === 'function') _origToast(msg, type);
+  if (type === 'success') SoundManager.play('success');
+  else if (type === 'error') SoundManager.play('error');
+  else if (type === 'warn') SoundManager.play('warn');
+};
+
+/* ============================================================
+   PAZAR YERİ DETAYLI SİSTEM — Birden fazla pazar seviye kilidi
+   ============================================================ */
+async function renderPazar(){
+  const main = $('#appMain');
+  const lv = GZ.data.level || 1;
+  const shops = await dbGet(`businesses/${GZ.uid}/shops`) || {};
+
+  // Pazar seviyeleri
+  const pazarSeviyeleri = [
+    { lv:1,  name:'Mahalle Pazarı',  emo:'🛒', desc:'Temel ürünler: gıda, meyve, sebze' },
+    { lv:5,  name:'İlçe Pazarı',     emo:'🏪', desc:'Süt ürünleri, et, fırın' },
+    { lv:10, name:'Şehir Pazarı',    emo:'🏬', desc:'Sanayi ürünleri, tekstil' },
+    { lv:20, name:'Bölge Pazarı',    emo:'🏭', desc:'Madenler, kimyasallar' },
+    { lv:30, name:'Ulusal Pazar',    emo:'🌍', desc:'Tüm ürünler, özel ihaleler' },
+  ];
+
+  let totalRev = 0, totalSold = 0, totalShelves = 0;
+  for (const s of Object.values(shops)){
+    const shelves = s.shelves || {};
+    for (const k of Object.keys(shelves)){
+      const sh = shelves[k];
+      totalShelves++;
+      totalRev += sh.totalRevenue || 0;
+      totalSold += sh.totalSold || 0;
+    }
+  }
+
+  let html = `<div class="page-title">🛒 Pazar Sistemi</div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="lbl">Reyon</div><div class="val">${totalShelves}</div></div>
+      <div class="stat-box"><div class="lbl">Ciro</div><div class="val green" style="font-size:12px">${cashFmt(totalRev)}</div></div>
+      <div class="stat-box"><div class="lbl">Satış</div><div class="val">${fmtInt(totalSold)}</div></div>
+      <div class="stat-box"><div class="lbl">Seviye</div><div class="val">Lv ${lv}</div></div>
+    </div>
+    <div class="section-title">PAZAR KADEMELERİ</div>`;
+
+  for (const p of pazarSeviyeleri){
+    const unlocked = lv >= p.lv;
+    html += `<div class="card ${unlocked?'':'opacity:.5'}">
+      <div class="card-row">
+        <div class="card-thumb">${unlocked?p.emo:'🔒'}</div>
+        <div class="card-body">
+          <div class="card-title">${p.name} ${unlocked?'<span class="small green">✓ Açık</span>':''}</div>
+          <div class="card-sub">${p.desc}</div>
+          <div class="small muted">Gerekli seviye: Lv ${p.lv}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Oyuncu pazarına link
+  html += `<button class="btn-primary mt-12" style="width:100%" onclick="switchTab('oyunpazari')">🏬 Oyuncu Pazarına Git</button>`;
+
+  html += `<div class="card mt-12">
+    <div class="card-title">📊 Pazar Kuralları</div>
+    <p class="small muted mt-12">• Pazar her 90 saniyede otomatik döner<br>• Fiyat tabanın 3 katını geçemez<br>• Reyona stok yüklemeden satış olmaz<br>• %2 pazar komisyonu kesilir</p>
+  </div>`;
+  main.innerHTML = html;
+}

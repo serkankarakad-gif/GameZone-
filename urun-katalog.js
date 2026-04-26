@@ -348,3 +348,69 @@
 
   console.log('[urun-katalog] Yüklendi: ' + Object.keys(SHOP_CATALOG).length + ' dükkan türü, ' + Object.keys(window.URUNLER).length + ' ürün');
 })();
+
+/* ============================================================
+   EK ÜRÜNLER — Elektronik, Otomotiv, Yapı, Eczane kategorileri
+   ============================================================ */
+(function(){
+  if (!window.URUNLER) return;
+  const ek = {
+    // Elektronik
+    televizyon:   { name:'Televizyon',      emo:'📺', base:4500, cat:'elektronik', unit:'Adet', lv:5 },
+    telefon:      { name:'Akıllı Telefon',  emo:'📱', base:8000, cat:'elektronik', unit:'Adet', lv:5 },
+    laptop:       { name:'Laptop',          emo:'💻', base:12000,cat:'elektronik', unit:'Adet', lv:7 },
+    tablet:       { name:'Tablet',          emo:'📱', base:6000, cat:'elektronik', unit:'Adet', lv:6 },
+    kamera:       { name:'Fotoğraf Makinesi',emo:'📷',base:7500, cat:'elektronik', unit:'Adet', lv:8 },
+    kulaklık:     { name:'Kulaklık',        emo:'🎧', base:800,  cat:'elektronik', unit:'Adet', lv:5 },
+    // Beyaz eşya
+    buzdolabi:    { name:'Buzdolabı',       emo:'🧊', base:9000, cat:'beyazesya',  unit:'Adet', lv:8 },
+    camasir_mak:  { name:'Çamaşır Makinesi',emo:'🫧', base:7500, cat:'beyazesya',  unit:'Adet', lv:8 },
+    klima:        { name:'Klima',           emo:'❄️', base:11000,cat:'beyazesya',  unit:'Adet', lv:9 },
+    firin_ev:     { name:'Fırın (Ev)',      emo:'🔥', base:5000, cat:'beyazesya',  unit:'Adet', lv:8 },
+    // Mobilya
+    koltuk:       { name:'Koltuk Takımı',   emo:'🛋️', base:8500, cat:'mobilya',   unit:'Adet', lv:8 },
+    masa:         { name:'Yemek Masası',    emo:'🪑', base:3500, cat:'mobilya',    unit:'Adet', lv:8 },
+    dolap:        { name:'Gardırop',        emo:'🗄️', base:5000, cat:'mobilya',    unit:'Adet', lv:8 },
+    yatak:        { name:'Yatak Takımı',    emo:'🛏️', base:6000, cat:'mobilya',    unit:'Adet', lv:9 },
+    // Otomotiv
+    lastik:       { name:'Lastik (4\'lü)',  emo:'🔧', base:2400, cat:'otomotiv',   unit:'Set',  lv:15 },
+    motor_yagi:   { name:'Motor Yağı',      emo:'🛢️', base:350,  cat:'otomotiv',   unit:'Litre',lv:12 },
+    akü:          { name:'Akü',            emo:'🔋', base:1200, cat:'otomotiv',   unit:'Adet', lv:12 },
+    // Yapı market
+    boya:         { name:'Dış Cephe Boya', emo:'🎨', base:320,  cat:'yapi',       unit:'Litre',lv:8 },
+    boru:         { name:'Su Borusu',      emo:'🔩', base:45,   cat:'yapi',       unit:'Metre',lv:8 },
+    cam:          { name:'Cam (m²)',       emo:'🪟', base:180,  cat:'yapi',       unit:'m²',   lv:8 },
+    // Eczane
+    agri_kesici:  { name:'Ağrı Kesici',    emo:'💊', base:45,   cat:'eczane',     unit:'Kutu', lv:6 },
+    vitamin:      { name:'Vitamin C',      emo:'🍋', base:85,   cat:'eczane',     unit:'Kutu', lv:6 },
+    sabun:        { name:'Sıvı Sabun',     emo:'🧴', base:25,   cat:'eczane',     unit:'Litre',lv:6 },
+    sampuan:      { name:'Şampuan',        emo:'🧴', base:55,   cat:'eczane',     unit:'Şişe', lv:6 },
+    // Benzin
+    benzin95:     { name:'Benzin 95',      emo:'⛽', base:45,   cat:'akaryakit',  unit:'Litre',lv:12 },
+    benzin98:     { name:'Benzin 98',      emo:'⛽', base:52,   cat:'akaryakit',  unit:'Litre',lv:12 },
+    mazot:        { name:'Motorin',        emo:'⛽', base:42,   cat:'akaryakit',  unit:'Litre',lv:12 },
+    // Kuyumcu
+    altin_bilis:  { name:'Altın Bilezik',  emo:'💛', base:18000,cat:'kuyumcu',   unit:'Adet', lv:12 },
+    gumus_kolye:  { name:'Gümüş Kolye',    emo:'🪙', base:850,  cat:'kuyumcu',   unit:'Adet', lv:12 },
+    elmas_yuzuk:  { name:'Elmas Yüzük',    emo:'💍', base:45000,cat:'kuyumcu',   unit:'Adet', lv:15 },
+  };
+  Object.assign(window.URUNLER, ek);
+
+  // Kategori adları güncelle
+  if (window.URUN_KATEGORI){
+    Object.assign(window.URUN_KATEGORI, {
+      elektronik: 'Elektronik',
+      beyazesya:  'Beyaz Eşya',
+      mobilya:    'Mobilya',
+      otomotiv:   'Otomotiv',
+      yapi:       'Yapı Market',
+      eczane:     'Eczane & Kozmetik',
+      akaryakit:  'Akaryakıt',
+      kuyumcu:    'Kuyumcu',
+    });
+  }
+  if (window.URUN_KATEGORI_TUM){
+    Object.assign(window.URUN_KATEGORI_TUM, window.URUN_KATEGORI);
+  }
+  console.log('[urun-katalog] Ek ürünler yüklendi:', Object.keys(ek).length, 'yeni ürün');
+})();

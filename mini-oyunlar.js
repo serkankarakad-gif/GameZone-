@@ -144,7 +144,15 @@ async function takeBet(bet) {
 }
 
 async function settle(gid, bet, won, payout, xp = 10) {
-  if (payout > 0) await addCash(GZ.uid, payout, 'mini-' + gid);
+  if (payout > 0) {
+    await addCash(GZ.uid, payout, 'mini-' + gid);
+    if (window.SoundManager) SoundManager.play('cash');
+    // Başarım: kripto değil normal oyun kazanımı toplam kontrolü
+    if (typeof checkAndGrantAchievement === 'function'){
+      const stats = await dbGet(`mini/${GZ.uid}/${gid}`) || {};
+      if ((stats.totalWon||0) + payout >= 50000) await checkAndGrantAchievement(GZ.uid, 'crypto_win');
+    }
+  }
   await db.ref(`mini/${GZ.uid}/${gid}`).transaction(d => {
     d = d || { level:1, xp:0, totalPlays:0, totalWins:0, totalBet:0, totalWon:0, dailyKey:todayKey(), dailyPlays:0 };
     d.totalPlays = (d.totalPlays||0)+1;
@@ -158,6 +166,8 @@ async function settle(gid, bet, won, payout, xp = 10) {
   });
   await addGameXP(gid, xp);
   await addXP(GZ.uid, Math.max(1, Math.floor((bet||0)/200)+1));
+  // Günlük görev: kripto oynadı
+  if (bet >= 1000 && typeof updateDailyTask === 'function') await updateDailyTask('crypto_1', 1);
 }
 
 async function bonus(gid, base) {
@@ -1316,3 +1326,53 @@ window._drawCard = drawCard;
 window._cardHtml = cardHtml;
 
 })();
+
+/* ============================================================
+   YENİ OYUNLAR — PvP + Ek Kumar
+   ============================================================ */
+
+/* PvP MEYDAN OKUMA — İki oyuncu zar atar, yüksek kazanır */
+GAMES.push({ id:'pvp_zar', name:'PvP Zar Düellosu', emo:'⚔️', cat:'pvp', minLv:5, minBet:500, maxBet:100000, daily:20 });
+
+window._PVP_CHALLENGES = window._PVP_CHALLENGES || {};
+
+window.createPvpChallenge = async function(bet){
+  const ok = await spendCash(GZ.uid, bet, 'pvp-escrow');
+  if (!ok) return toast('Yetersiz bakiye','error');
+  const id = 'pvp_' + Date.now().toString(36);
+  await dbSet(`pvp/${id}`, {
+    id, creator: GZ.uid, creatorName: GZ.data.username,
+    bet, status:'waiting', createdAt: now()
+  });
+  toast(`⚔️ Meydan okuma oluşturuldu! ID: ${id}`, 'success');
+  await pushNotif(GZ.uid, `⚔️ PvP meydan okuman hazır, rakip bekleniyor`);
+  return id;
+};
+window.joinPvpChallenge = async function(pvpId){
+  const ch = await dbGet(`pvp/${pvpId}`);
+  if (!ch || ch.status !== 'waiting') return toast('Meydan okuma bulunamadı','error');
+  if (ch.creator === GZ.uid) return toast('Kendi meydan okumanına katılamazsın','error');
+  const ok = await spendCash(GZ.uid, ch.bet, 'pvp-escrow');
+  if (!ok) return toast('Yetersiz bakiye','error');
+  // Her iki oyuncu zar atar
+  const myRoll    = Math.floor(Math.random()*6)+1;
+  const theirRoll = Math.floor(Math.random()*6)+1;
+  let winnerId, winnerName, loserId;
+  if (myRoll > theirRoll){
+    winnerId = GZ.uid; winnerName = GZ.data.username; loserId = ch.creator;
+  } else if (theirRoll > myRoll){
+    winnerId = ch.creator; winnerName = ch.creatorName; loserId = GZ.uid;
+  } else {
+    // Beraberlik — para iade
+    await addCash(GZ.uid, ch.bet, 'pvp-draw');
+    await addCash(ch.creator, ch.bet, 'pvp-draw');
+    await db.ref(`pvp/${pvpId}`).remove();
+    toast(`🤝 Beraberlik! ${myRoll} vs ${theirRoll} — para iade edildi`,'warn');
+    return;
+  }
+  const prize = ch.bet * 2 * 0.95; // %5 komisyon
+  await addCash(winnerId, prize, 'pvp-win');
+  await db.ref(`pvp/${pvpId}`).remove();
+  await pushNotif(ch.creator, `⚔️ PvP Sonuç: ${myRoll} vs ${theirRoll} — ${winnerName} kazandı!`);
+  toast(`⚔️ ${myRoll} vs ${theirRoll} — ${winnerId === GZ.uid ? '🏆 KAZANDIN' : '😞 Kaybettin'} (${prize > 0 && winnerId===GZ.uid ? '+' + cashFmt(prize) : ''})`, winnerId===GZ.uid?'success':'error');
+};
