@@ -4,162 +4,63 @@
       "$uid": {
         ".read": "auth != null",
         ".write": "auth != null && auth.uid === $uid",
-        "banned": {
-          ".write": false
-        },
-        "level": {
-          ".write": false
-        },
-        "diamonds": {
-          ".write": false
-        },
-        "netWorth": {
-          ".write": "auth != null && auth.uid === $uid"
-        },
-        "weeklyRevenue": {
-          ".write": "auth != null && auth.uid === $uid"
-        },
-        "lastDailyBonus": {
-          ".write": "auth != null && auth.uid === $uid"
-        },
-        "dailyTasks": {
-          "$date": {
-            ".write": "auth != null && auth.uid === $uid"
-          }
-        },
+        "banned":     { ".write": false },
+        "level":      { ".write": false },
+        "diamonds":   { ".write": false },
+        "founderRole":{ ".write": false },
+        "isFounder":  { ".write": false },
+        "prestige":   { ".write": false },
+        "netWorth":      { ".write": "auth != null && auth.uid === $uid" },
+        "weeklyRevenue": { ".write": "auth != null && auth.uid === $uid" },
+        "lastDailyBonus":{ ".write": "auth != null && auth.uid === $uid" },
+        "dailyTasks":    { "$date": { ".write": "auth != null && auth.uid === $uid" } },
         "achievements": {
           ".read": "auth != null",
-          "$achId": {
-            ".write": "auth != null && auth.uid === $uid"
-          }
-        }
+          "$achId": { ".write": "auth != null && auth.uid === $uid" }
+        },
+        "avatar": { ".write": "auth != null && auth.uid === $uid" },
+        "title":  { ".write": "auth != null && auth.uid === $uid" },
+        "decor":  { ".write": "auth != null && auth.uid === $uid" }
       }
     },
-
     "usernames": {
       ".read": "auth != null",
-      "$name": {
-        ".write": "auth != null && (!data.exists() || data.val() === auth.uid)"
-      }
+      "$name": { ".write": "auth != null && (!data.exists() || data.val() === auth.uid)" }
     },
-
-    "bank": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
-      }
-    },
-
-    "businesses": {
-      "$uid": {
-        ".read": "auth != null",
-        ".write": "auth != null && auth.uid === $uid"
-      }
-    },
-
+    "bank":       { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+    "businesses": { "$uid": { ".read": "auth != null", ".write": "auth != null && auth.uid === $uid" } },
     "security": {
-      "logins": {
-        "$uid": {
-          ".read": "auth != null && auth.uid === $uid",
-          ".write": "auth != null && auth.uid === $uid"
-        }
-      },
-      "alerts": {
-        "$uid": {
-          ".read": "auth != null && auth.uid === $uid",
-          ".write": "auth != null && auth.uid === $uid"
-        }
-      },
-      "emailChanges": {
-        "$uid": {
-          ".read": "auth != null && auth.uid === $uid",
-          ".write": "auth != null && auth.uid === $uid"
-        }
-      },
-      "passChanges": {
-        "$uid": {
-          ".read": "auth != null && auth.uid === $uid",
-          ".write": "auth != null && auth.uid === $uid"
-        }
-      }
+      "logins":       { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+      "alerts":       { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+      "emailChanges": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+      "passChanges":  { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+      "founderAttempts": { ".read": "auth != null && root.child('users').child(auth.uid).child('isFounder').val() === true", ".write": "auth != null" }
     },
-
-    "notifs": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null"
-      }
-    },
-
+    "notifs": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null" } },
     "crypto": {
-      "prices": {
-        ".read": "auth != null",
-        ".write": "auth != null"
-      },
-      "_tickLock": {
-        ".read": "auth != null",
-        ".write": "auth != null"
-      },
-      "holdings": {
-        "$uid": {
-          ".read": "auth != null && auth.uid === $uid",
-          ".write": "auth != null && auth.uid === $uid"
-        }
-      }
+      "prices":   { ".read": "auth != null", ".write": "auth != null" },
+      "_tickLock":{ ".read": "auth != null", ".write": "auth != null" },
+      "holdings": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } }
     },
-
-    "exports": {
-      "list": {
-        ".read": "auth != null",
-        ".write": "auth != null"
-      }
-    },
-
-    "auctions": {
-      ".read": "auth != null",
-      ".write": "auth != null"
-    },
-
+    "exports":   { "list": { ".read": "auth != null", ".write": "auth != null" } },
+    "auctions":  { ".read": "auth != null", ".write": "auth != null" },
     "chat": {
       "global": {
-        ".read": "auth != null",
-        ".write": "auth != null",
-        "$msgId": {
-          ".validate": "newData.hasChildren(['uid','username','message','ts']) && newData.child('message').val().length <= 200 && newData.child('uid').val() === auth.uid"
-        }
+        ".read": "auth != null", ".write": "auth != null",
+        "$msgId": { ".validate": "newData.hasChildren(['uid','username','message','ts']) && newData.child('message').val().length <= 200 && newData.child('uid').val() === auth.uid" }
       }
     },
-
-    "brands": {
-      ".read": "auth != null",
-      "$bid": {
-        ".write": "auth != null"
-      }
-    },
-
-    "friends": {
-      "$uid": {
-        ".read": "auth != null",
-        ".write": "auth != null && auth.uid === $uid"
-      }
-    },
-
+    "brands":  { ".read": "auth != null", "$bid": { ".write": "auth != null" } },
+    "friends": { "$uid": { ".read": "auth != null", ".write": "auth != null && auth.uid === $uid" } },
     "loans": {
-      ".read": "auth != null",
-      ".write": "auth != null",
-      "$loanId": {
-        ".validate": "newData.hasChildren(['from','to','amount','paid','createdAt']) && newData.child('from').val() === auth.uid"
-      }
+      ".read": "auth != null", ".write": "auth != null",
+      "$loanId": { ".validate": "newData.hasChildren(['from','to','amount','paid','createdAt']) && newData.child('from').val() === auth.uid" }
     },
-
     "feedback": {
-      ".read": false,
+      ".read": "auth != null && root.child('users').child(auth.uid).child('isFounder').val() === true",
       ".write": "auth != null",
-      "$fbId": {
-        ".validate": "newData.hasChildren(['uid','username','text','ts']) && newData.child('uid').val() === auth.uid && newData.child('text').val().length >= 10"
-      }
+      "$fbId": { ".validate": "newData.hasChildren(['uid','username','text','ts']) && newData.child('uid').val() === auth.uid && newData.child('text').val().length >= 10" }
     },
-
     "playerMarket": {
       ".read": "auth != null",
       "$listingId": {
@@ -167,25 +68,65 @@
         ".validate": "!newData.exists() || (newData.hasChildren(['id','sellerUid','item','qty','remaining','price','isPublic','createdAt']) && newData.child('price').val() > 0 && newData.child('qty').val() > 0 && newData.child('remaining').val() <= newData.child('qty').val())"
       }
     },
-
     "pvp": {
       ".read": "auth != null",
-      "$pvpId": {
-        ".write": "auth != null",
-        ".validate": "!newData.exists() || newData.hasChildren(['id','creator','bet','status','createdAt'])"
-      }
+      "$pvpId": { ".write": "auth != null", ".validate": "!newData.exists() || newData.hasChildren(['id','creator','bet','status','createdAt'])" }
     },
+    "mini":        { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+    "leaderboard": { ".read": "auth != null", ".write": false },
 
-    "mini": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
-      }
+    "stocks": {
+      "list":     { ".read": "auth != null", ".write": "auth != null" },
+      "prices":   { ".read": "auth != null", ".write": "auth != null" },
+      "history":  { ".read": "auth != null", ".write": "auth != null" },
+      "holdings": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+      "ipos":     { ".read": "auth != null", ".write": "auth != null" },
+      "dividends":{ "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null" } }
     },
-
-    "leaderboard": {
-      ".read": "auth != null",
-      ".write": false
-    }
+    "realestate": {
+      "listings":      { ".read": "auth != null", ".write": "auth != null" },
+      "owned":         { "$uid": { ".read": "auth != null", ".write": "auth != null && auth.uid === $uid" } },
+      "rent":          { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null" } },
+      "constructions": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } }
+    },
+    "insurance": {
+      "policies": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+      "claims":   { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+      "premiums": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } }
+    },
+    "franchise": {
+      "offers":    { ".read": "auth != null", ".write": "auth != null" },
+      "active":    { ".read": "auth != null", ".write": "auth != null" },
+      "owned":     { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+      "royalties": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null" } }
+    },
+    "intl_trade": {
+      "rates":     { ".read": "auth != null", ".write": "auth != null" },
+      "demand":    { ".read": "auth != null", ".write": "auth != null" },
+      "shipments": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } }
+    },
+    "blackmarket": {
+      "offers":  { ".read": "auth != null", ".write": "auth != null" },
+      "history": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+      "wanted":  { ".read": "auth != null", ".write": "auth != null" }
+    },
+    "bonds":     { "list":     { ".read": "auth != null", ".write": "auth != null" }, "holdings": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } } },
+    "futures":   { "contracts":{ ".read": "auth != null", ".write": "auth != null" }, "positions":{ "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } } },
+    "hedgefunds":{ "list":     { ".read": "auth != null", ".write": "auth != null" }, "investors":{ "$fundId": { ".read": "auth != null", ".write": "auth != null" } }, "performance":{ ".read": "auth != null", ".write": "auth != null" } },
+    "weather":   { "current":  { ".read": "auth != null", ".write": "auth != null" }, "history":  { ".read": "auth != null", ".write": "auth != null" } },
+    "disasters": { "active":   { ".read": "auth != null", ".write": "auth != null" }, "history":  { ".read": "auth != null", ".write": "auth != null" } },
+    "employees": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+    "rd_tech":   { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+    "education": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+    "contracts": { ".read": "auth != null", "$cid": { ".write": "auth != null" } },
+    "city_mayor":{ "elections":{ ".read": "auth != null", ".write": "auth != null" }, "current":  { ".read": "auth != null", ".write": "auth != null" }, "votes":    { "$cityId": { ".read": "auth != null", ".write": "auth != null" } } },
+    "trade_war": { "active":   { ".read": "auth != null", ".write": "auth != null" }, "history":  { ".read": "auth != null", ".write": "auth != null" } },
+    "duels":     { "active":   { ".read": "auth != null", ".write": "auth != null" }, "history":  { ".read": "auth != null", ".write": "auth != null" } },
+    "expeditions": { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } },
+    "collectibles":{ "owned":  { "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" } }, "trades":   { ".read": "auth != null", ".write": "auth != null" } },
+    "tr_map":    { "regions":  { ".read": "auth != null", ".write": "auth != null" } },
+    "broadcast": { "current":  { ".read": "auth != null", ".write": "auth != null" }, "history":  { ".read": "auth != null", ".write": "auth != null" } },
+    "system":    { "maintenance":{ ".read": true, ".write": "auth != null" }, "stats":  { ".read": "auth != null", ".write": "auth != null" }, "founders":{ ".read": "auth != null && root.child('users').child(auth.uid).child('isFounder').val() === true", ".write": "auth != null" } },
+    "reports":   { ".read": "auth != null && root.child('users').child(auth.uid).child('isFounder').val() === true", ".write": "auth != null" }
   }
 }

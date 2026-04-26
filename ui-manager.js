@@ -1987,3 +1987,1133 @@ async function renderPazar(){
   </div>`;
   main.innerHTML = html;
 }
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║                    UI MANAGER — v2.0 RENDER GENİŞLETMESİ                 ║
+   ║   Borsa, Emlak, Sigorta, Franchise, Uluslararası, Karaborsa, Tahvil,   ║
+   ║   Futures, Hedge, Çalışan, Ar-Ge, Eğitim, Sözleşme, Belediye,           ║
+   ║   Tic.Savaş, Düello, Sefer, Prestij, Koleksiyon, TR Harita,             ║
+   ║   Avatar, Unvan, Dekorasyon + KURUCU PANELİ                            ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+/* render() switch'ine yeni case'leri ekle */
+const _origRender = window.render;
+window.render = function(tab) {
+  const main = $('#appMain');
+  switch(tab) {
+    case 'borsa':       return renderBorsa();
+    case 'emlak':       return renderEmlak();
+    case 'sigorta':     return renderSigorta();
+    case 'franchise':   return renderFranchise();
+    case 'uluslararasi':return renderUluslararasi();
+    case 'karaborsa':   return renderKaraborsa();
+    case 'tahvil':      return renderTahvil();
+    case 'futures':     return renderFutures();
+    case 'hedgefon':    return renderHedgeFon();
+    case 'calisan':     return renderCalisan();
+    case 'arge':        return renderArge();
+    case 'egitim':      return renderEgitim();
+    case 'sozlesme':    return renderSozlesme();
+    case 'belediye':    return renderBelediye();
+    case 'ticsavas':    return renderTicsavas();
+    case 'duello':      return renderDuello();
+    case 'avatar':      return renderAvatar();
+    case 'unvan':       return renderUnvan();
+    case 'dekorasyon':  return renderDekorasyon();
+    case 'sefer':       return renderSefer();
+    case 'prestij':     return renderPrestij();
+    case 'koleksiyon':  return renderKoleksiyon();
+    case 'harita':      return renderHarita();
+    default:            return _origRender ? _origRender(tab) : null;
+  }
+};
+
+/* ─── Yardımcı kart şablonu ─── */
+function _v2Card(title, body, footer) {
+  return `<div class="v2-card">
+    <div class="v2-card-head"><h3>${title}</h3></div>
+    <div class="v2-card-body">${body}</div>
+    ${footer ? `<div class="v2-card-foot">${footer}</div>` : ''}
+  </div>`;
+}
+
+/* ============================================================
+   📊 BORSA RENDER
+   ============================================================ */
+async function renderBorsa() {
+  const main = $('#appMain');
+  main.innerHTML = `<div class="page-head"><h2>📊 Borsa İstanbul (Sanal)</h2><p class="muted">Hisse senedi al-sat, temettü kazan, IPO yap.</p></div>
+    <div class="v2-toolbar">
+      <button class="btn-secondary" onclick="renderBorsaIPO()">🚀 Kendi Şirketini Halka Aç (IPO)</button>
+      <button class="btn-secondary" onclick="renderBorsaPortfoy()">💼 Portföyüm</button>
+    </div>
+    <div id="borsaList" class="stocks-grid"></div>`;
+
+  const list = $('#borsaList');
+  let html = '';
+  for (const s of STOCKS_DATA) {
+    const price = await dbGet('stocks/prices/' + s.sym + '/current') || s.basePrice;
+    const change = await dbGet('stocks/prices/' + s.sym + '/changePct') || 0;
+    const cls = change > 0 ? 'up' : change < 0 ? 'down' : '';
+    html += `<div class="stock-card ${cls}">
+      <div class="sc-head">
+        <span class="sc-sym">${s.sym}</span>
+        <span class="sc-sector">${STOCK_SECTORS[s.sector]||s.sector}</span>
+      </div>
+      <div class="sc-name">${s.name}</div>
+      <div class="sc-price">₺${price.toFixed(2)}</div>
+      <div class="sc-change ${cls}">${change>0?'▲':change<0?'▼':'■'} ${change.toFixed(2)}%</div>
+      <div class="sc-actions">
+        <button class="btn-mini buy" onclick="borsaTradeModal('${s.sym}','buy')">AL</button>
+        <button class="btn-mini sell" onclick="borsaTradeModal('${s.sym}','sell')">SAT</button>
+      </div>
+      <div class="sc-meta">Temettü: %${(s.divRate*100).toFixed(1)}/yıl</div>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
+window.renderBorsa = renderBorsa;
+
+window.borsaTradeModal = async function(sym, action) {
+  const stock = STOCKS_DATA.find(s => s.sym === sym);
+  const price = await dbGet('stocks/prices/' + sym + '/current') || stock.basePrice;
+  const owned = await dbGet('stocks/holdings/' + GZ.uid + '/' + sym) || { qty:0, avgPrice:0 };
+  showModal(`${action==='buy'?'📈 Al':'📉 Sat'} — ${sym}`, `
+    <div class="trade-info">
+      <div><b>Şirket:</b> ${stock.name}</div>
+      <div><b>Anlık Fiyat:</b> ₺${price.toFixed(2)}</div>
+      <div><b>Sahip Olunan:</b> ${owned.qty} adet (Ort: ₺${owned.avgPrice?.toFixed(2)||'0'})</div>
+    </div>
+    <input type="number" id="trdQty" placeholder="Adet" min="1">
+    <div id="trdSummary" class="trade-summary"></div>
+    <button class="btn-primary" onclick="borsaExecute('${sym}','${action}')">${action==='buy'?'Satın Al':'Sat'}</button>
+  `);
+  setTimeout(() => {
+    const inp = document.getElementById('trdQty');
+    inp.addEventListener('input', () => {
+      const q = parseInt(inp.value) || 0;
+      const total = q * price;
+      const com = total * 0.002;
+      document.getElementById('trdSummary').innerHTML = `
+        Tutar: ₺${total.toFixed(2)}<br>
+        Komisyon (%0.2): ₺${com.toFixed(2)}<br>
+        <b>Toplam: ₺${(action==='buy'? total+com : total-com).toFixed(2)}</b>`;
+    });
+  }, 100);
+};
+
+window.borsaExecute = async function(sym, action) {
+  const qty = parseInt(document.getElementById('trdQty').value) || 0;
+  if (qty <= 0) return toast('Geçerli adet girin', 'error');
+  const result = action === 'buy' ? await buyStock(sym, qty) : await sellStock(sym, qty);
+  if (result.ok) { toast(result.msg, 'success'); closeModal(); renderBorsa(); }
+  else toast(result.msg, 'error');
+};
+
+window.renderBorsaPortfoy = async function() {
+  const holdings = await dbGet('stocks/holdings/' + GZ.uid) || {};
+  let html = '<h3>💼 Hisse Portföyüm</h3>';
+  if (!Object.keys(holdings).length) html += '<p class="muted">Henüz hisseniz yok.</p>';
+  else {
+    html += '<div class="portfoy-list">';
+    for (const sym of Object.keys(holdings)) {
+      const h = holdings[sym];
+      const stock = STOCKS_DATA.find(s => s.sym === sym);
+      const price = await dbGet('stocks/prices/' + sym + '/current') || stock.basePrice;
+      const value = price * h.qty;
+      const profit = value - h.totalCost;
+      html += `<div class="portfoy-row">
+        <b>${sym}</b> ${h.qty} adet × ₺${price.toFixed(2)} = ₺${value.toFixed(2)}
+        <span style="color:${profit>=0?'#16a34a':'#dc2626'}">${profit>=0?'+':''}${profit.toFixed(2)}</span>
+      </div>`;
+    }
+    html += '</div>';
+  }
+  showModal('💼 Portföyüm', html);
+};
+
+window.renderBorsaIPO = async function() {
+  showModal('🚀 IPO — Şirketini Halka Aç', `
+    <p class="muted">Min. Lv 25 + ₺500K servet · Listeleme ücreti: hisse×fiyat×%5</p>
+    <input type="text" id="ipoCompany" placeholder="Şirket adı (ör: GZ Tekstil A.Ş.)">
+    <input type="number" id="ipoShares" placeholder="Toplam hisse (1000-1.000.000)">
+    <input type="number" id="ipoPrice" placeholder="Hisse fiyatı (₺1-1000)">
+    <button class="btn-primary" onclick="executeIPO()">Halka Aç</button>
+  `);
+};
+window.executeIPO = async function() {
+  const c = document.getElementById('ipoCompany').value.trim();
+  const s = parseInt(document.getElementById('ipoShares').value);
+  const p = parseFloat(document.getElementById('ipoPrice').value);
+  if (!c) return toast('Şirket adı gerekli', 'error');
+  const r = await createIPO(c, s, p);
+  if (r.ok) { toast(`✅ IPO açıldı: ${r.sym}`, 'success'); closeModal(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   🏘️ EMLAK RENDER
+   ============================================================ */
+async function renderEmlak() {
+  const main = $('#appMain');
+  main.innerHTML = `<div class="page-head"><h2>🏘️ Emlak Pazarı</h2><p class="muted">Arsa al, bina yap, kira topla, değer kazansın.</p></div>
+    <div class="v2-toolbar">
+      <button class="btn-secondary" onclick="renderEmlakOwned()">🏠 Emlaklarım</button>
+    </div>
+    <div class="emlak-grid" id="emlakGrid"></div>`;
+
+  let html = '';
+  for (const t of EMLAK_TIPLERI) {
+    html += `<div class="emlak-card">
+      <div class="ec-emo">${t.emo}</div>
+      <div class="ec-name">${t.name}</div>
+      <div class="ec-price">₺${t.basePrice.toLocaleString('tr-TR')}+</div>
+      <div class="ec-desc">${t.desc}</div>
+      <div class="ec-meta">${t.rentMax > 0 ? `Kira: ₺${t.rentMin}-${t.rentMax}/ay` : 'Kira: yok (arsa)'}</div>
+      <button class="btn-mini buy" onclick="emlakBuyModal('${t.type}')">SATIN AL</button>
+    </div>`;
+  }
+  $('#emlakGrid').innerHTML = html;
+}
+window.renderEmlak = renderEmlak;
+
+window.emlakBuyModal = function(typeId) {
+  const cities = (window.ILLER || []).slice(0, 30);
+  showModal('🏘️ Emlak Satın Al', `
+    <p class="muted">Şehir seç (İstanbul/Ankara/İzmir daha pahalı):</p>
+    <select id="emlakCity">${cities.map(c => `<option>${c}</option>`).join('')}</select>
+    <button class="btn-primary" onclick="emlakBuyExec('${typeId}')">Satın Al</button>
+  `);
+};
+
+window.emlakBuyExec = async function(typeId) {
+  const city = document.getElementById('emlakCity').value;
+  const r = await buyProperty(typeId, city);
+  if (r.ok) { toast(`✅ ${city}'da emlak alındı! ₺${r.price.toLocaleString('tr-TR')}`, 'success'); closeModal(); }
+  else toast(r.msg, 'error');
+};
+
+window.renderEmlakOwned = async function() {
+  const owned = await dbGet('realestate/owned/' + GZ.uid) || {};
+  let html = '<h3>🏠 Emlak Portföyüm</h3>';
+  if (!Object.keys(owned).length) html += '<p class="muted">Emlağınız yok.</p>';
+  else {
+    for (const k of Object.keys(owned)) {
+      const p = owned[k];
+      const t = EMLAK_TIPLERI.find(x => x.type === p.type);
+      html += `<div class="owned-prop">
+        <b>${t.emo} ${t.name}</b> · ${p.city}<br>
+        <small>Değer: ₺${p.currentValue?.toLocaleString('tr-TR')} · ${p.rented ? `Kiracı: ${p.tenantName} (₺${p.monthlyRent}/ay)` : 'Boş'}</small><br>
+        ${!p.rented && p.rentMax > 0 ? `<button class="btn-mini" onclick="findTenantUI('${k}')">Kiracı Bul</button>` : ''}
+        <button class="btn-mini sell" onclick="sellPropertyUI('${k}')">Sat</button>
+      </div>`;
+    }
+  }
+  showModal('🏠 Emlaklarım', html);
+};
+window.findTenantUI = async function(k) {
+  const r = await findTenant(k);
+  if (r.ok) toast(`✅ Kiracı bulundu: ${r.tenant} · ₺${r.rent}/ay`, 'success');
+  else toast(r.msg, 'error');
+  renderEmlakOwned();
+};
+window.sellPropertyUI = async function(k) {
+  if (!confirm('Bu emlağı %95 değerinde satmak istediğine emin misin?')) return;
+  const r = await sellProperty(k);
+  if (r.ok) { toast(`✅ Satıldı: ₺${r.sellPrice.toLocaleString('tr-TR')}`, 'success'); renderEmlakOwned(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   🛡️ SİGORTA RENDER
+   ============================================================ */
+function renderSigorta() {
+  const main = $('#appMain');
+  let html = `<div class="page-head"><h2>🛡️ Sigorta Şirketi</h2><p class="muted">Tesislerini, ürünlerini, araçlarını sigortala. Afet halinde tazminat al.</p></div>
+    <div class="sigorta-grid">`;
+  for (const k of Object.keys(INSURANCE_TYPES)) {
+    const c = INSURANCE_TYPES[k];
+    html += `<div class="ins-card">
+      <h3>${c.name}</h3>
+      <div class="muted">Riskler: ${c.risks.join(', ')}</div>
+      <div class="ins-tiers">
+        ${c.coverPct.map((cv, i) => `
+          <button class="btn-mini" onclick="sigortaBuyModal('${k}', ${i})">
+            Kademe ${i+1} (Teminat %${cv*100}, Prim %${(c.premiumPct[i]*100).toFixed(2)}/ay)
+          </button>
+        `).join('')}
+      </div>
+    </div>`;
+  }
+  html += '</div><div style="margin-top:20px"><button class="btn-secondary" onclick="renderSigortaPolicies()">📋 Poliçelerim</button></div>';
+  main.innerHTML = html;
+}
+window.renderSigorta = renderSigorta;
+
+window.sigortaBuyModal = function(typeKey, tier) {
+  showModal('🛡️ Sigorta Satın Al', `
+    <p class="muted">Sigorta yapılacak varlığın değerini gir:</p>
+    <input type="number" id="insAsset" placeholder="Varlık değeri (₺)">
+    <button class="btn-primary" onclick="sigortaBuyExec('${typeKey}',${tier})">Poliçe Oluştur</button>
+  `);
+};
+window.sigortaBuyExec = async function(typeKey, tier) {
+  const v = parseFloat(document.getElementById('insAsset').value) || 0;
+  const r = await buyInsurance(typeKey, tier, v);
+  if (r.ok) { toast('✅ Poliçe oluşturuldu!', 'success'); closeModal(); }
+  else toast(r.msg, 'error');
+};
+window.renderSigortaPolicies = async function() {
+  const ps = await dbGet('insurance/policies/' + GZ.uid) || {};
+  let html = '<h3>📋 Aktif Poliçelerim</h3>';
+  if (!Object.keys(ps).length) html += '<p class="muted">Poliçeniz yok.</p>';
+  else for (const k of Object.keys(ps)) {
+    const p = ps[k];
+    html += `<div class="policy-row">
+      <b>${p.type}</b> · Teminat: ₺${p.coverage?.toLocaleString('tr-TR')}<br>
+      <small>Prim: ₺${p.premium}/ay · ${p.claims||0} hasar talebi</small>
+    </div>`;
+  }
+  showModal('📋 Poliçelerim', html);
+};
+
+/* ============================================================
+   🪧 FRANCHISE RENDER
+   ============================================================ */
+async function renderFranchise() {
+  const main = $('#appMain');
+  const offers = await dbGet('franchise/offers') || {};
+  let html = `<div class="page-head"><h2>🪧 Franchise Pazarı</h2><p class="muted">Hazır markalar al, kendi markanı ver. Royalty kazan.</p></div>
+    <div class="v2-toolbar">
+      <button class="btn-secondary" onclick="franchiseCreateModal()">🆕 Kendi Franchise'ını Aç</button>
+      <button class="btn-secondary" onclick="renderMyFranchises()">🪪 Sahip Olduklarım</button>
+    </div>
+    <div class="franchise-list">`;
+  for (const k of Object.keys(offers)) {
+    const o = offers[k];
+    if (o.status !== 'open' || o.ownerUid === GZ.uid) continue;
+    html += `<div class="franchise-card">
+      <h3>${o.brandName}</h3>
+      <div class="muted">Sahip: ${o.ownerName}</div>
+      <div>Royalty: %${o.royaltyPct} · Başlangıç: ₺${o.initialFee?.toLocaleString('tr-TR')}</div>
+      <div class="muted">Aktif şube: ${o.activeFranchisees||0}</div>
+      <button class="btn-mini buy" onclick="franchiseBuy('${k}')">Satın Al</button>
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderFranchise = renderFranchise;
+
+window.franchiseCreateModal = function() {
+  showModal('🆕 Franchise Oluştur', `
+    <input type="text" id="frBrand" placeholder="Marka adı">
+    <input type="number" id="frRoyalty" placeholder="Royalty % (5-30)" min="5" max="30">
+    <input type="number" id="frFee" placeholder="Başlangıç ücreti (min ₺10K)">
+    <input type="text" id="frProduct" placeholder="Ürün tipi (kahve, kıyafet, vb)">
+    <button class="btn-primary" onclick="franchiseCreateExec()">Oluştur</button>
+  `);
+};
+window.franchiseCreateExec = async function() {
+  const r = await createFranchiseOffer(
+    $('#frBrand').value.trim(),
+    parseFloat($('#frRoyalty').value),
+    parseFloat($('#frFee').value),
+    $('#frProduct').value.trim()
+  );
+  if (r.ok) { toast('✅ Franchise oluşturuldu!', 'success'); closeModal(); renderFranchise(); }
+  else toast(r.msg, 'error');
+};
+window.franchiseBuy = async function(k) {
+  const r = await buyFranchise(k);
+  if (r.ok) { toast('✅ Franchise alındı!', 'success'); renderFranchise(); }
+  else toast(r.msg, 'error');
+};
+window.renderMyFranchises = async function() {
+  const all = await dbGet('franchise/active') || {};
+  const mine = Object.values(all).filter(f => f.franchiseeUid === GZ.uid);
+  let html = '<h3>🪪 Sahip Olduğum Franchise\'lar</h3>';
+  if (!mine.length) html = '<p class="muted">Franchise yok.</p>';
+  else for (const f of mine) {
+    html += `<div class="my-fr"><b>${f.brandName}</b> · Royalty: %${f.royaltyPct} · Sahibi: ${f.offerOwnerName}</div>`;
+  }
+  showModal('🪪 Franchise\'larım', html);
+};
+
+/* ============================================================
+   🌍 ULUSLARARASI TİCARET RENDER
+   ============================================================ */
+function renderUluslararasi() {
+  const main = $('#appMain');
+  let html = `<div class="page-head"><h2>🌍 Uluslararası Ticaret</h2><p class="muted">10 ülkeye ihracat yap. Mesafe = teslim süresi. Gümrük vergisi %4-12.</p></div>
+    <div class="countries-grid">`;
+  for (const c of COUNTRIES) {
+    html += `<div class="country-card">
+      <div class="cc-flag">${c.flag}</div>
+      <h3>${c.name}</h3>
+      <div class="muted">${c.currency} · 1 USD = ${(1/c.rateUsd).toFixed(2)} ${c.currency}</div>
+      <div>Talep: ×${c.demandMult.toFixed(1)} · Gümrük: %${(c.tariff*100).toFixed(0)}</div>
+      <div class="muted">Mesafe: ${c.distance} km · Teslim: ~${Math.ceil(c.distance/800)} gün</div>
+      <button class="btn-mini buy" onclick="intlExportModal('${c.code}')">İhracat Yap</button>
+    </div>`;
+  }
+  html += '</div><div style="margin-top:16px"><button class="btn-secondary" onclick="renderIntlShipments()">📦 Sevkiyatlarım</button></div>';
+  main.innerHTML = html;
+}
+window.renderUluslararasi = renderUluslararasi;
+
+window.intlExportModal = function(code) {
+  const products = Object.keys(URUNLER).slice(0, 30);
+  showModal('🌍 İhracat Yap', `
+    <select id="intlProd">${products.map(p => `<option value="${p}">${URUNLER[p].emo} ${URUNLER[p].name}</option>`).join('')}</select>
+    <input type="number" id="intlQty" placeholder="Adet">
+    <button class="btn-primary" onclick="intlExportExec('${code}')">Gönder</button>
+  `);
+};
+window.intlExportExec = async function(code) {
+  const p = $('#intlProd').value;
+  const q = parseInt($('#intlQty').value) || 0;
+  const r = await exportInternational(code, p, q);
+  if (r.ok) { toast(`✅ Sevk edildi! Net: ₺${r.netRevenue.toLocaleString('tr-TR')} (${r.days} gün)`, 'success'); closeModal(); }
+  else toast(r.msg, 'error');
+};
+window.renderIntlShipments = async function() {
+  const ships = await dbGet('intl_trade/shipments/' + GZ.uid) || {};
+  let html = '<h3>📦 Sevkiyatlarım</h3>';
+  for (const k of Object.keys(ships)) {
+    const s = ships[k];
+    const remaining = Math.max(0, s.arrivesAt - Date.now());
+    const days = Math.ceil(remaining / (24*3600*1000));
+    html += `<div class="ship-row"><b>${s.countryName}</b> ${s.product}×${s.qty} · ${s.status==='in_transit'?`${days} gün kaldı`:'✅ Teslim Edildi'} · ₺${s.netRevenue?.toLocaleString('tr-TR')}</div>`;
+  }
+  showModal('📦 Sevkiyatlarım', html || '<p class="muted">Yok</p>');
+};
+
+/* ============================================================
+   🕶️ KARABORSA RENDER (oyun özelliği - illegal değil)
+   ============================================================ */
+function renderKaraborsa() {
+  const main = $('#appMain');
+  let html = `<div class="page-head"><h2>🕶️ Karaborsa</h2><p class="muted">⚠️ Yüksek risk, yüksek kazanç. Yakalanırsan ceza! Min Lv 15.</p></div>
+    <div class="bm-grid">`;
+  for (const it of BLACKMARKET_ITEMS) {
+    html += `<div class="bm-card">
+      <div class="bm-emo">${it.emo}</div>
+      <h3>${it.name}</h3>
+      <div>Alış: ₺${it.priceMin}-${it.priceMax}</div>
+      <div class="risk-bar">Risk: ${'⚠️'.repeat(Math.ceil(it.risk*5))}</div>
+      <div>Kar potansiyeli: ×${it.profit}</div>
+      <button class="btn-mini buy" onclick="bmBuyModal('${it.code}')">AL</button>
+      <button class="btn-mini sell" onclick="bmSellModal('${it.code}')">SAT</button>
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderKaraborsa = renderKaraborsa;
+window.bmBuyModal = function(c) {
+  showModal('🕶️ Karaborsa Alış', `<input type="number" id="bmQ" placeholder="Adet"><button class="btn-primary" onclick="bmBuyExec('${c}')">Risk Al</button>`);
+};
+window.bmBuyExec = async function(c) {
+  const q = parseInt($('#bmQ').value) || 0;
+  const r = await blackmarketBuy(c, q);
+  toast(r.msg || (r.ok ? 'Alındı' : 'Hata'), r.ok ? 'success' : 'error');
+  if (r.ok) closeModal();
+};
+window.bmSellModal = function(c) {
+  showModal('🕶️ Karaborsa Satış', `<input type="number" id="bmQ" placeholder="Adet"><button class="btn-primary" onclick="bmSellExec('${c}')">Risk Al</button>`);
+};
+window.bmSellExec = async function(c) {
+  const q = parseInt($('#bmQ').value) || 0;
+  const r = await blackmarketSell(c, q);
+  toast(r.msg || (r.ok ? `Satıldı: ₺${r.total?.toFixed(0)}` : 'Hata'), r.ok ? 'success' : 'error');
+  if (r.ok) closeModal();
+};
+
+/* ============================================================
+   📜 TAHVİL RENDER
+   ============================================================ */
+function renderTahvil() {
+  const main = $('#appMain');
+  let html = `<div class="page-head"><h2>📜 Tahvil Piyasası</h2><p class="muted">Sabit getirili yatırım. 3 ayda bir kupon, vadede anapara.</p></div>
+    <div class="bonds-grid">`;
+  for (const b of BONDS) {
+    html += `<div class="bond-card">
+      <div class="bc-head"><span>${b.emo}</span><h3>${b.name}</h3></div>
+      <div>Nominal: ₺${b.face.toLocaleString('tr-TR')}</div>
+      <div>Yıllık Getiri: %${(b.yieldRate*100).toFixed(1)}</div>
+      <div>Vade: ${Math.floor(b.term/365)} yıl</div>
+      <div>İhraç: ${b.issuer}</div>
+      <div class="risk">Risk: ${'⚠️'.repeat(b.riskLevel)}</div>
+      <button class="btn-mini buy" onclick="bondBuyModal('${b.code}')">Satın Al</button>
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderTahvil = renderTahvil;
+window.bondBuyModal = function(c) {
+  showModal('📜 Tahvil Al', `<input type="number" id="bndQ" placeholder="Adet"><button class="btn-primary" onclick="bondBuyExec('${c}')">Al</button>`);
+};
+window.bondBuyExec = async function(c) {
+  const q = parseInt($('#bndQ').value) || 0;
+  const r = await buyBond(c, q);
+  if (r.ok) { toast(`✅ Alındı! ₺${r.cost.toLocaleString('tr-TR')}`, 'success'); closeModal(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   📉 FUTURES RENDER
+   ============================================================ */
+async function renderFutures() {
+  const main = $('#appMain');
+  let html = `<div class="page-head"><h2>📉 Vadeli İşlemler (Futures)</h2><p class="muted">Kaldıraçlı al/sat. ⚠️ Liquidation riski!</p></div>
+    <div class="futures-grid">`;
+  for (const s of STOCKS_DATA.slice(0, 10)) {
+    const price = await dbGet('stocks/prices/' + s.sym + '/current') || s.basePrice;
+    html += `<div class="fut-card">
+      <h3>${s.sym}</h3>
+      <div>₺${price.toFixed(2)}</div>
+      <button class="btn-mini buy" onclick="futOpenModal('${s.sym}','long')">📈 LONG</button>
+      <button class="btn-mini sell" onclick="futOpenModal('${s.sym}','short')">📉 SHORT</button>
+    </div>`;
+  }
+  html += '</div><div style="margin-top:16px"><button class="btn-secondary" onclick="renderFutPositions()">📊 Açık Pozisyonlarım</button></div>';
+  main.innerHTML = html;
+}
+window.renderFutures = renderFutures;
+window.futOpenModal = function(sym, dir) {
+  showModal(`📊 Pozisyon Aç (${dir.toUpperCase()})`, `
+    <input type="number" id="futLot" placeholder="Lot büyüklüğü">
+    <select id="futLev"><option value="1">1x</option><option value="2">2x</option><option value="5">5x</option><option value="10">10x</option></select>
+    <button class="btn-primary" onclick="futOpenExec('${sym}','${dir}')">Aç</button>
+  `);
+};
+window.futOpenExec = async function(sym, dir) {
+  const lot = parseInt($('#futLot').value) || 0;
+  const lev = parseInt($('#futLev').value) || 1;
+  const r = await openFuturesPosition(sym, dir, lot, lev);
+  if (r.ok) { toast('✅ Pozisyon açıldı', 'success'); closeModal(); }
+  else toast(r.msg, 'error');
+};
+window.renderFutPositions = async function() {
+  const ps = await dbGet('futures/positions/' + GZ.uid) || {};
+  let html = '<h3>📊 Pozisyonlarım</h3>';
+  for (const k of Object.keys(ps)) {
+    const p = ps[k];
+    if (p.status !== 'open') continue;
+    const cur = await dbGet('stocks/prices/' + p.symbol + '/current') || p.entryPrice;
+    const diff = p.direction === 'long' ? (cur - p.entryPrice) : (p.entryPrice - cur);
+    const pnl = diff * p.lotSize * p.leverage;
+    html += `<div class="pos-row">
+      <b>${p.symbol}</b> ${p.direction.toUpperCase()} ${p.leverage}x · 
+      Giriş: ₺${p.entryPrice.toFixed(2)} · Şu an: ₺${cur.toFixed(2)} · 
+      <span style="color:${pnl>=0?'#16a34a':'#dc2626'}">PnL: ₺${pnl.toFixed(2)}</span>
+      <button class="btn-mini" onclick="futClose('${k}')">Kapat</button>
+    </div>`;
+  }
+  showModal('📊 Pozisyonlarım', html);
+};
+window.futClose = async function(k) {
+  const r = await closeFuturesPosition(k);
+  if (r.liquidated) toast(`💥 LIQUIDATED! Kayıp: ₺${Math.abs(r.pnl).toFixed(2)}`, 'error');
+  else if (r.ok) toast(`✅ Kapatıldı! PnL: ₺${r.pnl.toFixed(2)}`, 'success');
+  else toast(r.msg, 'error');
+  renderFutPositions();
+};
+
+/* ============================================================
+   💹 HEDGE FON RENDER
+   ============================================================ */
+async function renderHedgeFon() {
+  const main = $('#appMain');
+  const funds = await dbGet('hedgefunds/list') || {};
+  let html = `<div class="page-head"><h2>💹 Hedge Fonları</h2><p class="muted">Profesyonel yöneticilerin fonlarına yatırım yap. Min Lv 35 ile fon kur.</p></div>
+    <button class="btn-secondary" onclick="hfCreateModal()">🆕 Hedge Fon Kur</button>
+    <div class="funds-list">`;
+  for (const k of Object.keys(funds)) {
+    const f = funds[k];
+    html += `<div class="fund-card">
+      <h3>${f.fundName}</h3>
+      <div>Yönetici: ${f.managerName}</div>
+      <div>NAV: ₺${f.nav?.toFixed(4)} · AUM: ₺${(f.aum||0).toLocaleString('tr-TR')}</div>
+      <div>Yönetim: %${(f.mgmtFee*100).toFixed(2)} · Performans: %${(f.perfFee*100).toFixed(0)}</div>
+      <div>Yatırımcı: ${f.investorCount||0} · Min: ₺${f.minInvest?.toLocaleString('tr-TR')}</div>
+      <button class="btn-mini buy" onclick="hfInvestModal('${k}',${f.minInvest||10000})">Yatırım Yap</button>
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderHedgeFon = renderHedgeFon;
+window.hfCreateModal = function() {
+  showModal('🆕 Hedge Fon Kur', `
+    <input type="text" id="hfName" placeholder="Fon adı">
+    <input type="number" id="hfMgmt" placeholder="Yönetim ücreti (0.005-0.05)" step="0.005">
+    <input type="number" id="hfPerf" placeholder="Performans ücreti (0.05-0.30)" step="0.01">
+    <input type="number" id="hfMin" placeholder="Min yatırım (₺)">
+    <button class="btn-primary" onclick="hfCreateExec()">Kur</button>
+  `);
+};
+window.hfCreateExec = async function() {
+  const r = await createHedgeFund($('#hfName').value, parseFloat($('#hfMgmt').value), parseFloat($('#hfPerf').value), parseFloat($('#hfMin').value), 'balanced');
+  if (r.ok) { toast('✅ Fon kuruldu', 'success'); closeModal(); renderHedgeFon(); }
+  else toast(r.msg, 'error');
+};
+window.hfInvestModal = function(k, min) {
+  showModal('💹 Yatırım Yap', `<input type="number" id="hfAmt" placeholder="Tutar (min ₺${min})"><button class="btn-primary" onclick="hfInvestExec('${k}')">Yatır</button>`);
+};
+window.hfInvestExec = async function(k) {
+  const a = parseFloat($('#hfAmt').value) || 0;
+  const r = await investInHedgeFund(k, a);
+  if (r.ok) { toast(`✅ ${r.shares.toFixed(4)} pay alındı`, 'success'); closeModal(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   👷 ÇALIŞAN RENDER
+   ============================================================ */
+async function renderCalisan() {
+  const main = $('#appMain');
+  const emps = await dbGet('employees/' + GZ.uid) || {};
+  let html = `<div class="page-head"><h2>👷 Çalışan Yönetimi</h2><p class="muted">Personel tut, maaş öde, verimliliği artır.</p></div>
+    <div class="emp-positions">`;
+  for (const p of EMPLOYEE_POSITIONS) {
+    html += `<div class="empos-card">
+      <div class="emp-emo">${p.emo}</div>
+      <h3>${p.name}</h3>
+      <div>Maaş: ₺${p.minSalary.toLocaleString('tr-TR')}-${p.maxSalary.toLocaleString('tr-TR')}</div>
+      <div>Verim Bonus: +%${p.productivityBonus*100}</div>
+      <button class="btn-mini buy" onclick="empHireModal('${p.code}', ${p.minSalary}, ${p.maxSalary})">İşe Al</button>
+    </div>`;
+  }
+  html += '</div><h3 style="margin-top:20px">Çalışanlarım</h3><div class="emps-list">';
+  for (const k of Object.keys(emps)) {
+    const e = emps[k];
+    html += `<div class="emp-row">
+      <b>${e.name}</b> · ${e.positionName} · ₺${e.salary}/ay · Moral: ${e.morale}%
+      ${e.onStrike ? ' 🚫 GREVDE' : ''}
+      <button class="btn-mini sell" onclick="empFire('${k}')">Çıkar</button>
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderCalisan = renderCalisan;
+window.empHireModal = function(code, min, max) {
+  showModal('👷 İşe Al', `<input type="number" id="empSal" placeholder="Maaş (₺${min}-${max})"><button class="btn-primary" onclick="empHireExec('${code}')">Al</button>`);
+};
+window.empHireExec = async function(code) {
+  const s = parseFloat($('#empSal').value) || 0;
+  const r = await hireEmployee(code, s);
+  if (r.ok) { toast(`✅ İşe alındı: ${r.employee.name}`, 'success'); closeModal(); renderCalisan(); }
+  else toast(r.msg, 'error');
+};
+window.empFire = async function(k) {
+  if (!confirm('Tazminat (2 maaş) ödenecek. Onaylıyor musun?')) return;
+  const r = await fireEmployee(k);
+  if (r.ok) { toast(`✅ Çıkarıldı. Tazminat: ₺${r.severance.toLocaleString('tr-TR')}`, 'success'); renderCalisan(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   🔬 AR-GE RENDER
+   ============================================================ */
+async function renderArge() {
+  const main = $('#appMain');
+  const research = await dbGet('rd_tech/' + GZ.uid) || {};
+  let html = `<div class="page-head"><h2>🔬 Ar-Ge / Teknoloji Ağacı</h2><p class="muted">Yatırım yap, kalıcı bonus kazan.</p></div>
+    <div class="tech-grid">`;
+  for (const code of Object.keys(TECH_TREE)) {
+    const t = TECH_TREE[code];
+    const r = research[code];
+    const status = r?.status || 'available';
+    let badge = '';
+    if (status === 'completed') badge = '<span class="badge ok">✅ Tamam</span>';
+    else if (status === 'in_progress') {
+      const remH = Math.max(0, Math.ceil((r.completesAt - Date.now()) / 3600000));
+      badge = `<span class="badge prog">⏳ ${remH}sa</span>`;
+    }
+    html += `<div class="tech-card">
+      <h3>${t.name} ${badge}</h3>
+      <div class="muted">${t.desc}</div>
+      <div>Maliyet: ₺${t.cost.toLocaleString('tr-TR')} · Süre: ${t.days} gün</div>
+      ${t.prereq.length ? `<div class="muted">Önkoşul: ${t.prereq.map(p => TECH_TREE[p].name).join(', ')}</div>` : ''}
+      ${status === 'available' ? `<button class="btn-mini buy" onclick="rdStart('${code}')">Başlat</button>` : ''}
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderArge = renderArge;
+window.rdStart = async function(c) {
+  const r = await startResearch(c);
+  if (r.ok) { toast('✅ Araştırma başlatıldı', 'success'); renderArge(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   🎓 EĞİTİM RENDER
+   ============================================================ */
+async function renderEgitim() {
+  const main = $('#appMain');
+  const edu = await dbGet('education/' + GZ.uid) || {};
+  let html = `<div class="page-head"><h2>🎓 Eğitim Merkezi</h2><p class="muted">Kurslar al, kalıcı yetenek bonusları kazan.</p></div>
+    <div class="course-grid">`;
+  for (const c of COURSES) {
+    const e = edu[c.code];
+    let badge = e?.status === 'completed' ? '✅' : e?.status === 'in_progress' ? '⏳' : '';
+    html += `<div class="course-card">
+      <h3>${badge} ${c.name}</h3>
+      <div class="muted">${c.desc} · ${c.branch}</div>
+      <div>₺${c.cost.toLocaleString('tr-TR')} · ${c.days} gün</div>
+      ${!e ? `<button class="btn-mini buy" onclick="eduEnroll('${c.code}')">Kayıt Ol</button>` : ''}
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderEgitim = renderEgitim;
+window.eduEnroll = async function(c) {
+  const r = await enrollCourse(c);
+  if (r.ok) { toast('✅ Kayıt olundu', 'success'); renderEgitim(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   📝 SÖZLEŞME RENDER
+   ============================================================ */
+async function renderSozlesme() {
+  const main = $('#appMain');
+  const cts = await dbGet('contracts') || {};
+  const my = Object.entries(cts).filter(([k,c]) => c.creator === GZ.uid || c.target === GZ.uid);
+  let html = `<div class="page-head"><h2>📝 Sözleşmeler</h2><p class="muted">Oyuncularla resmi ticaret anlaşmaları.</p></div>
+    <button class="btn-secondary" onclick="contractCreateModal()">🆕 Yeni Sözleşme</button>
+    <div class="contracts-list">`;
+  for (const [k, c] of my) {
+    html += `<div class="contract-row">
+      <b>${c.type}</b> · ${c.creatorName||'?'} → ${c.target===GZ.uid?'SEN':'?'} · 
+      <span class="badge ${c.status}">${c.status}</span>
+      ${c.status === 'pending' && c.target === GZ.uid ? `<button class="btn-mini" onclick="ctAccept('${k}')">Kabul</button>` : ''}
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderSozlesme = renderSozlesme;
+window.contractCreateModal = function() {
+  showModal('📝 Sözleşme Oluştur', `
+    <input type="text" id="ctTarget" placeholder="Hedef oyuncu UID">
+    <select id="ctType">
+      <option value="tedarik">Tedarik</option>
+      <option value="satis">Satış</option>
+      <option value="ortak_yatirim">Ortak Yatırım</option>
+    </select>
+    <textarea id="ctTerms" placeholder="Şartlar (JSON veya açıklama)"></textarea>
+    <button class="btn-primary" onclick="ctCreateExec()">Gönder</button>
+  `);
+};
+window.ctCreateExec = async function() {
+  await createContract($('#ctTarget').value, $('#ctType').value, { note: $('#ctTerms').value });
+  toast('✅ Sözleşme önerildi', 'success'); closeModal();
+};
+window.ctAccept = async function(k) {
+  const r = await acceptContract(k);
+  if (r.ok) { toast('✅ Kabul edildi', 'success'); renderSozlesme(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   🏛️ BELEDİYE RENDER
+   ============================================================ */
+async function renderBelediye() {
+  const main = $('#appMain');
+  const elections = await dbGet('city_mayor/elections') || {};
+  let html = `<div class="page-head"><h2>🏛️ Belediye Seçimleri</h2><p class="muted">Şehirlerde belediye başkanı ol, vergi ayarla.</p></div>
+    <div class="cities-list">`;
+  const cities = (window.ILLER || []).slice(0, 15);
+  for (const city of cities) {
+    const el = elections[city];
+    html += `<div class="city-row">
+      <b>${city}</b>
+      ${el ? `· Adaylar: ${Object.keys(el.candidates||{}).length}` : ''}
+      <button class="btn-mini" onclick="mayorRunModal('${city}')">Aday Ol</button>
+      ${el ? `<button class="btn-mini" onclick="mayorVoteModal('${city}')">Oy Ver</button>` : ''}
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderBelediye = renderBelediye;
+window.mayorRunModal = function(city) {
+  showModal('🏛️ Aday Ol — ' + city, `
+    <textarea id="mManif" placeholder="Vaadlerin (manifesto)"></textarea>
+    <input type="number" id="mTax" placeholder="Vergi % (0-20)" step="0.5" max="20" min="0">
+    <button class="btn-primary" onclick="mayorRunExec('${city}')">Aday Ol (₺50K)</button>
+  `);
+};
+window.mayorRunExec = async function(city) {
+  const r = await runForMayor(city, $('#mManif').value, parseFloat($('#mTax').value)/100);
+  if (r.ok) { toast('✅ Aday oldun', 'success'); closeModal(); }
+  else toast(r.msg, 'error');
+};
+window.mayorVoteModal = async function(city) {
+  const el = await dbGet('city_mayor/elections/' + city);
+  let html = `<h3>${city} - Adaylar</h3>`;
+  for (const uid of Object.keys(el.candidates || {})) {
+    const c = el.candidates[uid];
+    html += `<div class="candidate"><b>${c.name}</b> · Vergi: %${(c.taxPolicy*100).toFixed(1)}<br>${c.manifesto}<br><button class="btn-mini" onclick="mayorVoteExec('${city}','${uid}')">Oy Ver</button></div>`;
+  }
+  showModal('🗳️ Oy Ver', html);
+};
+window.mayorVoteExec = async function(city, uid) {
+  const r = await voteForMayor(city, uid);
+  if (r.ok) { toast('✅ Oy verildi', 'success'); closeModal(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   ⚔️ TİCARET SAVAŞI RENDER
+   ============================================================ */
+async function renderTicsavas() {
+  const main = $('#appMain');
+  const wars = await dbGet('trade_war/active') || {};
+  let html = `<div class="page-head"><h2>⚔️ Ticaret Savaşları</h2><p class="muted">Rakiplere ekonomik baskı uygula.</p></div>
+    <button class="btn-secondary" onclick="warDeclareModal()">⚔️ Savaş İlan Et</button>
+    <div class="wars-list">`;
+  for (const k of Object.keys(wars)) {
+    const w = wars[k];
+    html += `<div class="war-row"><b>${w.aggressorName}</b> ⚔️ → <b>${w.target}</b> · ${w.weapon} · ${w.status}</div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderTicsavas = renderTicsavas;
+window.warDeclareModal = function() {
+  showModal('⚔️ Ticaret Savaşı İlan Et', `
+    <input type="text" id="warTarget" placeholder="Hedef UID">
+    <select id="warWeapon">
+      <option value="fiyat_dampingi">Fiyat Dampingi</option>
+      <option value="boykot">Boykot</option>
+      <option value="reklam_savasi">Reklam Savaşı</option>
+      <option value="lobi">Lobi Faaliyeti</option>
+    </select>
+    <input type="number" id="warDays" placeholder="Süre (gün)" value="7">
+    <button class="btn-primary" onclick="warDeclareExec()">İlan Et (₺100K)</button>
+  `);
+};
+window.warDeclareExec = async function() {
+  const r = await declareTradeWar($('#warTarget').value, parseInt($('#warDays').value), $('#warWeapon').value);
+  if (r.ok) { toast('⚔️ Savaş ilan edildi', 'success'); closeModal(); renderTicsavas(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   🤜 DÜELLO RENDER
+   ============================================================ */
+async function renderDuello() {
+  const main = $('#appMain');
+  const duels = await dbGet('duels/active') || {};
+  let html = `<div class="page-head"><h2>🤜 Düello Arena</h2><p class="muted">1v1 ticaret düellosu. Bahis koyar, kim daha çok kar yapar.</p></div>
+    <button class="btn-secondary" onclick="duelCreateModal()">🤜 Düello Çağrısı Yap</button>
+    <div class="duels-list">`;
+  for (const k of Object.keys(duels)) {
+    const d = duels[k];
+    html += `<div class="duel-row"><b>${d.creatorName}</b> 🤜 ${d.opponent===GZ.uid?'SEN':'?'} · Bahis: ₺${d.betAmount?.toLocaleString('tr-TR')} · ${d.status}
+      ${d.status==='pending' && d.opponent===GZ.uid ? `<button class="btn-mini" onclick="duelAccept('${k}')">Kabul</button>` : ''}
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderDuello = renderDuello;
+window.duelCreateModal = function() {
+  showModal('🤜 Düello', `
+    <input type="text" id="duelOpp" placeholder="Rakip UID">
+    <input type="number" id="duelBet" placeholder="Bahis (min ₺10K)">
+    <input type="number" id="duelDur" placeholder="Süre dk (5-60)" value="15">
+    <button class="btn-primary" onclick="duelCreateExec()">Çağrı Yap</button>
+  `);
+};
+window.duelCreateExec = async function() {
+  const r = await createDuel($('#duelOpp').value, parseFloat($('#duelBet').value), parseInt($('#duelDur').value));
+  if (r.ok) { toast('🤜 Düello çağrısı gönderildi', 'success'); closeModal(); }
+  else toast(r.msg, 'error');
+};
+window.duelAccept = async function(k) {
+  const r = await acceptDuel(k);
+  if (r.ok) { toast('🤜 Düello başladı!', 'success'); renderDuello(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   🎭 AVATAR / 🎖️ UNVAN / 🎨 DEKORASYON
+   ============================================================ */
+async function renderAvatar() {
+  const main = $('#appMain');
+  const owned = await dbGet('users/' + GZ.uid + '/ownedAvatars') || {};
+  let html = `<div class="page-head"><h2>🎭 Avatar Seç</h2><p class="muted">Karakterini seç, premium olanlar 💎 ile.</p></div><div class="avatar-grid">`;
+  for (const a of AVATARS) {
+    const has = owned[a.code] || a.cost === 0 && !a.premium;
+    html += `<div class="av-card ${has?'owned':''}">
+      <div class="av-emo">${a.emo}</div>
+      <h3>${a.name}</h3>
+      ${has ? `<button class="btn-mini" onclick="setAvatarUI('${a.code}')">Kullan</button>` :
+        `<button class="btn-mini buy" onclick="buyAvatarUI('${a.code}')">${a.premium ? `${a.diamondCost} 💎` : `₺${a.cost.toLocaleString('tr-TR')}`}</button>`}
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderAvatar = renderAvatar;
+window.setAvatarUI = async function(c) { await setAvatar(c); toast('✅ Avatar değişti', 'success'); };
+window.buyAvatarUI = async function(c) {
+  const r = await buyAvatar(c);
+  if (r.ok) { toast('✅ Alındı', 'success'); renderAvatar(); }
+  else toast(r.msg, 'error');
+};
+
+async function renderUnvan() {
+  const main = $('#appMain');
+  let html = `<div class="page-head"><h2>🎖️ Unvanlar</h2><p class="muted">Şartları yerine getirdiğin unvanları kullan.</p></div><div class="title-grid">`;
+  for (const t of TITLES) {
+    html += `<div class="title-card" style="border-color:${t.color}">
+      <h3 style="color:${t.color}">${t.name}</h3>
+      <div class="muted">Şart: ${JSON.stringify(t.condition)}</div>
+      <button class="btn-mini" onclick="setTitleUI('${t.code}')">Kullan</button>
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderUnvan = renderUnvan;
+window.setTitleUI = async function(c) { await setTitle(c); toast('✅ Unvan ayarlandı', 'success'); };
+
+async function renderDekorasyon() {
+  const main = $('#appMain');
+  let html = `<div class="page-head"><h2>🎨 Dükkan Dekorasyonu</h2></div><div class="decor-grid">`;
+  for (const d of DECORATIONS) {
+    html += `<div class="decor-card">
+      <h3>${d.name}</h3>
+      <div class="muted">${d.desc}</div>
+      <button class="btn-mini buy" onclick="buyDecorUI('${d.code}')">${d.diamondCost ? `${d.diamondCost} 💎` : `₺${d.cost.toLocaleString('tr-TR')}`}</button>
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderDekorasyon = renderDekorasyon;
+window.buyDecorUI = async function(c) {
+  const r = await buyDecoration(c);
+  if (r.ok) { toast('✅ Alındı', 'success'); renderDekorasyon(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   🗺️ SEFER / ⭐ PRESTİJ / 🃏 KOLEKSİYON / 🗺️ HARİTA
+   ============================================================ */
+async function renderSefer() {
+  const main = $('#appMain');
+  const cur = await dbGet('expeditions/' + GZ.uid + '/current');
+  let html = `<div class="page-head"><h2>🗺️ Seferler / Kampanyalar</h2><p class="muted">Uzun soluklu büyük görevler.</p></div>`;
+  if (cur && cur.status === 'active') {
+    const rem = Math.ceil((cur.endsAt - Date.now()) / 86400000);
+    html += `<div class="expedition-active"><h3>${cur.emo} ${cur.name}</h3><div>Kalan: ${rem} gün</div></div>`;
+  }
+  html += '<div class="exp-grid">';
+  for (const e of EXPEDITIONS) {
+    html += `<div class="exp-card">
+      <div class="exp-emo">${e.emo}</div>
+      <h3>${e.name}</h3>
+      <div>${e.days} gün · Ödül: ₺${e.reward.money.toLocaleString('tr-TR')} + ${e.reward.diamonds}💎 + ${e.reward.xp} XP</div>
+      <ul>${e.goals.map(g => `<li>${g.desc}</li>`).join('')}</ul>
+      <button class="btn-mini buy" onclick="seferStart('${e.code}')">Başlat</button>
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderSefer = renderSefer;
+window.seferStart = async function(c) {
+  const r = await startExpedition(c);
+  if (r.ok) { toast('🗺️ Sefer başladı', 'success'); renderSefer(); }
+  else toast(r.msg, 'error');
+};
+
+async function renderPrestij() {
+  const main = $('#appMain');
+  const u = GZ.data;
+  main.innerHTML = `<div class="page-head"><h2>⭐ Prestij Sistemi</h2><p class="muted">Lv 100 + ₺100M servete ulaştığında prestij kazan, kalıcı bonuslar al.</p></div>
+    <div class="prestige-info">
+      <h3>Mevcut Prestij: ${u?.prestige || 0}</h3>
+      <div>Cash Çarpanı: ×${(1 + 0.05 * (u?.prestige || 0)).toFixed(2)}</div>
+      <div>XP Çarpanı: ×${(1 + 0.10 * (u?.prestige || 0)).toFixed(2)}</div>
+      ${(u?.level||1) >= 100 && (u?.netWorth||0) >= 100000000 ? 
+        `<button class="btn-primary" onclick="prestijExec()">⭐ PRESTİJ AL</button>` : 
+        `<div class="muted">Şartlar henüz yetersiz.</div>`}
+    </div>`;
+}
+window.renderPrestij = renderPrestij;
+window.prestijExec = async function() {
+  if (!confirm('⚠️ Hesap sıfırlanacak (level, para, işletmeler) ama prestij + bonuslar kalır. Onaylıyor musun?')) return;
+  const r = await attemptPrestige();
+  if (r.ok) { toast(`⭐ Prestij ${r.newPrestige}!`, 'success', 6000); renderPrestij(); }
+  else toast(r.msg, 'error');
+};
+
+async function renderKoleksiyon() {
+  const main = $('#appMain');
+  const owned = await dbGet('collectibles/owned/' + GZ.uid) || {};
+  let html = `<div class="page-head"><h2>🃏 Koleksiyon Kartları</h2><p class="muted">Paket aç, nadir kart topla, takas et.</p></div>
+    <div class="pack-buttons">
+      <button class="btn-secondary" onclick="cardPackOpen('basic')">📦 Basic Paket (₺5K)</button>
+      <button class="btn-secondary" onclick="cardPackOpen('premium')">💎 Premium Paket (₺25K)</button>
+      <button class="btn-secondary" onclick="cardPackOpen('legendary')">👑 Legendary Paket (₺100K)</button>
+    </div>
+    <h3>Koleksiyonum (${Object.keys(owned).length} farklı kart)</h3>
+    <div class="cards-grid">`;
+  for (const c of COLLECTIBLE_CARDS) {
+    const cnt = owned[c.id] || 0;
+    if (cnt > 0) {
+      html += `<div class="card-item ${c.rarity}" style="border-color:${RARITY_COLORS[c.rarity]}">
+        <div class="ci-emo">${c.emo}</div>
+        <h4>${c.name}</h4>
+        <small>${c.rarity}</small>
+        <div>Adet: ${cnt}</div>
+      </div>`;
+    }
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderKoleksiyon = renderKoleksiyon;
+window.cardPackOpen = async function(type) {
+  const r = await openCardPack(type);
+  if (r.ok) {
+    let txt = '🃏 Paket Açıldı:<br>';
+    for (const c of r.drawn) txt += `<div style="color:${RARITY_COLORS[c.rarity]}">${c.emo} ${c.name} (${c.rarity})</div>`;
+    showModal('🎉 Paket Açıldı', txt);
+    setTimeout(renderKoleksiyon, 100);
+  } else toast(r.msg, 'error');
+};
+
+async function renderHarita() {
+  const main = $('#appMain');
+  const regions = await dbGet('tr_map/regions') || {};
+  let html = `<div class="page-head"><h2>🗺️ Türkiye Harita Modu</h2><p class="muted">Bölgelerin %50'sinde işletme = bölge sahipliği. Bölgede +%10 gelir bonus.</p></div>
+    <div class="regions-grid">`;
+  for (const r of TR_REGIONS) {
+    const owned = regions[r.code];
+    html += `<div class="region-card ${owned?'owned':''}">
+      <h3>${r.name}</h3>
+      <div class="muted">${r.cities.length} şehir</div>
+      ${owned ? `<div>👑 Sahip: ${owned.ownerName}</div>` : 
+        `<button class="btn-mini buy" onclick="regionClaim('${r.code}')">Bölgeyi Al (₺1M)</button>`}
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+window.renderHarita = renderHarita;
+window.regionClaim = async function(c) {
+  const r = await claimRegion(c);
+  if (r.ok) { toast('👑 Bölge alındı', 'success'); renderHarita(); }
+  else toast(r.msg, 'error');
+};
+
+/* ============================================================
+   ⚡ KURUCU PANELİ
+   ============================================================ */
+window.openFounderPanel = async function() {
+  if (!window.GZ_IS_FOUNDER) { toast('Yetki yok', 'error'); return; }
+
+  const statsR = await window.founderActions.getStats();
+  const s = statsR.stats || {};
+
+  showModal('⚡ KURUCU PANELİ', `
+    <div class="founder-panel">
+      <div class="fp-stats">
+        <div class="fp-stat"><div class="fps-num">${s.totalUsers||0}</div><div class="fps-lbl">Oyuncu</div></div>
+        <div class="fp-stat"><div class="fps-num">${s.onlineUsers||0}</div><div class="fps-lbl">Online</div></div>
+        <div class="fp-stat"><div class="fps-num">₺${(s.totalMoney||0).toLocaleString('tr-TR')}</div><div class="fps-lbl">Toplam Para</div></div>
+        <div class="fp-stat"><div class="fps-num">${s.bannedUsers||0}</div><div class="fps-lbl">Banlı</div></div>
+        <div class="fp-stat"><div class="fps-num">${(s.avgLevel||0).toFixed(1)}</div><div class="fps-lbl">Ortalama Lv</div></div>
+        <div class="fp-stat"><div class="fps-num">${s.founders||0}</div><div class="fps-lbl">Kurucular</div></div>
+      </div>
+
+      <div class="fp-section">
+        <h3>📢 Global Duyuru</h3>
+        <textarea id="fpBroadcast" placeholder="Tüm oyunculara bant olarak gözükecek mesaj"></textarea>
+        <input type="number" id="fpBroadcastDur" placeholder="Süre (dakika)" value="30">
+        <button class="btn-primary" onclick="fpDoBroadcast()">📢 Yayınla</button>
+        <button class="btn-secondary" onclick="fpClearBroadcast()">🚫 Duyuruyu Kaldır</button>
+      </div>
+
+      <div class="fp-section">
+        <h3>🔧 Bakım Modu</h3>
+        <input type="text" id="fpMaintReason" placeholder="Sebep">
+        <input type="text" id="fpMaintEta" placeholder="ETA (örn: 10 dk)">
+        <button class="btn-primary" onclick="fpToggleMaint(true)">🔧 BAKIMA AL</button>
+        <button class="btn-secondary" onclick="fpToggleMaint(false)">✅ Bakımdan Çıkar</button>
+      </div>
+
+      <div class="fp-section">
+        <h3>👤 Kullanıcı İşlemleri</h3>
+        <input type="text" id="fpUid" placeholder="Hedef Kullanıcı UID">
+        <input type="number" id="fpAmount" placeholder="Miktar (₺ veya 💎 veya seviye)">
+        <div class="fp-actions">
+          <button class="btn-mini" onclick="fpGrantMoney()">💰 Para Ver</button>
+          <button class="btn-mini" onclick="fpGrantDia()">💎 Elmas Ver</button>
+          <button class="btn-mini" onclick="fpSetLv()">📊 Seviye Ayarla</button>
+          <button class="btn-mini sell" onclick="fpBan()">🚫 Banla</button>
+          <button class="btn-mini" onclick="fpUnban()">✅ Ban Kaldır</button>
+        </div>
+      </div>
+
+      <div class="fp-section">
+        <h3>📨 Tüm Oyunculara Bildirim</h3>
+        <textarea id="fpNotif" placeholder="Bildirim mesajı"></textarea>
+        <button class="btn-primary" onclick="fpSendNotif()">📨 Tüm Oyunculara Gönder</button>
+      </div>
+    </div>
+  `);
+};
+
+window.fpDoBroadcast = async function() {
+  const t = $('#fpBroadcast').value.trim();
+  const d = parseInt($('#fpBroadcastDur').value) || 30;
+  if (!t) return toast('Mesaj gerekli', 'error');
+  const r = await window.founderActions.sendBroadcast(t, d);
+  if (r.ok) toast('📢 Yayınlandı', 'success');
+};
+window.fpClearBroadcast = async function() { await window.founderActions.clearBroadcast(); toast('Kaldırıldı', 'success'); };
+window.fpToggleMaint = async function(active) {
+  await window.founderActions.toggleMaintenance(active, $('#fpMaintReason').value, $('#fpMaintEta').value);
+  toast(active ? '🔧 Bakıma alındı' : '✅ Çıkarıldı', 'success');
+};
+window.fpGrantMoney = async function() {
+  await window.founderActions.grantMoney($('#fpUid').value, parseFloat($('#fpAmount').value));
+  toast('💰 Verildi', 'success');
+};
+window.fpGrantDia = async function() {
+  await window.founderActions.grantDiamonds($('#fpUid').value, parseInt($('#fpAmount').value));
+  toast('💎 Verildi', 'success');
+};
+window.fpSetLv = async function() {
+  await window.founderActions.setLevel($('#fpUid').value, parseInt($('#fpAmount').value));
+  toast('📊 Ayarlandı', 'success');
+};
+window.fpBan = async function() {
+  if (!confirm('Banlamak istediğine emin misin?')) return;
+  await window.founderActions.banUser($('#fpUid').value, 'Kurucu kararı');
+  toast('🚫 Banlandı', 'success');
+};
+window.fpUnban = async function() {
+  await window.founderActions.unbanUser($('#fpUid').value);
+  toast('✅ Ban kaldırıldı', 'success');
+};
+window.fpSendNotif = async function() {
+  const r = await window.founderActions.sendNotificationToAll($('#fpNotif').value, '📢');
+  if (r.ok) toast(`📨 ${r.count} oyuncuya gönderildi`, 'success');
+};

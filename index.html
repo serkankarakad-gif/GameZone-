@@ -19,7 +19,7 @@
 <!-- =================== AUTH EKRANI =================== -->
 <div id="authScreen" class="screen active">
   <div class="auth-container">
-    <div class="auth-logo">
+    <div class="auth-logo" id="authLogoArea">
       <span class="logo-text"><span class="logo-y">Game</span><span class="logo-w">Zone</span></span>
       <div class="logo-sub">ERP — Ticaret İmparatorluğu</div>
     </div>
@@ -113,7 +113,37 @@
       <button class="btn-link" id="btnForgotBack">← Giriş Ekranına Dön</button>
     </div>
 
-    <div class="auth-footer">v1.1 • Geliştirici: Serkan Karakaş & Resul Karakaş</div>
+    <div class="auth-footer">v2.0 DEV BUILD • Geliştirici: Serkan Karakaş & Resul Karakaş</div>
+  </div>
+
+  <!-- =================== KURUCU GİZLİ GİRİŞ PANELİ =================== -->
+  <div id="founderLoginPanel" class="founder-login-panel">
+    <div class="fl-card">
+      <div class="fl-header">
+        <div class="fl-icon">⚡</div>
+        <h2>KURUCU GİRİŞİ</h2>
+        <div class="fl-sub">Yetkisiz erişim yasaktır. Tüm girişler kayıt altındadır.</div>
+      </div>
+      <div class="fl-body">
+        <div class="input-group">
+          <label>👤 Kurucu Anahtarı</label>
+          <input type="password" id="founderKey" placeholder="Master Key" autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label>🔐 Devlet Şifresi</label>
+          <input type="password" id="founderPass" placeholder="Şifre" autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label>🛡️ TOTP Kodu (6 haneli)</label>
+          <input type="text" id="founderTotp" placeholder="000000" maxlength="6" inputmode="numeric">
+        </div>
+        <button class="btn-founder" id="btnFounderLogin">⚡ KURUCU OLARAK GİR</button>
+        <button class="btn-link" id="btnFounderClose">← İptal</button>
+        <div class="fl-warning">
+          ⚠️ 3 başarısız denemeden sonra cihaz 24 saat banlanacaktır.
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -174,6 +204,30 @@
     <button class="navbtn" data-tab="oyunlar">🎮<span>Oyunlar</span></button>
     <button class="navbtn" data-tab="hikaye">📖<span>Hikaye</span></button>
     <button class="navbtn" data-tab="sss">❓<span>SSS</span></button>
+    <!-- ===== YENİ EKLENEN SEKMELER (v2.0) ===== -->
+    <button class="navbtn" data-tab="borsa">📊<span>Borsa</span></button>
+    <button class="navbtn" data-tab="emlak">🏘️<span>Emlak</span></button>
+    <button class="navbtn" data-tab="sigorta">🛡️<span>Sigorta</span></button>
+    <button class="navbtn" data-tab="franchise">🪧<span>Franchise</span></button>
+    <button class="navbtn" data-tab="uluslararasi">🌍<span>Uluslararası</span></button>
+    <button class="navbtn" data-tab="karaborsa">🕶️<span>Karaborsa</span></button>
+    <button class="navbtn" data-tab="tahvil">📜<span>Tahvil</span></button>
+    <button class="navbtn" data-tab="futures">📉<span>Vadeli</span></button>
+    <button class="navbtn" data-tab="hedgefon">💹<span>Hedge Fon</span></button>
+    <button class="navbtn" data-tab="calisan">👷<span>Çalışan</span></button>
+    <button class="navbtn" data-tab="arge">🔬<span>Ar-Ge</span></button>
+    <button class="navbtn" data-tab="egitim">🎓<span>Eğitim</span></button>
+    <button class="navbtn" data-tab="sozlesme">📝<span>Sözleşme</span></button>
+    <button class="navbtn" data-tab="belediye">🏛️<span>Belediye</span></button>
+    <button class="navbtn" data-tab="ticsavas">⚔️<span>Tic. Savaş</span></button>
+    <button class="navbtn" data-tab="duello">🤜<span>Düello</span></button>
+    <button class="navbtn" data-tab="avatar">🎭<span>Avatar</span></button>
+    <button class="navbtn" data-tab="unvan">🎖️<span>Unvanlar</span></button>
+    <button class="navbtn" data-tab="dekorasyon">🎨<span>Dekorasyon</span></button>
+    <button class="navbtn" data-tab="sefer">🗺️<span>Sefer</span></button>
+    <button class="navbtn" data-tab="prestij">⭐<span>Prestij</span></button>
+    <button class="navbtn" data-tab="koleksiyon">🃏<span>Koleksiyon</span></button>
+    <button class="navbtn" data-tab="harita">🗺️<span>TR Harita</span></button>
   </nav>
 </div>
 
@@ -197,6 +251,36 @@
   <div class="splash-text">GameZone yükleniyor...</div>
 </div>
 
+<!-- =================== BAKIM MODU EKRANI =================== -->
+<div id="maintenanceScreen" class="screen maintenance-screen">
+  <div class="maint-box">
+    <div class="maint-emoji">🔧</div>
+    <h2>Bakım Modunda</h2>
+    <p id="maintReason">Sunucularımıza güncelleme yüklüyoruz. Lütfen birkaç dakika sonra tekrar deneyin.</p>
+    <div class="maint-loader"><div class="ml-bar"></div></div>
+    <div class="maint-eta" id="maintEta">Tahmini süre: kısa süre içinde</div>
+    <div class="maint-credits">— GameZone Ekibi</div>
+  </div>
+</div>
+
+<!-- =================== KURUCU PANELİ MODAL ROOT =================== -->
+<div id="founderPanelRoot"></div>
+
+<!-- =================== GLOBAL DUYURU BANTI =================== -->
+<div id="globalBroadcast" class="global-broadcast" style="display:none">
+  <div class="gb-icon">📢</div>
+  <div class="gb-text" id="gbText"></div>
+  <button class="gb-close" id="gbClose">✕</button>
+</div>
+
+<!-- =================== HAVA DURUMU & MEVSİM BANTI =================== -->
+<div id="weatherBar" class="weather-bar" style="display:none">
+  <span class="wb-season" id="wbSeason">🌸</span>
+  <span class="wb-weather" id="wbWeather">☀️ Güneşli</span>
+  <span class="wb-temp" id="wbTemp">22°C</span>
+  <span class="wb-effect" id="wbEffect"></span>
+</div>
+
 <!-- Scriptler -->
 <script src="firebase-init.js"></script>
 <script src="giriş.js"></script>
@@ -206,5 +290,11 @@
 <script src="mini-oyunlar-2.js"></script>
 <script src="ui-manager.js"></script>
 <script src="konsol-manager.js"></script>
+
+<!-- DEV NOT: Tüm yeni v2.0 özellikleri (Borsa, Emlak, Sigorta, Franchise,
+     Uluslararası Tic., Karaborsa, Tahvil, Futures, Hedge Fon, Çalışan,
+     Ar-Ge, Eğitim, Sözleşme, Belediye, Tic. Savaşı, Düello, Avatar, Unvan,
+     Dekorasyon, Sefer, Prestij, Koleksiyon, TR Harita, Hava-Mevsim-Afet,
+     Kurucu Paneli) MEVCUT dosyalara append edildi - ekstra dosya yok. -->
 </body>
 </html>

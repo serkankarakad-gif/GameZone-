@@ -1189,3 +1189,1359 @@ async function updateDailyTask(taskId, increment = 1){
   }
 }
 window.updateDailyTask = updateDailyTask;
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║                                                                          ║
+   ║   ███████  ██╗   ██╗ █████╗ ██╗  ██╗ ███████  ██╗   ██╗ ███████          ║
+   ║      ██╔   ██║   ██║██╔══██╗██║ ██╔╝ ██╔════╝ ██║   ██║ ██╔════          ║
+   ║      ██║   ██║   ██║███████║█████╔╝  █████╗   ██║   ██║ █████╗           ║
+   ║      ██║   ╚██╗ ██╔╝██╔══██║██╔═██╗  ██╔══╝   ╚██╗ ██╔╝ ██╔══╝           ║
+   ║      ██║    ╚████╔╝ ██║  ██║██║  ██╗ ███████╗  ╚████╔╝  ███████          ║
+   ║      ╚═╝     ╚═══╝  ╚═╝  ╚═╝╚═╝  ╚═╝ ╚══════╝   ╚═══╝   ╚══════          ║
+   ║                                                                          ║
+   ║   GAMEZONE ERP — v2.0 EKONOMİ GENİŞLETMESİ                              ║
+   ║   ─────────────────────────────────────────────────                     ║
+   ║   • BORSA (Hisse Senedi & IPO)                                          ║
+   ║   • EMLAK (Arazi/Bina)                                                  ║
+   ║   • SİGORTA                                                             ║
+   ║   • FRANCHISE                                                           ║
+   ║   • ULUSLARARASI TİCARET                                                ║
+   ║   • KARABORSA                                                           ║
+   ║   • TAHVİL                                                              ║
+   ║   • VADELİ İŞLEMLER (Futures)                                           ║
+   ║   • HEDGE FONU                                                          ║
+   ║   • HAVA DURUMU & MEVSİM & AFET                                         ║
+   ║   • ÇALIŞAN YÖNETİMİ                                                    ║
+   ║   • AR-GE / TEKNOLOJİ AĞACI                                             ║
+   ║   • EĞİTİM MERKEZİ                                                      ║
+   ║   • SÖZLEŞME                                                            ║
+   ║   • BELEDİYE SEÇİM                                                      ║
+   ║   • TİCARET SAVAŞLARI                                                   ║
+   ║   • DÜELLO (1v1 ticaret)                                                ║
+   ║   • SEFER / KAMPANYA                                                    ║
+   ║   • PRESTİJ                                                             ║
+   ║   • KOLEKSİYON KARTLARI                                                 ║
+   ║   • TR HARİTASI BÖLGE KONTROLÜ                                          ║
+   ║   • AVATAR / UNVAN / DEKORASYON                                         ║
+   ║                                                                          ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 1. BORSA — HİSSE SENEDİ SİSTEMİ
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const STOCKS_DATA = [
+  { sym:'TKBNK', name:'Türk Bankası A.Ş.',       sector:'finans',  basePrice:142.50, vol:0.025, divRate:0.04, marketCap:8500000000  },
+  { sym:'AYPRT', name:'Ayparti Holding',          sector:'sanayi',  basePrice:78.25,  vol:0.030, divRate:0.03, marketCap:5200000000  },
+  { sym:'TCMRT', name:'TC Marketler',             sector:'gida',    basePrice:32.80,  vol:0.022, divRate:0.05, marketCap:3100000000  },
+  { sym:'ANRJ',  name:'Anadolu Enerji',           sector:'enerji',  basePrice:215.00, vol:0.035, divRate:0.06, marketCap:12800000000 },
+  { sym:'GMSAN', name:'Gemi Sanayi A.Ş.',         sector:'sanayi',  basePrice:96.40,  vol:0.040, divRate:0.02, marketCap:4500000000  },
+  { sym:'IZAUT', name:'İzmir Otomotiv',           sector:'otomotiv',basePrice:188.75, vol:0.045, divRate:0.025,marketCap:9200000000  },
+  { sym:'BURTKS',name:'Bursa Tekstil',            sector:'tekstil', basePrice:54.20,  vol:0.038, divRate:0.04, marketCap:2800000000  },
+  { sym:'KSAYL', name:'Kayseri Yapı',             sector:'insaat',  basePrice:41.60,  vol:0.042, divRate:0.035,marketCap:1900000000  },
+  { sym:'MRMRD', name:'Marmara Madencilik',       sector:'maden',   basePrice:312.00, vol:0.055, divRate:0.05, marketCap:15400000000 },
+  { sym:'IGDTR', name:'IG Türk Telekom',          sector:'iletisim',basePrice:67.90,  vol:0.020, divRate:0.07, marketCap:7300000000  },
+  { sym:'ANKLJ', name:'Ankara Lojistik',          sector:'lojistik',basePrice:23.45,  vol:0.028, divRate:0.04, marketCap:1200000000  },
+  { sym:'TRGY',  name:'Turkogyat Gıda',           sector:'gida',    basePrice:18.90,  vol:0.025, divRate:0.05, marketCap:850000000   },
+  { sym:'ISTHV', name:'İstanbul Havayolları',     sector:'ulasim',  basePrice:175.30, vol:0.060, divRate:0.02, marketCap:8800000000  },
+  { sym:'ADNKM', name:'Adana Kimya',              sector:'kimya',   basePrice:89.50,  vol:0.034, divRate:0.045,marketCap:4200000000  },
+  { sym:'TZBYL', name:'Trabzon Balık',            sector:'gida',    basePrice:12.75,  vol:0.030, divRate:0.06, marketCap:520000000   },
+  { sym:'TKMD',  name:'Türk Medya Grubu',         sector:'medya',   basePrice:45.80,  vol:0.048, divRate:0.025,marketCap:2100000000  },
+  { sym:'GZTRP', name:'GameZone Turizm Pazarl.',  sector:'turizm',  basePrice:28.65,  vol:0.052, divRate:0.03, marketCap:1100000000  },
+  { sym:'SERKR', name:'Serkan Karakaş Holding',   sector:'holding', basePrice:520.00, vol:0.025, divRate:0.08, marketCap:25000000000 },
+  { sym:'RESL',  name:'Resul Investments',        sector:'finans',  basePrice:485.50, vol:0.022, divRate:0.075,marketCap:22000000000 },
+  { sym:'GZTECH',name:'GameZone Tech AŞ',         sector:'teknoloji',basePrice:1250.0,vol:0.065, divRate:0.015,marketCap:48000000000 }
+];
+window.STOCKS_DATA = STOCKS_DATA;
+
+const STOCK_SECTORS = {
+  finans:'💰 Finans', sanayi:'🏭 Sanayi', gida:'🍞 Gıda', enerji:'⚡ Enerji',
+  otomotiv:'🚗 Otomotiv', tekstil:'🧵 Tekstil', insaat:'🏗️ İnşaat',
+  maden:'⛏️ Madencilik', iletisim:'📡 İletişim', lojistik:'🚚 Lojistik',
+  ulasim:'✈️ Ulaşım', kimya:'⚗️ Kimya', medya:'📺 Medya',
+  turizm:'🏖️ Turizm', holding:'🏛️ Holding', teknoloji:'💻 Teknoloji'
+};
+window.STOCK_SECTORS = STOCK_SECTORS;
+
+/* Hisse fiyat tick (1 dakikada bir) */
+async function tickStockPrices() {
+  const lockRef = db.ref('stocks/_tickLock');
+  const lockResult = await lockRef.transaction(cur => {
+    if (cur && (Date.now() - cur) < 50000) return;
+    return Date.now();
+  });
+  if (!lockResult.committed) return;
+
+  const updates = {};
+  for (const stock of STOCKS_DATA) {
+    const cur = await dbGet('stocks/prices/' + stock.sym + '/current') || stock.basePrice;
+    const drift = (Math.random() - 0.5) * stock.vol * 2;
+    const trend = Math.sin(Date.now() / 86400000) * 0.005; // günlük dalga
+    const newPrice = Math.max(stock.basePrice * 0.3, Math.min(stock.basePrice * 5, cur * (1 + drift + trend)));
+
+    updates['stocks/prices/' + stock.sym + '/current'] = newPrice;
+    updates['stocks/prices/' + stock.sym + '/prev'] = cur;
+    updates['stocks/prices/' + stock.sym + '/changePct'] = ((newPrice - cur) / cur) * 100;
+    updates['stocks/prices/' + stock.sym + '/ts'] = firebase.database.ServerValue.TIMESTAMP;
+
+    // Tarihçe (son 50 nokta)
+    await db.ref('stocks/history/' + stock.sym).push({ p: newPrice, t: Date.now() });
+  }
+  await db.ref().update(updates);
+
+  // History trim
+  for (const stock of STOCKS_DATA) {
+    const histRef = db.ref('stocks/history/' + stock.sym);
+    const histSnap = await histRef.limitToLast(50).once('value');
+    const keys = Object.keys(histSnap.val() || {});
+    if (keys.length >= 50) {
+      const allSnap = await histRef.once('value');
+      const allKeys = Object.keys(allSnap.val() || {});
+      if (allKeys.length > 50) {
+        const removeUpdate = {};
+        allKeys.slice(0, allKeys.length - 50).forEach(k => removeUpdate[k] = null);
+        await histRef.update(removeUpdate);
+      }
+    }
+  }
+}
+window.tickStockPrices = tickStockPrices;
+
+/* Hisse al */
+async function buyStock(sym, qty) {
+  const stock = STOCKS_DATA.find(s => s.sym === sym);
+  if (!stock) return { ok:false, msg:'Hisse bulunamadı' };
+  if (qty <= 0) return { ok:false, msg:'Miktar pozitif olmalı' };
+
+  const price = await dbGet('stocks/prices/' + sym + '/current') || stock.basePrice;
+  const cost = price * qty;
+  const commission = cost * 0.002; // %0.2 komisyon
+  const total = cost + commission;
+
+  const ok = await spendCash(GZ.uid, total, 'stock_buy');
+  if (!ok) return { ok:false, msg:'Yetersiz bakiye' };
+
+  await db.ref('stocks/holdings/' + GZ.uid + '/' + sym).transaction(cur => {
+    cur = cur || { qty:0, avgPrice:0, totalCost:0 };
+    const newTotalCost = cur.totalCost + cost;
+    const newQty = cur.qty + qty;
+    return { qty:newQty, avgPrice:newTotalCost/newQty, totalCost:newTotalCost };
+  });
+
+  return { ok:true, msg:'Alındı! Komisyon: ₺' + commission.toFixed(2), price, qty };
+}
+window.buyStock = buyStock;
+
+/* Hisse sat */
+async function sellStock(sym, qty) {
+  const stock = STOCKS_DATA.find(s => s.sym === sym);
+  if (!stock) return { ok:false, msg:'Hisse bulunamadı' };
+
+  const holding = await dbGet('stocks/holdings/' + GZ.uid + '/' + sym);
+  if (!holding || holding.qty < qty) return { ok:false, msg:'Yetersiz hisse' };
+
+  const price = await dbGet('stocks/prices/' + sym + '/current') || stock.basePrice;
+  const revenue = price * qty;
+  const commission = revenue * 0.002;
+  const tax = (price > holding.avgPrice) ? (revenue - holding.avgPrice * qty) * 0.10 : 0; // %10 sermaye kazancı vergisi
+  const net = revenue - commission - tax;
+
+  await addCash(GZ.uid, net, 'stock_sell');
+
+  await db.ref('stocks/holdings/' + GZ.uid + '/' + sym).transaction(cur => {
+    if (!cur) return null;
+    const newQty = cur.qty - qty;
+    if (newQty <= 0) return null;
+    return { qty:newQty, avgPrice:cur.avgPrice, totalCost:cur.avgPrice * newQty };
+  });
+
+  return { ok:true, msg:`Satıldı! Net: ₺${net.toFixed(2)} (Komisyon: ₺${commission.toFixed(2)}, Vergi: ₺${tax.toFixed(2)})`, price, qty };
+}
+window.sellStock = sellStock;
+
+/* Temettü dağıtımı (her hafta otomatik) */
+async function distributeDividends() {
+  const lastRef = db.ref('stocks/_lastDividend');
+  const lastResult = await lastRef.transaction(cur => {
+    if (cur && (Date.now() - cur) < 7 * 24 * 3600 * 1000 - 60000) return;
+    return Date.now();
+  });
+  if (!lastResult.committed) return;
+
+  const allHoldings = await dbGet('stocks/holdings') || {};
+  for (const uid of Object.keys(allHoldings)) {
+    let totalDiv = 0;
+    for (const sym of Object.keys(allHoldings[uid])) {
+      const stock = STOCKS_DATA.find(s => s.sym === sym);
+      if (!stock) continue;
+      const holding = allHoldings[uid][sym];
+      const price = await dbGet('stocks/prices/' + sym + '/current') || stock.basePrice;
+      const yearlyDiv = price * stock.divRate;
+      const weeklyDiv = (yearlyDiv / 52) * holding.qty;
+      totalDiv += weeklyDiv;
+    }
+    if (totalDiv > 0) {
+      await addCash(uid, totalDiv, 'dividend');
+      await db.ref('stocks/dividends/' + uid).push({
+        amount: totalDiv,
+        ts: firebase.database.ServerValue.TIMESTAMP
+      });
+      await db.ref('notifs/' + uid).push({
+        type:'dividend', icon:'💰',
+        msg:`📊 Temettü ödemesi: ₺${totalDiv.toFixed(2)}`,
+        ts: firebase.database.ServerValue.TIMESTAMP, read:false
+      });
+    }
+  }
+}
+window.distributeDividends = distributeDividends;
+
+/* IPO oluşturma — Kullanıcı kendi şirketini halka açar */
+async function createIPO(companyName, totalShares, sharePrice) {
+  if (totalShares < 1000 || totalShares > 1000000) return { ok:false, msg:'Hisse: 1000-1.000.000 arası' };
+  if (sharePrice < 1 || sharePrice > 1000) return { ok:false, msg:'Fiyat: 1-1000 ₺ arası' };
+
+  const userData = GZ.data;
+  if ((userData.level || 1) < 25) return { ok:false, msg:'Min. 25 seviye gerekli (IPO)' };
+  if ((userData.netWorth || 0) < 500000) return { ok:false, msg:'Min. 500.000₺ servet gerekli' };
+
+  const fee = totalShares * sharePrice * 0.05; // %5 listeleme ücreti
+  const ok = await spendCash(GZ.uid, fee, 'ipo_fee');
+  if (!ok) return { ok:false, msg:'Yetersiz bakiye (Listeleme ücreti: ₺' + fee.toFixed(0) + ')' };
+
+  const sym = (userData.username || 'USR').slice(0, 5).toUpperCase();
+  const ipoData = {
+    sym, founderUid: GZ.uid, companyName,
+    totalShares, sharePrice,
+    sharesAvailable: totalShares,
+    listedAt: firebase.database.ServerValue.TIMESTAMP,
+    status: 'open',
+    expiresAt: Date.now() + 7 * 24 * 3600 * 1000
+  };
+  const newRef = await db.ref('stocks/ipos').push(ipoData);
+  return { ok:true, ipoId: newRef.key, sym };
+}
+window.createIPO = createIPO;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 2. EMLAK SİSTEMİ
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const EMLAK_TIPLERI = [
+  { type:'arsa_kucuk',   name:'Küçük Arsa',           emo:'🟫', basePrice:50000,    rentMin:0,    rentMax:0,    growth:0.02,  buildable:true,  desc:'İmar izinli, küçük arsa' },
+  { type:'arsa_orta',    name:'Orta Arsa',            emo:'🟫', basePrice:250000,   rentMin:0,    rentMax:0,    growth:0.025, buildable:true,  desc:'İmar izinli, orta arsa' },
+  { type:'arsa_buyuk',   name:'Büyük Arsa',           emo:'🟫', basePrice:1500000,  rentMin:0,    rentMax:0,    growth:0.03,  buildable:true,  desc:'İmar izinli, büyük arsa' },
+  { type:'tarla',        name:'Tarım Arazisi',        emo:'🌾', basePrice:120000,   rentMin:800,  rentMax:2000, growth:0.015, buildable:false, desc:'Bahçe/çiftlik kapasitesi +1' },
+  { type:'daire_1',      name:'1+1 Daire',            emo:'🏠', basePrice:380000,   rentMin:2500, rentMax:5500, growth:0.04,  buildable:false, desc:'Aylık kira geliri' },
+  { type:'daire_2',      name:'2+1 Daire',            emo:'🏠', basePrice:680000,   rentMin:4500, rentMax:9500, growth:0.04,  buildable:false, desc:'Aylık kira geliri' },
+  { type:'daire_3',      name:'3+1 Daire',            emo:'🏘️', basePrice:1200000,  rentMin:7500, rentMax:14500,growth:0.045, buildable:false, desc:'Aylık kira geliri' },
+  { type:'villa',        name:'Lüks Villa',           emo:'🏖️', basePrice:5500000,  rentMin:25000,rentMax:55000,growth:0.05,  buildable:false, desc:'Premium kira' },
+  { type:'plaza',        name:'Ofis Plaza Katı',      emo:'🏢', basePrice:8500000,  rentMin:35000,rentMax:75000,growth:0.06,  buildable:false, desc:'Aylık ofis kira' },
+  { type:'avm_dukkan',   name:'AVM Dükkanı',          emo:'🛍️', basePrice:3500000,  rentMin:15000,rentMax:38000,growth:0.05,  buildable:false, desc:'Reyon kapasitesi +2' },
+  { type:'fabrika_arsa', name:'Sanayi Bölgesi Arsa',  emo:'🏭', basePrice:2500000,  rentMin:0,    rentMax:0,    growth:0.035, buildable:true,  desc:'Fabrika kapasitesi +1' },
+  { type:'maden_sahasi', name:'Maden Sahası',         emo:'⛰️', basePrice:15000000, rentMin:0,    rentMax:0,    growth:0.08,  buildable:false, desc:'Maden kapasitesi +1 (Lv 30)' },
+  { type:'sahil_arazi',  name:'Sahil Arazi',          emo:'🏝️', basePrice:25000000, rentMin:80000,rentMax:200000,growth:0.10, buildable:true,  desc:'Turizm yatırımı, çok değerli' },
+];
+window.EMLAK_TIPLERI = EMLAK_TIPLERI;
+
+/* Emlak satın al */
+async function buyProperty(typeId, cityName) {
+  const tip = EMLAK_TIPLERI.find(t => t.type === typeId);
+  if (!tip) return { ok:false, msg:'Emlak tipi bulunamadı' };
+
+  // Şehir çarpanı: İstanbul %150, Ankara %120, İzmir %110, diğer %100
+  let cityMult = 1.0;
+  if (cityName === 'İstanbul') cityMult = 1.5;
+  else if (cityName === 'Ankara' || cityName === 'İzmir') cityMult = 1.2;
+  else if (['Bursa','Antalya','Adana','Gaziantep'].includes(cityName)) cityMult = 1.1;
+
+  const price = Math.floor(tip.basePrice * cityMult);
+  const ok = await spendCash(GZ.uid, price, 'realestate_buy');
+  if (!ok) return { ok:false, msg:`Yetersiz bakiye (₺${price.toLocaleString('tr-TR')})` };
+
+  const propId = 'p_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+  const property = {
+    id: propId, type: typeId, city: cityName, owner: GZ.uid,
+    purchasePrice: price, currentValue: price,
+    rentMin: Math.floor(tip.rentMin * cityMult), rentMax: Math.floor(tip.rentMax * cityMult),
+    rented: false, tenantName: null, monthlyRent: 0,
+    purchasedAt: firebase.database.ServerValue.TIMESTAMP,
+    nextRentDate: Date.now() + 30 * 24 * 3600 * 1000,
+    buildings: []
+  };
+  await db.ref('realestate/owned/' + GZ.uid + '/' + propId).set(property);
+  return { ok:true, propId, price };
+}
+window.buyProperty = buyProperty;
+
+/* Emlak sat (mevcut değerin %95'iyle - %5 komisyon) */
+async function sellProperty(propId) {
+  const prop = await dbGet('realestate/owned/' + GZ.uid + '/' + propId);
+  if (!prop) return { ok:false, msg:'Emlak bulunamadı' };
+  const sellPrice = Math.floor(prop.currentValue * 0.95);
+  await addCash(GZ.uid, sellPrice, 'realestate_sell');
+  await db.ref('realestate/owned/' + GZ.uid + '/' + propId).remove();
+  return { ok:true, sellPrice };
+}
+window.sellProperty = sellProperty;
+
+/* Kiracı bul (NPC, otomatik) */
+async function findTenant(propId) {
+  const prop = await dbGet('realestate/owned/' + GZ.uid + '/' + propId);
+  if (!prop) return { ok:false, msg:'Emlak bulunamadı' };
+  if (prop.rented) return { ok:false, msg:'Zaten kiracı var' };
+  if (prop.rentMax === 0) return { ok:false, msg:'Bu emlak kiraya verilemez (arsa)' };
+
+  const rent = Math.floor(prop.rentMin + Math.random() * (prop.rentMax - prop.rentMin));
+  const tenantNames = ['Mehmet Yılmaz','Ayşe Demir','Mustafa Kaya','Fatma Şahin','Ali Çelik','Zeynep Arslan',
+                       'Hüseyin Öztürk','Hatice Yıldız','Ahmet Aydın','Emine Polat','İbrahim Doğan','Elif Çetin'];
+  const tenant = tenantNames[Math.floor(Math.random() * tenantNames.length)];
+
+  await db.ref('realestate/owned/' + GZ.uid + '/' + propId).update({
+    rented: true, tenantName: tenant, monthlyRent: rent,
+    rentStartDate: Date.now()
+  });
+  return { ok:true, rent, tenant };
+}
+window.findTenant = findTenant;
+
+/* Bina inşa et */
+const INSAAT_TIPLERI = [
+  { code:'fabrika',  name:'Fabrika Binası',     cost:1500000, days:14, output:'fabrika kapasitesi +2' },
+  { code:'depo',     name:'Depo Binası',        cost:800000,  days:7,  output:'lojistik depo +500m³' },
+  { code:'avm',      name:'Mini AVM',           cost:5500000, days:30, output:'reyon kapasitesi +5' },
+  { code:'apt',      name:'Apartman (10 daire)',cost:3500000, days:45, output:'10 kira birimi (her ay)' },
+  { code:'otel',     name:'Otel (40 oda)',      cost:8500000, days:60, output:'turizm geliri günlük' }
+];
+window.INSAAT_TIPLERI = INSAAT_TIPLERI;
+
+async function startConstruction(propId, buildCode) {
+  const prop = await dbGet('realestate/owned/' + GZ.uid + '/' + propId);
+  if (!prop) return { ok:false, msg:'Emlak yok' };
+  const tip = EMLAK_TIPLERI.find(t => t.type === prop.type);
+  if (!tip || !tip.buildable) return { ok:false, msg:'Bu emlağa inşaat yapılamaz' };
+  const build = INSAAT_TIPLERI.find(b => b.code === buildCode);
+  if (!build) return { ok:false, msg:'İnşaat tipi yok' };
+
+  const ok = await spendCash(GZ.uid, build.cost, 'construction');
+  if (!ok) return { ok:false, msg:'Yetersiz bakiye' };
+
+  const construction = {
+    id: 'c_' + Date.now(),
+    propId, buildCode, buildName: build.name,
+    startedAt: Date.now(),
+    completesAt: Date.now() + build.days * 24 * 3600 * 1000,
+    status: 'in_progress'
+  };
+  await db.ref('realestate/constructions/' + GZ.uid).push(construction);
+  return { ok:true };
+}
+window.startConstruction = startConstruction;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 3. SİGORTA SİSTEMİ
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const INSURANCE_TYPES = {
+  'tesis': {
+    name:'🏭 Tesis Sigortası',
+    coverPct: [0.5, 0.7, 0.9, 1.0],          // teminat oranı (kademeli)
+    premiumPct:[0.005, 0.008, 0.012, 0.020], // aylık prim (varlık değerinin yüzdesi)
+    risks:['yangın','sel','deprem','sabotaj']
+  },
+  'urun': {
+    name:'📦 Ürün Stok Sigortası',
+    coverPct: [0.4, 0.6, 0.8],
+    premiumPct:[0.003, 0.006, 0.012],
+    risks:['hasar','hırsızlık','bozulma']
+  },
+  'arac': {
+    name:'🚛 Lojistik Araç Sigortası',
+    coverPct: [0.5, 0.75, 1.0],
+    premiumPct:[0.008, 0.014, 0.025],
+    risks:['kaza','hırsızlık','arıza']
+  },
+  'emlak': {
+    name:'🏘️ Emlak Sigortası',
+    coverPct: [0.6, 0.85, 1.0],
+    premiumPct:[0.004, 0.007, 0.012],
+    risks:['deprem','yangın','sel']
+  },
+  'kasko': {
+    name:'🚗 Kasko (Genel)',
+    coverPct: [0.7, 0.9, 1.0],
+    premiumPct:[0.010, 0.018, 0.030],
+    risks:['her şey']
+  }
+};
+window.INSURANCE_TYPES = INSURANCE_TYPES;
+
+async function buyInsurance(typeKey, tier, assetValue, assetRef) {
+  const cfg = INSURANCE_TYPES[typeKey];
+  if (!cfg) return { ok:false, msg:'Sigorta tipi yok' };
+  if (tier < 0 || tier >= cfg.coverPct.length) return { ok:false, msg:'Geçersiz kademe' };
+  if (assetValue <= 0) return { ok:false, msg:'Varlık değeri pozitif olmalı' };
+
+  const monthlyPremium = Math.floor(assetValue * cfg.premiumPct[tier]);
+  const ok = await spendCash(GZ.uid, monthlyPremium, 'insurance_premium');
+  if (!ok) return { ok:false, msg:'Yetersiz bakiye (Prim: ₺'+monthlyPremium.toLocaleString('tr-TR')+')' };
+
+  const policy = {
+    id: 'pol_' + Date.now(),
+    typeKey, type: cfg.name, tier,
+    coverPct: cfg.coverPct[tier],
+    coverage: Math.floor(assetValue * cfg.coverPct[tier]),
+    premium: monthlyPremium,
+    assetValue, assetRef: assetRef || null,
+    startDate: Date.now(),
+    nextPremiumDate: Date.now() + 30 * 24 * 3600 * 1000,
+    status: 'active',
+    claims: 0
+  };
+  await db.ref('insurance/policies/' + GZ.uid).push(policy);
+  return { ok:true, policy };
+}
+window.buyInsurance = buyInsurance;
+
+async function fileInsuranceClaim(policyId, lossAmount, reason) {
+  const policiesSnap = await db.ref('insurance/policies/' + GZ.uid).once('value');
+  const policies = policiesSnap.val() || {};
+  const polKey = Object.keys(policies).find(k => policies[k].id === policyId);
+  if (!polKey) return { ok:false, msg:'Poliçe yok' };
+  const pol = policies[polKey];
+  if (pol.status !== 'active') return { ok:false, msg:'Poliçe pasif' };
+
+  // Hasar / kapsam değerlendirmesi
+  const payout = Math.min(lossAmount * pol.coverPct, pol.coverage);
+  const deductible = payout * 0.10; // %10 muafiyet
+  const finalPayout = Math.max(0, payout - deductible);
+
+  // %15 ihtimalle red (gerçekçilik)
+  if (Math.random() < 0.15) {
+    await db.ref('insurance/claims/' + GZ.uid).push({
+      policyId, lossAmount, reason, status:'denied',
+      ts: firebase.database.ServerValue.TIMESTAMP
+    });
+    return { ok:false, msg:'❌ Talep reddedildi (sigorta uzmanı incelemesi)' };
+  }
+
+  await addCash(GZ.uid, finalPayout, 'insurance_claim');
+  await db.ref('insurance/claims/' + GZ.uid).push({
+    policyId, lossAmount, reason, status:'approved', payout: finalPayout,
+    ts: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  // Prim artırımı (claim sonrası %20 artış)
+  await db.ref('insurance/policies/' + GZ.uid + '/' + polKey).update({
+    premium: Math.floor(pol.premium * 1.2),
+    claims: (pol.claims || 0) + 1
+  });
+
+  return { ok:true, payout: finalPayout };
+}
+window.fileInsuranceClaim = fileInsuranceClaim;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 4. FRANCHISE SİSTEMİ
+   ──────────────────────────────────────────────────────────────────────────── */
+
+async function createFranchiseOffer(brandName, royaltyPct, initialFee, productType) {
+  if (royaltyPct < 5 || royaltyPct > 30) return { ok:false, msg:'Royalty %5-30 arası' };
+  if (initialFee < 10000) return { ok:false, msg:'Min başlangıç ücreti ₺10.000' };
+  if ((GZ.data.level||1) < 20) return { ok:false, msg:'Min Lv 20 gerekli' };
+
+  const offer = {
+    id: 'fr_' + Date.now(),
+    ownerUid: GZ.uid,
+    ownerName: GZ.data.username,
+    brandName, royaltyPct, initialFee, productType,
+    description: '',
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    activeFranchisees: 0,
+    status: 'open'
+  };
+  await db.ref('franchise/offers').push(offer);
+  return { ok:true, offer };
+}
+window.createFranchiseOffer = createFranchiseOffer;
+
+async function buyFranchise(offerKey) {
+  const offer = await dbGet('franchise/offers/' + offerKey);
+  if (!offer) return { ok:false, msg:'Teklif yok' };
+  if (offer.ownerUid === GZ.uid) return { ok:false, msg:'Kendi franchise\'ını alamazsın' };
+  if (offer.status !== 'open') return { ok:false, msg:'Teklif kapalı' };
+
+  const ok = await spendCash(GZ.uid, offer.initialFee, 'franchise_buy');
+  if (!ok) return { ok:false, msg:'Yetersiz bakiye' };
+
+  // Sahip kullanıcısı %50'sini alır
+  await addCash(offer.ownerUid, Math.floor(offer.initialFee * 0.5), 'franchise_initial');
+
+  const active = {
+    id: 'fr_active_' + Date.now(),
+    offerKey, offerOwnerUid: offer.ownerUid, offerOwnerName: offer.ownerName,
+    franchiseeUid: GZ.uid, franchiseeName: GZ.data.username,
+    brandName: offer.brandName, royaltyPct: offer.royaltyPct,
+    productType: offer.productType,
+    startedAt: firebase.database.ServerValue.TIMESTAMP,
+    totalRevenue: 0, totalRoyaltyPaid: 0
+  };
+  await db.ref('franchise/active').push(active);
+  await db.ref('franchise/offers/' + offerKey + '/activeFranchisees').transaction(c => (c||0) + 1);
+
+  return { ok:true };
+}
+window.buyFranchise = buyFranchise;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 5. ULUSLARARASI TİCARET
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const COUNTRIES = [
+  { code:'DE', name:'Almanya',   flag:'🇩🇪', currency:'EUR', rateUsd:1.08, demandMult:1.4, distance:2400, tariff:0.05 },
+  { code:'US', name:'ABD',       flag:'🇺🇸', currency:'USD', rateUsd:1.00, demandMult:1.6, distance:8500, tariff:0.08 },
+  { code:'GB', name:'İngiltere', flag:'🇬🇧', currency:'GBP', rateUsd:1.27, demandMult:1.3, distance:2900, tariff:0.06 },
+  { code:'FR', name:'Fransa',    flag:'🇫🇷', currency:'EUR', rateUsd:1.08, demandMult:1.2, distance:2700, tariff:0.05 },
+  { code:'IT', name:'İtalya',    flag:'🇮🇹', currency:'EUR', rateUsd:1.08, demandMult:1.1, distance:1800, tariff:0.04 },
+  { code:'NL', name:'Hollanda',  flag:'🇳🇱', currency:'EUR', rateUsd:1.08, demandMult:1.25,distance:2500, tariff:0.05 },
+  { code:'CN', name:'Çin',       flag:'🇨🇳', currency:'CNY', rateUsd:0.14, demandMult:0.9, distance:7500, tariff:0.10 },
+  { code:'JP', name:'Japonya',   flag:'🇯🇵', currency:'JPY', rateUsd:0.0067,demandMult:1.5,distance:9000, tariff:0.07 },
+  { code:'RU', name:'Rusya',     flag:'🇷🇺', currency:'RUB', rateUsd:0.011, demandMult:1.0,distance:2000, tariff:0.12 },
+  { code:'SA', name:'S.Arabistan',flag:'🇸🇦',currency:'SAR', rateUsd:0.27, demandMult:1.1, distance:2200, tariff:0.06 }
+];
+window.COUNTRIES = COUNTRIES;
+
+async function exportInternational(countryCode, productKey, qty) {
+  const country = COUNTRIES.find(c => c.code === countryCode);
+  if (!country) return { ok:false, msg:'Ülke yok' };
+  const product = URUNLER[productKey];
+  if (!product) return { ok:false, msg:'Ürün yok' };
+
+  // Stok kontrolü
+  const warehouse = await dbGet(`businesses/${GZ.uid}/warehouse/${productKey}`) || 0;
+  if (warehouse < qty) return { ok:false, msg:'Yetersiz stok' };
+
+  // Fiyat hesapla
+  const usdPrice = product.base / 30; // basit kur (1 USD ≈ 30 TL)
+  const localPrice = usdPrice * country.demandMult / country.rateUsd;
+  const tlRevenue = localPrice * country.rateUsd * 30 * qty;
+  const tariffCost = tlRevenue * country.tariff;
+  const shipping = country.distance * 0.5 * qty * (product.unit === 'Kilo' ? 1 : 0.3);
+  const netRevenue = tlRevenue - tariffCost - shipping;
+
+  if (netRevenue <= 0) return { ok:false, msg:'Maliyet > Gelir, kar yok!' };
+
+  // Stok düş
+  await db.ref(`businesses/${GZ.uid}/warehouse/${productKey}`).transaction(c => Math.max(0, (c||0) - qty));
+
+  // Sevkiyat oluştur (teslimat süreli)
+  const shipmentId = 'sh_' + Date.now();
+  const days = Math.ceil(country.distance / 800); // 800km/gün
+  const shipment = {
+    id: shipmentId, country: countryCode, countryName: country.name,
+    product: productKey, qty,
+    departedAt: Date.now(),
+    arrivesAt: Date.now() + days * 24 * 3600 * 1000,
+    netRevenue: Math.floor(netRevenue),
+    status: 'in_transit'
+  };
+  await db.ref(`intl_trade/shipments/${GZ.uid}`).push(shipment);
+
+  return { ok:true, shipmentId, days, netRevenue: Math.floor(netRevenue) };
+}
+window.exportInternational = exportInternational;
+
+async function processIntlShipments() {
+  const shipsSnap = await db.ref(`intl_trade/shipments/${GZ.uid}`).once('value');
+  const ships = shipsSnap.val() || {};
+  for (const key of Object.keys(ships)) {
+    const sh = ships[key];
+    if (sh.status === 'in_transit' && Date.now() >= sh.arrivesAt) {
+      await addCash(GZ.uid, sh.netRevenue, 'intl_export');
+      await db.ref(`intl_trade/shipments/${GZ.uid}/${key}/status`).set('delivered');
+      await addXP(GZ.uid, 50);
+    }
+  }
+}
+window.processIntlShipments = processIntlShipments;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 6. KARABORSA — RİSKLİ TİCARET
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const BLACKMARKET_ITEMS = [
+  { code:'kacak_sigara', name:'Kaçak Sigara',         emo:'🚬', priceMin:50,    priceMax:120,    risk:0.18, profit:2.5 },
+  { code:'sahte_marka',  name:'Sahte Marka Ürün',     emo:'👜', priceMin:300,   priceMax:1500,   risk:0.25, profit:3.0 },
+  { code:'antika',       name:'Şüpheli Antika',       emo:'🏺', priceMin:5000,  priceMax:80000,  risk:0.30, profit:4.0 },
+  { code:'nadir_para',   name:'Nadir Koleksiyon Para',emo:'🪙', priceMin:1000,  priceMax:25000,  risk:0.20, profit:3.5 },
+  { code:'gizli_belge',  name:'Eski Gizli Belge',     emo:'📜', priceMin:2500,  priceMax:50000,  risk:0.35, profit:5.0 },
+  { code:'kacak_kahve',  name:'Kaçak Kahve',          emo:'☕', priceMin:200,   priceMax:800,    risk:0.10, profit:2.0 },
+  { code:'kayit_disi',   name:'Kayıt Dışı Mücevher',  emo:'💎', priceMin:10000, priceMax:200000, risk:0.40, profit:6.0 },
+];
+window.BLACKMARKET_ITEMS = BLACKMARKET_ITEMS;
+
+async function blackmarketBuy(itemCode, qty) {
+  if ((GZ.data.level || 1) < 15) return { ok:false, msg:'Min Lv 15 gerekli (karaborsa)' };
+  const item = BLACKMARKET_ITEMS.find(i => i.code === itemCode);
+  if (!item) return { ok:false, msg:'Mal yok' };
+
+  const price = item.priceMin + Math.random() * (item.priceMax - item.priceMin);
+  const total = price * qty;
+  const ok = await spendCash(GZ.uid, total, 'blackmarket_buy');
+  if (!ok) return { ok:false, msg:'Yetersiz bakiye' };
+
+  // Yakalanma riski (alış sırasında daha düşük)
+  if (Math.random() < item.risk * 0.4) {
+    // Para gitti, mal yok
+    await db.ref(`blackmarket/history/${GZ.uid}`).push({
+      action:'caught_buy', item:itemCode, qty, lostAmount:total,
+      ts: firebase.database.ServerValue.TIMESTAMP
+    });
+    // Wanted listesine ekle (bir süre)
+    await db.ref(`blackmarket/wanted/${GZ.uid}`).set({
+      reason:'illegal_buy', until: Date.now() + 3 * 3600 * 1000,
+      level: 1
+    });
+    return { ok:false, msg:'🚨 YAKALANDIN! Mallar el konuldu, ₺'+total.toFixed(0)+' kayıp.' };
+  }
+
+  await db.ref(`blackmarket/inventory/${GZ.uid}/${itemCode}`).transaction(c => (c||0) + qty);
+  await db.ref(`blackmarket/history/${GZ.uid}`).push({
+    action:'buy', item:itemCode, qty, price, total,
+    ts: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  return { ok:true, total };
+}
+window.blackmarketBuy = blackmarketBuy;
+
+async function blackmarketSell(itemCode, qty) {
+  const item = BLACKMARKET_ITEMS.find(i => i.code === itemCode);
+  if (!item) return { ok:false, msg:'Mal yok' };
+  const inv = await dbGet(`blackmarket/inventory/${GZ.uid}/${itemCode}`) || 0;
+  if (inv < qty) return { ok:false, msg:'Yetersiz envanter' };
+
+  const sellPrice = (item.priceMin + Math.random() * (item.priceMax - item.priceMin)) * item.profit;
+  const total = sellPrice * qty;
+
+  // Yakalanma riski (satışta daha yüksek)
+  if (Math.random() < item.risk) {
+    await db.ref(`blackmarket/inventory/${GZ.uid}/${itemCode}`).set(0);
+    await db.ref(`blackmarket/history/${GZ.uid}`).push({
+      action:'caught_sell', item:itemCode, qty,
+      ts: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    // Para cezası (satılacak değerin %50'si)
+    const fine = Math.floor(total * 0.5);
+    await spendCash(GZ.uid, fine, 'blackmarket_fine');
+
+    await db.ref(`blackmarket/wanted/${GZ.uid}`).set({
+      reason:'illegal_sell', until: Date.now() + 12 * 3600 * 1000,
+      level: 2
+    });
+
+    return { ok:false, msg:`🚨 YAKALANDIN! ₺${fine.toLocaleString('tr-TR')} ceza, mallar el konuldu.` };
+  }
+
+  await db.ref(`blackmarket/inventory/${GZ.uid}/${itemCode}`).transaction(c => Math.max(0, (c||0) - qty));
+  await addCash(GZ.uid, total, 'blackmarket_sell');
+  await db.ref(`blackmarket/history/${GZ.uid}`).push({
+    action:'sell', item:itemCode, qty, price:sellPrice, total,
+    ts: firebase.database.ServerValue.TIMESTAMP
+  });
+
+  return { ok:true, total };
+}
+window.blackmarketSell = blackmarketSell;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 7. TAHVİL (BONDS)
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const BONDS = [
+  { code:'TR_2YR',  name:'Devlet Tahvili 2 Yıl',  emo:'🇹🇷', face:1000,  yieldRate:0.18, term:730,  riskLevel:1, issuer:'Türkiye Hazinesi' },
+  { code:'TR_5YR',  name:'Devlet Tahvili 5 Yıl',  emo:'🇹🇷', face:1000,  yieldRate:0.22, term:1825, riskLevel:1, issuer:'Türkiye Hazinesi' },
+  { code:'TR_10YR', name:'Devlet Tahvili 10 Yıl', emo:'🇹🇷', face:1000,  yieldRate:0.28, term:3650, riskLevel:1, issuer:'Türkiye Hazinesi' },
+  { code:'CORP_A',  name:'Akbank Tahvili',        emo:'🏦', face:5000,  yieldRate:0.32, term:1095, riskLevel:2, issuer:'Türkiye Bankaları' },
+  { code:'CORP_B',  name:'Holding Tahvili',       emo:'🏛️', face:10000, yieldRate:0.40, term:730,  riskLevel:3, issuer:'Karakaş Holding' },
+  { code:'CORP_C',  name:'Yüksek Getiri (junk)',  emo:'⚠️', face:5000,  yieldRate:0.65, term:365,  riskLevel:5, issuer:'Riskli Şirket A.Ş.' },
+];
+window.BONDS = BONDS;
+
+async function buyBond(code, qty) {
+  const bond = BONDS.find(b => b.code === code);
+  if (!bond) return { ok:false, msg:'Tahvil yok' };
+  const cost = bond.face * qty;
+  const ok = await spendCash(GZ.uid, cost, 'bond_buy');
+  if (!ok) return { ok:false, msg:'Yetersiz bakiye' };
+
+  const holding = {
+    code, qty, face:bond.face, totalCost:cost,
+    purchaseDate: Date.now(),
+    maturityDate: Date.now() + bond.term * 24 * 3600 * 1000,
+    yieldRate:bond.yieldRate, riskLevel:bond.riskLevel,
+    nextCouponDate: Date.now() + 90 * 24 * 3600 * 1000  // 3 ayda bir kupon
+  };
+  await db.ref(`bonds/holdings/${GZ.uid}`).push(holding);
+
+  return { ok:true, cost };
+}
+window.buyBond = buyBond;
+
+async function processBondCoupons() {
+  const holdSnap = await db.ref(`bonds/holdings/${GZ.uid}`).once('value');
+  const hs = holdSnap.val() || {};
+  for (const k of Object.keys(hs)) {
+    const h = hs[k];
+    if (Date.now() >= h.nextCouponDate) {
+      // Yıllık getirinin 1/4'ü (3 aylık kupon)
+      const coupon = h.face * h.qty * h.yieldRate / 4;
+
+      // Risk: junk bond %3 ihtimalle default
+      if (h.riskLevel >= 5 && Math.random() < 0.03) {
+        await db.ref(`bonds/holdings/${GZ.uid}/${k}/status`).set('defaulted');
+        await db.ref('notifs/' + GZ.uid).push({
+          type:'bond_default', icon:'⚠️',
+          msg:`⚠️ Tahvil default! ${h.code} ödeme yapamadı.`,
+          ts: firebase.database.ServerValue.TIMESTAMP, read:false
+        });
+        continue;
+      }
+
+      await addCash(GZ.uid, coupon, 'bond_coupon');
+      await db.ref(`bonds/holdings/${GZ.uid}/${k}/nextCouponDate`).set(Date.now() + 90 * 24 * 3600 * 1000);
+
+      // Vade dolduysa anaparayı geri ver
+      if (Date.now() >= h.maturityDate) {
+        await addCash(GZ.uid, h.totalCost, 'bond_principal');
+        await db.ref(`bonds/holdings/${GZ.uid}/${k}/status`).set('matured');
+      }
+    }
+  }
+}
+window.processBondCoupons = processBondCoupons;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 8. VADELİ İŞLEMLER (FUTURES)
+   ──────────────────────────────────────────────────────────────────────────── */
+
+async function openFuturesPosition(symbol, direction, lotSize, leverage) {
+  // direction: 'long' veya 'short'
+  // leverage: 1, 2, 5, 10
+  if (![1,2,5,10].includes(leverage)) return { ok:false, msg:'Kaldıraç 1/2/5/10' };
+  const stock = STOCKS_DATA.find(s => s.sym === symbol);
+  if (!stock) return { ok:false, msg:'Sembol yok' };
+
+  const price = await dbGet('stocks/prices/' + symbol + '/current') || stock.basePrice;
+  const notional = price * lotSize;
+  const margin = notional / leverage;
+
+  const ok = await spendCash(GZ.uid, margin, 'futures_margin');
+  if (!ok) return { ok:false, msg:'Yetersiz teminat' };
+
+  const position = {
+    id: 'fut_' + Date.now(),
+    symbol, direction, lotSize, leverage,
+    entryPrice: price, notional, margin,
+    openedAt: Date.now(),
+    status: 'open',
+    expiresAt: Date.now() + 30 * 24 * 3600 * 1000  // 1 ay vade
+  };
+  await db.ref(`futures/positions/${GZ.uid}`).push(position);
+  return { ok:true, position };
+}
+window.openFuturesPosition = openFuturesPosition;
+
+async function closeFuturesPosition(posKey) {
+  const pos = await dbGet(`futures/positions/${GZ.uid}/${posKey}`);
+  if (!pos || pos.status !== 'open') return { ok:false, msg:'Pozisyon yok/kapalı' };
+
+  const curPrice = await dbGet('stocks/prices/' + pos.symbol + '/current') || pos.entryPrice;
+  const priceDiff = pos.direction === 'long' ? (curPrice - pos.entryPrice) : (pos.entryPrice - curPrice);
+  const pnl = priceDiff * pos.lotSize * pos.leverage;
+  const finalAmount = pos.margin + pnl;
+
+  // Liquidation: kayıp marginden büyükse pozisyon sıfırlanır
+  if (finalAmount <= 0) {
+    await db.ref(`futures/positions/${GZ.uid}/${posKey}/status`).set('liquidated');
+    return { ok:true, liquidated:true, pnl: -pos.margin };
+  }
+
+  await addCash(GZ.uid, finalAmount, 'futures_close');
+  await db.ref(`futures/positions/${GZ.uid}/${posKey}`).update({
+    status:'closed', exitPrice:curPrice, pnl, closedAt:Date.now()
+  });
+  return { ok:true, pnl, finalAmount };
+}
+window.closeFuturesPosition = closeFuturesPosition;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 9. HEDGE FONU
+   ──────────────────────────────────────────────────────────────────────────── */
+
+async function createHedgeFund(fundName, mgmtFee, perfFee, minInvest, strategy) {
+  if (mgmtFee < 0.005 || mgmtFee > 0.05) return { ok:false, msg:'Yönetim ücreti %0.5-5' };
+  if (perfFee < 0.05 || perfFee > 0.30) return { ok:false, msg:'Performans ücreti %5-30' };
+  if ((GZ.data.level||1) < 35) return { ok:false, msg:'Min Lv 35 gerekli' };
+  if ((GZ.data.netWorth||0) < 5000000) return { ok:false, msg:'Min ₺5M servet gerekli' };
+
+  const fund = {
+    id: 'hf_' + Date.now(),
+    fundName, managerUid: GZ.uid, managerName: GZ.data.username,
+    mgmtFee, perfFee, minInvest,
+    strategy: strategy || 'balanced',
+    nav: 1.00,
+    aum: 0,  // Assets Under Management
+    investorCount: 0,
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    status: 'open'
+  };
+  await db.ref('hedgefunds/list').push(fund);
+  return { ok:true, fund };
+}
+window.createHedgeFund = createHedgeFund;
+
+async function investInHedgeFund(fundKey, amount) {
+  const fund = await dbGet('hedgefunds/list/' + fundKey);
+  if (!fund) return { ok:false, msg:'Fon yok' };
+  if (fund.managerUid === GZ.uid) return { ok:false, msg:'Kendi fonuna yatıramazsın' };
+  if (amount < fund.minInvest) return { ok:false, msg:`Min yatırım ₺${fund.minInvest.toLocaleString('tr-TR')}` };
+
+  const ok = await spendCash(GZ.uid, amount, 'hedgefund_invest');
+  if (!ok) return { ok:false, msg:'Yetersiz bakiye' };
+
+  // Manager'a anlık olarak yatırım miktarının %1'i ücret olarak akar
+  await addCash(fund.managerUid, amount * 0.01, 'hedgefund_setup_fee');
+
+  const shares = amount / fund.nav;
+  await db.ref(`hedgefunds/investors/${fundKey}/${GZ.uid}`).transaction(cur => {
+    cur = cur || { shares:0, totalInvested:0 };
+    return { shares: cur.shares + shares, totalInvested: cur.totalInvested + amount };
+  });
+  await db.ref(`hedgefunds/list/${fundKey}/aum`).transaction(c => (c||0) + amount * 0.99);
+  await db.ref(`hedgefunds/list/${fundKey}/investorCount`).transaction(c => (c||0) + 1);
+
+  return { ok:true, shares };
+}
+window.investInHedgeFund = investInHedgeFund;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 10. HAVA DURUMU + MEVSİM + AFET SİSTEMİ
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const SEASONS = [
+  { code:'ilkbahar', name:'İlkbahar', emo:'🌸', months:[3,4,5],   tarımMult:1.20, satışMult:1.05 },
+  { code:'yaz',      name:'Yaz',      emo:'☀️', months:[6,7,8],   tarımMult:1.30, satışMult:1.15 },
+  { code:'sonbahar', name:'Sonbahar', emo:'🍂', months:[9,10,11], tarımMult:1.10, satışMult:1.00 },
+  { code:'kis',      name:'Kış',     emo:'❄️', months:[12,1,2],  tarımMult:0.60, satışMult:1.10 }
+];
+window.SEASONS = SEASONS;
+
+const WEATHER_TYPES = [
+  { code:'gunes',     emo:'☀️', name:'Güneşli',       prod:1.10, prob:0.40 },
+  { code:'parcabulutlu',emo:'⛅', name:'Parçalı Bulutlu',prod:1.00, prob:0.20 },
+  { code:'bulutlu',   emo:'☁️', name:'Bulutlu',       prod:0.95, prob:0.15 },
+  { code:'yagmur',    emo:'🌧️', name:'Yağmurlu',      prod:0.90, prob:0.10 },
+  { code:'firtina',   emo:'⛈️', name:'Fırtına',       prod:0.60, prob:0.05 },
+  { code:'kar',       emo:'🌨️', name:'Kar',           prod:0.50, prob:0.05 },
+  { code:'sicakHava', emo:'🥵', name:'Aşırı Sıcak',   prod:0.70, prob:0.03 },
+  { code:'donus',     emo:'🥶', name:'Don Olayı',     prod:0.30, prob:0.02 }
+];
+window.WEATHER_TYPES = WEATHER_TYPES;
+
+function getCurrentSeason() {
+  const m = new Date().getMonth() + 1;
+  return SEASONS.find(s => s.months.includes(m)) || SEASONS[0];
+}
+window.getCurrentSeason = getCurrentSeason;
+
+async function tickWeather() {
+  // 6 saatte bir hava değişir
+  const lastTick = await dbGet('weather/_lastTick') || 0;
+  if (Date.now() - lastTick < 6 * 3600 * 1000) return;
+
+  const lockResult = await db.ref('weather/_lastTick').transaction(c => {
+    if (c && Date.now() - c < 6 * 3600 * 1000) return;
+    return Date.now();
+  });
+  if (!lockResult.committed) return;
+
+  // 81 il için ayrı hava
+  const cities = window.ILLER || [];
+  const updates = {};
+  for (const city of cities) {
+    const r = Math.random();
+    let acc = 0;
+    let weather = WEATHER_TYPES[0];
+    for (const w of WEATHER_TYPES) {
+      acc += w.prob;
+      if (r < acc) { weather = w; break; }
+    }
+    const baseTemp = getBaseTempForCity(city);
+    const temp = Math.floor(baseTemp + (Math.random() - 0.5) * 8);
+
+    updates['weather/current/' + city] = {
+      code: weather.code, name: weather.name, emo: weather.emo,
+      prod: weather.prod, temp, ts: Date.now()
+    };
+  }
+  await db.ref().update(updates);
+}
+window.tickWeather = tickWeather;
+
+function getBaseTempForCity(city) {
+  const m = new Date().getMonth() + 1;
+  const isWinter = [12,1,2].includes(m);
+  const isSummer = [6,7,8].includes(m);
+  // Akdeniz/Ege sıcak, İç/Doğu Anadolu serin
+  const sicakIller = ['Antalya','Mersin','Adana','Hatay','Muğla','İzmir','Aydın'];
+  const soguk = ['Erzurum','Kars','Ardahan','Ağrı','Bayburt','Sivas','Erzincan'];
+  let base = 18;
+  if (sicakIller.includes(city)) base = 25;
+  else if (soguk.includes(city)) base = 8;
+  if (isWinter) base -= 12;
+  else if (isSummer) base += 8;
+  return base;
+}
+
+const DISASTERS = [
+  { code:'deprem',  name:'Deprem',  emo:'🌍', prob:0.0008, damage:0.30, regions:['Bolu','İstanbul','Kocaeli','Sakarya','Düzce','Yalova','Hatay','Kahramanmaraş','Malatya','Adıyaman','Elazığ','Van','Bingöl','Erzincan'] },
+  { code:'sel',     name:'Sel',     emo:'🌊', prob:0.0015, damage:0.20, regions:['Rize','Trabzon','Giresun','Ordu','Samsun','Sinop','Kastamonu','Bartın','Zonguldak','Artvin'] },
+  { code:'yangin',  name:'Orman Yangını',emo:'🔥',prob:0.0020, damage:0.25, regions:['Antalya','Muğla','İzmir','Manisa','Aydın','Çanakkale','Adana','Mersin','Hatay'] },
+  { code:'kuraklik',name:'Kuraklık',emo:'🌵', prob:0.0010, damage:0.15, regions:['Konya','Karaman','Aksaray','Niğde','Nevşehir','Şanlıurfa','Diyarbakır','Mardin'] },
+  { code:'firtina', name:'Şiddetli Fırtına',emo:'🌪️',prob:0.0025, damage:0.10, regions:[] },  // her yere
+];
+window.DISASTERS = DISASTERS;
+
+async function checkDisasters() {
+  // 1 saatte bir kontrol
+  const lastTick = await dbGet('disasters/_lastTick') || 0;
+  if (Date.now() - lastTick < 3600 * 1000) return;
+  const lockResult = await db.ref('disasters/_lastTick').transaction(c => {
+    if (c && Date.now() - c < 3600 * 1000) return;
+    return Date.now();
+  });
+  if (!lockResult.committed) return;
+
+  for (const d of DISASTERS) {
+    if (Math.random() < d.prob) {
+      // Afet patladı!
+      const targetRegions = d.regions.length ? d.regions : (window.ILLER || []);
+      const city = targetRegions[Math.floor(Math.random() * targetRegions.length)];
+      const disaster = {
+        code: d.code, name: d.name, emo: d.emo,
+        damage: d.damage, city,
+        startedAt: Date.now(),
+        endsAt: Date.now() + (4 + Math.random() * 20) * 3600 * 1000,
+        affected: 0
+      };
+      await db.ref('disasters/active').push(disaster);
+      await db.ref('disasters/history').push(disaster);
+
+      // Etkilenen kullanıcılara bildirim
+      // (Production'da: o şehirde tesisi/emlağı olan kullanıcılara mesaj)
+    }
+  }
+}
+window.checkDisasters = checkDisasters;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 11. ÇALIŞAN YÖNETİMİ
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const EMPLOYEE_POSITIONS = [
+  { code:'isci',         name:'İşçi',                 emo:'👷', minSalary:8500,   maxSalary:14000,  productivityBonus:0.05, skills:['gen'] },
+  { code:'usta',         name:'Usta İşçi',           emo:'🛠️', minSalary:14000,  maxSalary:22000,  productivityBonus:0.10, skills:['gen','uretim'] },
+  { code:'muhasebeci',   name:'Muhasebeci',          emo:'📊', minSalary:18000,  maxSalary:32000,  productivityBonus:0.08, skills:['finans'] },
+  { code:'pazarlamaci',  name:'Pazarlamacı',         emo:'📢', minSalary:16000,  maxSalary:30000,  productivityBonus:0.12, skills:['satis'] },
+  { code:'guvenlik',     name:'Güvenlik',            emo:'🛡️', minSalary:11000,  maxSalary:18000,  productivityBonus:0.0,  skills:['guv'], theftReduce:0.5 },
+  { code:'muhendis',     name:'Mühendis',            emo:'🔧', minSalary:35000,  maxSalary:60000,  productivityBonus:0.20, skills:['teknik'] },
+  { code:'avukat',       name:'Avukat',              emo:'⚖️', minSalary:45000,  maxSalary:90000,  productivityBonus:0.0,  skills:['yasal'], lawsuitReduce:0.7 },
+  { code:'CEO_yardimci', name:'CEO Yardımcısı',      emo:'🎩', minSalary:80000,  maxSalary:200000, productivityBonus:0.30, skills:['yonetim'] }
+];
+window.EMPLOYEE_POSITIONS = EMPLOYEE_POSITIONS;
+
+async function hireEmployee(positionCode, salary) {
+  const pos = EMPLOYEE_POSITIONS.find(p => p.code === positionCode);
+  if (!pos) return { ok:false, msg:'Pozisyon yok' };
+  if (salary < pos.minSalary) return { ok:false, msg:`Min maaş ₺${pos.minSalary.toLocaleString('tr-TR')}` };
+  if (salary > pos.maxSalary) return { ok:false, msg:`Max maaş ₺${pos.maxSalary.toLocaleString('tr-TR')}` };
+
+  // İşe alma ücreti (1 maaş)
+  const ok = await spendCash(GZ.uid, salary, 'employee_hire');
+  if (!ok) return { ok:false, msg:'Yetersiz bakiye (1 maaş peşin)' };
+
+  const names = ['Ahmet Yılmaz','Mehmet Demir','Ayşe Kaya','Fatma Şahin','Mustafa Çelik','Zeynep Arslan',
+                 'Ali Öztürk','Hatice Yıldız','Hüseyin Aydın','Emine Polat','İbrahim Doğan','Elif Çetin',
+                 'Hasan Kara','Selin Akın','Burak Erdem','Deniz Sözer','Yiğit Korkmaz','Ceren Türk'];
+  const surname = ['(deneyimli)','(yetenekli)','(motiveli)','(çalışkan)','(profesyonel)'][Math.floor(Math.random()*5)];
+
+  const employee = {
+    id: 'emp_' + Date.now(),
+    name: names[Math.floor(Math.random()*names.length)] + ' ' + surname,
+    position: positionCode, positionName: pos.name,
+    salary, productivityBonus: pos.productivityBonus,
+    morale: 70 + Math.floor(Math.random() * 20),  // 70-90
+    hiredAt: Date.now(),
+    nextSalaryDate: Date.now() + 30 * 24 * 3600 * 1000,
+    skills: pos.skills,
+    onStrike: false
+  };
+  await db.ref(`employees/${GZ.uid}`).push(employee);
+  return { ok:true, employee };
+}
+window.hireEmployee = hireEmployee;
+
+async function fireEmployee(empKey) {
+  const emp = await dbGet(`employees/${GZ.uid}/${empKey}`);
+  if (!emp) return { ok:false, msg:'Çalışan yok' };
+
+  // Tazminat: 2 maaş
+  const severance = emp.salary * 2;
+  const ok = await spendCash(GZ.uid, severance, 'severance');
+  if (!ok) return { ok:false, msg:`Tazminat ₺${severance.toLocaleString('tr-TR')} gerekli` };
+
+  await db.ref(`employees/${GZ.uid}/${empKey}`).remove();
+  return { ok:true, severance };
+}
+window.fireEmployee = fireEmployee;
+
+async function payEmployeeSalaries() {
+  const empSnap = await db.ref(`employees/${GZ.uid}`).once('value');
+  const emps = empSnap.val() || {};
+  let totalPaid = 0;
+  for (const k of Object.keys(emps)) {
+    const emp = emps[k];
+    if (Date.now() < emp.nextSalaryDate) continue;
+    const ok = await spendCash(GZ.uid, emp.salary, 'salary');
+    if (!ok) {
+      // Maaş ödenemedi → moral düşer, grev riski
+      await db.ref(`employees/${GZ.uid}/${k}/morale`).transaction(c => Math.max(0, (c||50) - 20));
+      const newMorale = (await dbGet(`employees/${GZ.uid}/${k}/morale`)) || 0;
+      if (newMorale < 30 && Math.random() < 0.4) {
+        await db.ref(`employees/${GZ.uid}/${k}/onStrike`).set(true);
+      }
+      continue;
+    }
+    totalPaid += emp.salary;
+    await db.ref(`employees/${GZ.uid}/${k}/nextSalaryDate`).set(Date.now() + 30 * 24 * 3600 * 1000);
+    // Moral artışı (zamanında maaş)
+    await db.ref(`employees/${GZ.uid}/${k}/morale`).transaction(c => Math.min(100, (c||80) + 3));
+  }
+  return totalPaid;
+}
+window.payEmployeeSalaries = payEmployeeSalaries;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 12. AR-GE / TEKNOLOJİ AĞACI
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const TECH_TREE = {
+  'tarim_t1': { name:'Modern Tarım Aletleri',cost:50000,    days:3,  prereq:[],          effect:{tarimMult:1.10}, desc:'Bahçe üretiminde +%10' },
+  'tarim_t2': { name:'Sera Teknolojisi',     cost:250000,   days:7,  prereq:['tarim_t1'],effect:{tarimMult:1.25}, desc:'Bahçe üretiminde +%25' },
+  'tarim_t3': { name:'GMO Tohumlar',         cost:1500000,  days:15, prereq:['tarim_t2'],effect:{tarimMult:1.50}, desc:'Bahçe üretiminde +%50' },
+  'hayvan_t1':{ name:'Otomatik Sağım',       cost:75000,    days:4,  prereq:[],          effect:{ciftlikMult:1.15}, desc:'Çiftlik üretiminde +%15' },
+  'hayvan_t2':{ name:'Genetik Yem',          cost:400000,   days:8,  prereq:['hayvan_t1'],effect:{ciftlikMult:1.30}, desc:'Çiftlik üretiminde +%30' },
+  'fab_t1':   { name:'Otomasyon Robotları',  cost:300000,   days:7,  prereq:[],          effect:{fabrikaMult:1.20}, desc:'Fabrika üretiminde +%20' },
+  'fab_t2':   { name:'AI Yapılandırma',      cost:1800000,  days:14, prereq:['fab_t1'],  effect:{fabrikaMult:1.40}, desc:'Fabrika üretiminde +%40' },
+  'fab_t3':   { name:'Kuantum Endüstri',     cost:8500000,  days:30, prereq:['fab_t2'],  effect:{fabrikaMult:1.80}, desc:'Fabrika üretiminde +%80' },
+  'maden_t1': { name:'Sismik Tarama',        cost:600000,   days:10, prereq:[],          effect:{madenMult:1.20}, desc:'Maden üretiminde +%20' },
+  'maden_t2': { name:'Derin Sondaj',         cost:3500000,  days:18, prereq:['maden_t1'],effect:{madenMult:1.50}, desc:'Maden üretiminde +%50' },
+  'lojistik': { name:'Drone Teslimat',       cost:1200000,  days:12, prereq:[],          effect:{lojistikSpeed:1.5}, desc:'Sevkiyat hızı +%50' },
+  'pazarlama':{ name:'Dijital Pazarlama',    cost:200000,   days:5,  prereq:[],          effect:{satisMult:1.15}, desc:'Tüm satışlar +%15' },
+  'finans':   { name:'Algoritma Trade',      cost:5000000,  days:20, prereq:['pazarlama'],effect:{tradeProfit:1.25}, desc:'Hisse/kripto karı +%25' },
+};
+window.TECH_TREE = TECH_TREE;
+
+async function startResearch(techCode) {
+  const tech = TECH_TREE[techCode];
+  if (!tech) return { ok:false, msg:'Teknoloji yok' };
+
+  const research = await dbGet(`rd_tech/${GZ.uid}`) || {};
+  if (research[techCode] && research[techCode].status === 'completed') return { ok:false, msg:'Zaten tamamlandı' };
+  if (research[techCode] && research[techCode].status === 'in_progress') return { ok:false, msg:'Zaten araştırılıyor' };
+
+  // Önkoşul kontrolü
+  for (const pre of tech.prereq) {
+    if (!research[pre] || research[pre].status !== 'completed') {
+      return { ok:false, msg:`Önce gerekli: ${TECH_TREE[pre].name}` };
+    }
+  }
+
+  const ok = await spendCash(GZ.uid, tech.cost, 'rd_research');
+  if (!ok) return { ok:false, msg:`Yetersiz bakiye (₺${tech.cost.toLocaleString('tr-TR')})` };
+
+  await db.ref(`rd_tech/${GZ.uid}/${techCode}`).set({
+    code: techCode, name: tech.name,
+    status: 'in_progress',
+    startedAt: Date.now(),
+    completesAt: Date.now() + tech.days * 24 * 3600 * 1000
+  });
+  return { ok:true };
+}
+window.startResearch = startResearch;
+
+async function checkResearchCompletion() {
+  const research = await dbGet(`rd_tech/${GZ.uid}`) || {};
+  for (const code of Object.keys(research)) {
+    if (research[code].status === 'in_progress' && Date.now() >= research[code].completesAt) {
+      await db.ref(`rd_tech/${GZ.uid}/${code}/status`).set('completed');
+      await db.ref(`rd_tech/${GZ.uid}/${code}/completedAt`).set(Date.now());
+      await db.ref('notifs/' + GZ.uid).push({
+        type:'research', icon:'🔬',
+        msg:`🔬 Araştırma tamamlandı: ${research[code].name}`,
+        ts: firebase.database.ServerValue.TIMESTAMP, read:false
+      });
+      await addXP(GZ.uid, 200);
+    }
+  }
+}
+window.checkResearchCompletion = checkResearchCompletion;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 13. EĞİTİM MERKEZİ
+   ──────────────────────────────────────────────────────────────────────────── */
+
+const COURSES = [
+  { code:'business_101', name:'İşletme Temelleri', cost:5000,  days:1, branch:'genel',   bonus:{xpRate:1.05}, desc:'XP +%5' },
+  { code:'sales_pro',    name:'Satış Profesyonelliği',cost:25000,days:3, branch:'satis',  bonus:{satisMult:1.05}, desc:'Tüm satışlar +%5' },
+  { code:'finance_adv',  name:'İleri Finans',     cost:75000, days:5, branch:'finans',   bonus:{tradeFee:0.8},  desc:'Komisyonlar -%20' },
+  { code:'tech_lead',    name:'Tech Liderliği',   cost:150000,days:7, branch:'teknik',   bonus:{rdSpeed:1.3},   desc:'AR-GE %30 hızlı' },
+  { code:'mba',          name:'MBA',              cost:500000,days:14,branch:'yonetim',  bonus:{empProd:1.10},  desc:'Çalışan verimliliği +%10' },
+  { code:'crypto_master',name:'Kripto Uzmanı',    cost:200000,days:6, branch:'finans',   bonus:{cryptoFee:0.5}, desc:'Kripto komisyonu yarıya' },
+  { code:'real_estate',  name:'Emlak Yatırımı',   cost:120000,days:5, branch:'finans',   bonus:{rentMult:1.15}, desc:'Kira gelirleri +%15' },
+  { code:'logistics',    name:'Lojistik Optimizasyonu',cost:80000,days:4,branch:'teknik',bonus:{shipCost:0.85}, desc:'Nakliye %15 ucuz' },
+  { code:'leadership',   name:'Liderlik',         cost:300000,days:10,branch:'yonetim',  bonus:{empMorale:1.15},desc:'Çalışan morali +%15' },
+  { code:'marketing_adv',name:'İleri Pazarlama',  cost:100000,days:5, branch:'satis',    bonus:{ihaleAdv:1.10}, desc:'İhalelerde +%10 avantaj' }
+];
+window.COURSES = COURSES;
+
+async function enrollCourse(code) {
+  const course = COURSES.find(c => c.code === code);
+  if (!course) return { ok:false, msg:'Kurs yok' };
+  const edu = await dbGet(`education/${GZ.uid}`) || {};
+  if (edu[code]) return { ok:false, msg:'Zaten kayıtlısın/tamamlandı' };
+
+  const ok = await spendCash(GZ.uid, course.cost, 'education');
+  if (!ok) return { ok:false, msg:`Yetersiz bakiye ₺${course.cost.toLocaleString('tr-TR')}` };
+
+  await db.ref(`education/${GZ.uid}/${code}`).set({
+    code, name: course.name,
+    status: 'in_progress',
+    startedAt: Date.now(),
+    completesAt: Date.now() + course.days * 24 * 3600 * 1000
+  });
+  return { ok:true };
+}
+window.enrollCourse = enrollCourse;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 14. SÖZLEŞME SİSTEMİ
+   ──────────────────────────────────────────────────────────────────────────── */
+
+async function createContract(targetUid, contractType, terms) {
+  // contractType: 'tedarik', 'satis', 'ortak_yatirim', 'isbirligi'
+  const contract = {
+    id: 'ct_' + Date.now(),
+    creator: GZ.uid, creatorName: GZ.data.username,
+    target: targetUid,
+    type: contractType,
+    terms,  // { product, qtyPerWeek, pricePerUnit, durationWeeks, ... }
+    status: 'pending',
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    expiresAt: Date.now() + 7 * 24 * 3600 * 1000  // 7 gün karar süresi
+  };
+  await db.ref('contracts').push(contract);
+
+  // Hedef kullanıcıya bildirim
+  await db.ref('notifs/' + targetUid).push({
+    type:'contract_offer', icon:'📝',
+    msg:`${GZ.data.username} sana sözleşme önerdi: ${contractType}`,
+    ts: firebase.database.ServerValue.TIMESTAMP, read:false
+  });
+  return { ok:true };
+}
+window.createContract = createContract;
+
+async function acceptContract(contractKey) {
+  const ct = await dbGet('contracts/' + contractKey);
+  if (!ct) return { ok:false, msg:'Sözleşme yok' };
+  if (ct.target !== GZ.uid) return { ok:false, msg:'Bu sözleşme sana değil' };
+  if (ct.status !== 'pending') return { ok:false, msg:'Sözleşme zaten kapanmış' };
+  if (Date.now() > ct.expiresAt) return { ok:false, msg:'Sözleşme süresi doldu' };
+
+  await db.ref('contracts/' + contractKey + '/status').set('active');
+  await db.ref('contracts/' + contractKey + '/acceptedAt').set(Date.now());
+  return { ok:true };
+}
+window.acceptContract = acceptContract;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 15. BELEDİYE SEÇİM SİSTEMİ
+   ──────────────────────────────────────────────────────────────────────────── */
+
+async function runForMayor(cityName, manifesto, taxPolicy) {
+  // taxPolicy: 0.0-0.20 (vergi oranı)
+  if (taxPolicy < 0 || taxPolicy > 0.20) return { ok:false, msg:'Vergi %0-20 arası' };
+  if ((GZ.data.level||1) < 30) return { ok:false, msg:'Min Lv 30 gerekli' };
+  if ((GZ.data.netWorth||0) < 1000000) return { ok:false, msg:'Min ₺1M servet gerekli' };
+
+  // Kampanya ücreti: 50.000 ₺
+  const ok = await spendCash(GZ.uid, 50000, 'mayor_campaign');
+  if (!ok) return { ok:false, msg:'₺50.000 kampanya ücreti gerekli' };
+
+  const election = await dbGet('city_mayor/elections/' + cityName) || { candidates: {}, votes: {}, endsAt: Date.now() + 7 * 24 * 3600 * 1000 };
+  election.candidates[GZ.uid] = {
+    uid: GZ.uid, name: GZ.data.username,
+    manifesto, taxPolicy,
+    registeredAt: Date.now()
+  };
+  if (!election.endsAt) election.endsAt = Date.now() + 7 * 24 * 3600 * 1000;
+  await db.ref('city_mayor/elections/' + cityName).set(election);
+  return { ok:true };
+}
+window.runForMayor = runForMayor;
+
+async function voteForMayor(cityName, candidateUid) {
+  const voteRef = db.ref(`city_mayor/votes/${cityName}/${GZ.uid}`);
+  const existingVote = await voteRef.once('value');
+  if (existingVote.val()) return { ok:false, msg:'Zaten oy verdin' };
+
+  await voteRef.set({ candidateUid, ts: Date.now() });
+  await db.ref(`city_mayor/elections/${cityName}/votes/${candidateUid}`).transaction(c => (c||0) + 1);
+  return { ok:true };
+}
+window.voteForMayor = voteForMayor;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 16. TİCARET SAVAŞLARI
+   ──────────────────────────────────────────────────────────────────────────── */
+
+async function declareTradeWar(targetUid, durationDays, weaponType) {
+  // weaponType: 'fiyat_dampingi', 'boykot', 'reklam_savasi', 'lobi'
+  if ((GZ.data.netWorth||0) < 500000) return { ok:false, msg:'Min ₺500K servet gerekli' };
+
+  const cost = 100000;
+  const ok = await spendCash(GZ.uid, cost, 'trade_war');
+  if (!ok) return { ok:false, msg:'₺100K savaş ilanı ücreti gerekli' };
+
+  const war = {
+    id: 'tw_' + Date.now(),
+    aggressor: GZ.uid, aggressorName: GZ.data.username,
+    target: targetUid,
+    weapon: weaponType,
+    declaredAt: Date.now(),
+    endsAt: Date.now() + durationDays * 24 * 3600 * 1000,
+    status: 'active',
+    aggressorScore: 0, targetScore: 0
+  };
+  await db.ref('trade_war/active').push(war);
+
+  await db.ref('notifs/' + targetUid).push({
+    type:'trade_war', icon:'⚔️',
+    msg:`⚔️ ${GZ.data.username} sana ticaret savaşı ilan etti! (${weaponType})`,
+    ts: firebase.database.ServerValue.TIMESTAMP, read:false
+  });
+
+  return { ok:true };
+}
+window.declareTradeWar = declareTradeWar;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 17. DÜELLO (1v1 Ticaret)
+   ──────────────────────────────────────────────────────────────────────────── */
+
+async function createDuel(opponentUid, betAmount, durationMinutes) {
+  if (betAmount < 10000) return { ok:false, msg:'Min bahis ₺10.000' };
+  if (durationMinutes < 5 || durationMinutes > 60) return { ok:false, msg:'5-60 dk arası' };
+
+  const ok = await spendCash(GZ.uid, betAmount, 'duel_bet');
+  if (!ok) return { ok:false, msg:'Yetersiz bakiye' };
+
+  const duel = {
+    id: 'du_' + Date.now(),
+    creator: GZ.uid, creatorName: GZ.data.username,
+    opponent: opponentUid,
+    betAmount, escrow: betAmount,
+    durationMinutes,
+    status: 'pending',
+    createdAt: Date.now(),
+    expiresAt: Date.now() + 30 * 60 * 1000  // 30 dk kabul süresi
+  };
+  await db.ref('duels/active').push(duel);
+
+  await db.ref('notifs/' + opponentUid).push({
+    type:'duel_challenge', icon:'🤜',
+    msg:`🤜 ${GZ.data.username} seni düelloya çağırdı! Bahis: ₺${betAmount.toLocaleString('tr-TR')}`,
+    ts: firebase.database.ServerValue.TIMESTAMP, read:false
+  });
+  return { ok:true };
+}
+window.createDuel = createDuel;
+
+async function acceptDuel(duelKey) {
+  const duel = await dbGet('duels/active/' + duelKey);
+  if (!duel) return { ok:false, msg:'Düello yok' };
+  if (duel.opponent !== GZ.uid) return { ok:false, msg:'Senin düellon değil' };
+  if (duel.status !== 'pending') return { ok:false, msg:'Düello kabul edilemez' };
+
+  const ok = await spendCash(GZ.uid, duel.betAmount, 'duel_bet');
+  if (!ok) return { ok:false, msg:'Yetersiz bakiye' };
+
+  await db.ref('duels/active/' + duelKey).update({
+    status:'in_progress',
+    startedAt: Date.now(),
+    endsAt: Date.now() + duel.durationMinutes * 60 * 1000,
+    escrow: duel.betAmount * 2,
+    creatorScore: 0, opponentScore: 0
+  });
+  return { ok:true };
+}
+window.acceptDuel = acceptDuel;
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ████ 24. TICK ORCHESTRATOR
+   ──────────────────────────────────────────────────────────────────────────── */
+
+let _v2Intervals = [];
+
+function initV2Systems() {
+  if (_v2Intervals.length > 0) return;
+  _v2Intervals.push(setInterval(() => tickStockPrices().catch(()=>{}), 60000));
+  _v2Intervals.push(setInterval(() => tickWeather().catch(()=>{}), 30 * 60 * 1000));
+  _v2Intervals.push(setInterval(() => checkDisasters().catch(()=>{}), 60 * 60 * 1000));
+  _v2Intervals.push(setInterval(() => distributeDividends().catch(()=>{}), 60 * 60 * 1000));
+  _v2Intervals.push(setInterval(() => processBondCoupons().catch(()=>{}), 60 * 60 * 1000));
+  _v2Intervals.push(setInterval(() => processIntlShipments().catch(()=>{}), 5 * 60 * 1000));
+  _v2Intervals.push(setInterval(() => checkResearchCompletion().catch(()=>{}), 5 * 60 * 1000));
+  _v2Intervals.push(setInterval(() => payEmployeeSalaries().catch(()=>{}), 60 * 60 * 1000));
+
+  setTimeout(() => tickStockPrices().catch(()=>{}), 3000);
+  setTimeout(() => tickWeather().catch(()=>{}), 5000);
+  setTimeout(() => checkDisasters().catch(()=>{}), 8000);
+}
+window.initV2Systems = initV2Systems;
+
+if (typeof auth !== 'undefined') {
+  auth.onAuthStateChanged(u => { if (u) setTimeout(initV2Systems, 5000); });
+}

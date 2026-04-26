@@ -1089,3 +1089,263 @@ input[type="number"]#smsCodeInput {
 /* Fiyat limit uyarı rengi */
 .price-limit-warn { color: #dc2626; font-weight: 700; }
 .price-limit-ok   { color: #16a34a; font-weight: 700; }
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║                  v2.0 STIL GENİŞLETMESİ                                  ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+/* ─── KURUCU GİRİŞ PANELİ ─── */
+.founder-login-panel {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.92);
+  display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(8px);
+  padding: 16px;
+}
+.founder-login-panel.active { display: flex; animation: flFadeIn 0.3s; }
+@keyframes flFadeIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+
+.fl-card {
+  background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+  border: 2px solid #fbbf24;
+  box-shadow: 0 0 40px rgba(251,191,36,0.4), 0 0 80px rgba(251,191,36,0.15);
+  border-radius: 20px;
+  padding: 28px;
+  width: 100%; max-width: 440px;
+  color: #fff;
+}
+.fl-header { text-align: center; margin-bottom: 24px; }
+.fl-icon { font-size: 48px; animation: flPulse 2s infinite; }
+@keyframes flPulse { 0%,100% { filter: drop-shadow(0 0 8px #fbbf24); } 50% { filter: drop-shadow(0 0 20px #fbbf24); } }
+.fl-header h2 { color: #fbbf24; font-weight: 800; letter-spacing: 2px; margin: 8px 0; }
+.fl-sub { color: #a3a3a3; font-size: 12px; }
+.fl-body .input-group { margin-bottom: 14px; }
+.fl-body label { color: #d4d4d4; font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px; }
+.fl-body input {
+  width: 100%; padding: 12px; border-radius: 10px;
+  background: #262626; color: #fff; border: 1px solid #404040;
+  font-family: monospace; letter-spacing: 1px;
+}
+.fl-body input:focus { outline: none; border-color: #fbbf24; box-shadow: 0 0 0 3px rgba(251,191,36,0.2); }
+.btn-founder {
+  width: 100%; padding: 14px; margin: 12px 0;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #000; font-weight: 800; border: none; border-radius: 10px;
+  cursor: pointer; letter-spacing: 1px;
+  transition: all 0.2s;
+}
+.btn-founder:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(251,191,36,0.4); }
+.fl-warning {
+  background: rgba(239,68,68,0.15); border-left: 3px solid #ef4444;
+  padding: 10px; border-radius: 6px; font-size: 12px; color: #fca5a5; margin-top: 12px;
+}
+
+/* Top bar'daki kurucu butonu */
+.founder-btn {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+  animation: flPulse 2s infinite;
+  font-size: 18px;
+}
+
+/* ─── BAKIM EKRANI ─── */
+.maintenance-screen {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  display: none; align-items: center; justify-content: center;
+  position: fixed; inset: 0; z-index: 9998;
+}
+.maintenance-screen.active { display: flex; }
+.maint-box { text-align: center; color: #fff; padding: 40px; max-width: 500px; }
+.maint-emoji { font-size: 80px; animation: rotate 4s linear infinite; }
+@keyframes rotate { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+.maint-loader { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin: 20px 0; }
+.ml-bar { height: 100%; width: 30%; background: linear-gradient(90deg, transparent, #38bdf8, transparent); animation: ml 2s infinite; }
+@keyframes ml { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+.maint-credits { margin-top: 30px; color: #94a3b8; font-style: italic; }
+
+/* ─── GLOBAL DUYURU BANTI ─── */
+.global-broadcast {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 8000;
+  background: linear-gradient(90deg, #1e5cb8, #3b82f6);
+  color: #fff; padding: 10px 16px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+  animation: gbSlideDown 0.4s;
+}
+@keyframes gbSlideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+.gb-icon { font-size: 20px; animation: gbBounce 1.5s infinite; }
+@keyframes gbBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+.gb-text { flex: 1; font-weight: 600; font-size: 14px; }
+.gb-close { background: rgba(255,255,255,0.2); color: #fff; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; }
+
+/* ─── HAVA DURUMU BANTI ─── */
+.weather-bar {
+  position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+  border-radius: 20px; padding: 6px 14px;
+  display: flex; gap: 12px; align-items: center;
+  font-size: 13px; font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+
+/* ─── v2 KARTLAR & GRID'LER ─── */
+.v2-card { background: var(--surface, #fff); border-radius: 12px; padding: 16px; margin: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.v2-toolbar { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px 16px; }
+.page-head { padding: 16px; }
+.page-head h2 { margin: 0; }
+.page-head .muted { color: var(--muted, #6b7280); margin: 4px 0 0; font-size: 13px; }
+
+.btn-mini { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; margin: 2px; }
+.btn-mini.buy  { background: #16a34a; color: #fff; }
+.btn-mini.sell { background: #dc2626; color: #fff; }
+.btn-mini:not(.buy):not(.sell) { background: #e5e7eb; color: #1f2937; }
+
+/* Borsa */
+.stocks-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 10px; padding: 12px; }
+.stock-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
+.stock-card.up { border-left: 4px solid #16a34a; }
+.stock-card.down { border-left: 4px solid #dc2626; }
+.sc-head { display: flex; justify-content: space-between; align-items: center; }
+.sc-sym { font-weight: 800; font-size: 16px; }
+.sc-sector { font-size: 11px; color: #6b7280; }
+.sc-name { font-size: 12px; color: #4b5563; margin: 4px 0; }
+.sc-price { font-size: 22px; font-weight: 700; }
+.sc-change.up { color: #16a34a; }
+.sc-change.down { color: #dc2626; }
+.sc-actions { display: flex; gap: 6px; margin: 8px 0 4px; }
+.sc-meta { font-size: 11px; color: #9ca3af; }
+
+.trade-info { background: #f3f4f6; padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 10px; }
+.trade-info b { display: inline-block; min-width: 110px; }
+.trade-summary { background: #fef3c7; padding: 10px; border-radius: 8px; font-size: 13px; margin: 10px 0; }
+.portfoy-list { display: flex; flex-direction: column; gap: 6px; }
+.portfoy-row { padding: 8px; background: #f9fafb; border-radius: 6px; font-size: 13px; }
+
+/* Emlak */
+.emlak-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap: 10px; padding: 12px; }
+.emlak-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; text-align: center; }
+.ec-emo { font-size: 36px; }
+.ec-name { font-weight: 700; }
+.ec-price { color: #16a34a; font-weight: 700; }
+.ec-desc, .ec-meta { font-size: 11px; color: #6b7280; }
+.owned-prop { background: #f9fafb; padding: 10px; border-radius: 8px; margin: 6px 0; font-size: 13px; }
+
+/* Sigorta */
+.sigorta-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 12px; padding: 12px; }
+.ins-card { background: #fff; padding: 14px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.ins-card h3 { margin: 0 0 4px; }
+.ins-tiers { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.policy-row { background: #f9fafb; padding: 10px; border-radius: 8px; margin: 6px 0; font-size: 13px; }
+
+/* Franchise */
+.franchise-list { display: grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap: 10px; padding: 12px; }
+.franchise-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
+
+/* Uluslararası */
+.countries-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap: 10px; padding: 12px; }
+.country-card { background: #fff; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #e5e7eb; }
+.cc-flag { font-size: 36px; }
+
+/* Karaborsa */
+.bm-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap: 10px; padding: 12px; }
+.bm-card { background: #1f2937; color: #fff; padding: 12px; border-radius: 10px; text-align: center; }
+.bm-card .bm-emo { font-size: 30px; }
+.bm-card h3 { color: #fbbf24; margin: 4px 0; }
+.risk-bar { color: #ef4444; font-size: 12px; }
+
+/* Tahvil */
+.bonds-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 10px; padding: 12px; }
+.bond-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
+.bc-head { display: flex; align-items: center; gap: 8px; }
+.risk { color: #f59e0b; font-size: 12px; }
+
+/* Futures */
+.futures-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(140px,1fr)); gap: 10px; padding: 12px; }
+.fut-card { background: #fff; padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #e5e7eb; }
+.pos-row { background: #f9fafb; padding: 8px; border-radius: 6px; margin: 4px 0; font-size: 12px; }
+
+/* Hedge */
+.funds-list { display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 10px; padding: 12px; }
+.fund-card { background: #fff; padding: 12px; border-radius: 10px; border: 1px solid #e5e7eb; }
+
+/* Çalışan */
+.emp-positions { display: grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap: 10px; padding: 12px; }
+.empos-card { background: #fff; padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #e5e7eb; }
+.emp-emo { font-size: 28px; }
+.emps-list { padding: 0 12px; }
+.emp-row { background: #f9fafb; padding: 8px; border-radius: 6px; margin: 4px 0; font-size: 13px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+
+/* Ar-Ge */
+.tech-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap: 10px; padding: 12px; }
+.tech-card { background: #fff; padding: 12px; border-radius: 10px; border: 1px solid #e5e7eb; }
+.tech-card .badge { font-size: 11px; padding: 2px 8px; border-radius: 6px; }
+.tech-card .badge.ok { background: #16a34a; color: #fff; }
+.tech-card .badge.prog { background: #f59e0b; color: #fff; }
+
+/* Eğitim */
+.course-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 10px; padding: 12px; }
+.course-card { background: #fff; padding: 12px; border-radius: 10px; border: 1px solid #e5e7eb; }
+
+/* Sözleşme */
+.contracts-list { padding: 12px; }
+.contract-row { background: #f9fafb; padding: 10px; border-radius: 6px; margin: 4px 0; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.badge.pending { background: #f59e0b; color: #fff; }
+.badge.active { background: #16a34a; color: #fff; }
+.badge.completed { background: #6b7280; color: #fff; }
+
+/* Belediye */
+.cities-list { padding: 12px; }
+.city-row { background: #f9fafb; padding: 10px; border-radius: 6px; margin: 4px 0; font-size: 13px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.candidate { background: #f3f4f6; padding: 10px; border-radius: 8px; margin: 6px 0; font-size: 13px; }
+
+/* Tic. Savaş & Düello */
+.wars-list, .duels-list { padding: 12px; }
+.war-row, .duel-row { background: #fee2e2; padding: 10px; border-radius: 6px; margin: 4px 0; font-size: 13px; }
+
+/* Avatar / Unvan / Dekorasyon */
+.avatar-grid, .title-grid, .decor-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(140px,1fr)); gap: 10px; padding: 12px; }
+.av-card, .title-card, .decor-card { background: #fff; padding: 12px; border-radius: 10px; text-align: center; border: 2px solid #e5e7eb; }
+.av-card.owned { border-color: #16a34a; }
+.av-emo { font-size: 36px; }
+
+/* Sefer / Prestij / Koleksiyon / Harita */
+.exp-grid, .regions-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap: 10px; padding: 12px; }
+.exp-card, .region-card { background: #fff; padding: 14px; border-radius: 12px; border: 1px solid #e5e7eb; }
+.exp-emo { font-size: 32px; }
+.region-card.owned { border-color: #fbbf24; background: #fef3c7; }
+.expedition-active { background: linear-gradient(135deg, #fef3c7, #fcd34d); padding: 14px; border-radius: 12px; margin: 12px; }
+.prestige-info { background: linear-gradient(135deg, #ddd6fe, #c4b5fd); padding: 20px; border-radius: 16px; margin: 12px; text-align: center; }
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(120px,1fr)); gap: 8px; padding: 12px; }
+.card-item { background: #fff; padding: 10px; border-radius: 8px; text-align: center; border: 2px solid; }
+.ci-emo { font-size: 28px; }
+.card-item.legendary { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+.card-item.mythic { background: linear-gradient(135deg, #fee2e2, #fca5a5); animation: mythicGlow 2s infinite; }
+@keyframes mythicGlow { 0%,100% { box-shadow: 0 0 8px #ef4444; } 50% { box-shadow: 0 0 20px #ef4444; } }
+
+/* Kurucu Paneli */
+.founder-panel { color: #1f2937; }
+.fp-stats { display: grid; grid-template-columns: repeat(auto-fill,minmax(120px,1fr)); gap: 8px; margin: 16px 0; }
+.fp-stat { background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 12px; border-radius: 10px; text-align: center; }
+.fps-num { font-size: 20px; font-weight: 800; color: #92400e; }
+.fps-lbl { font-size: 11px; color: #78350f; }
+.fp-section { background: #f9fafb; padding: 14px; border-radius: 10px; margin: 12px 0; border-left: 4px solid #fbbf24; }
+.fp-section h3 { margin: 0 0 10px; font-size: 14px; }
+.fp-section input, .fp-section textarea { width: 100%; margin: 4px 0; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; }
+.fp-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+/* Recovery card */
+.recovery-card { background: linear-gradient(135deg, #1e293b, #0f172a); color: #fff; padding: 16px; border-radius: 12px; margin: 12px 0; }
+.rc-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+.rc-username { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.rc-code { font-family: monospace; font-size: 18px; font-weight: 800; letter-spacing: 2px; background: #fbbf24; color: #000; padding: 12px; border-radius: 8px; text-align: center; word-break: break-all; }
+
+/* Privacy pill */
+.privacy-pill { background: #e0f2fe; padding: 10px; border-radius: 8px; font-size: 12px; margin-bottom: 12px; display: flex; gap: 8px; align-items: center; }
+.privacy-pill.anon { background: #dcfce7; }
+.pp-icon { font-size: 16px; }
+
+/* Subtabs */
+.subtabs { display: flex; gap: 4px; margin: 8px 0; }
+.subtab { background: #e5e7eb; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; }
+.subtab.active { background: #1e5cb8; color: #fff; }

@@ -68,6 +68,65 @@
         { id: 'sss',       icon: '❓', label: 'SSS',     desc: 'Sıkça sorulan sorular' },
       ]
     },
+    /* ═══════════ v2.0 YENİ KATEGORİLER ═══════════ */
+    {
+      id: 'finans', name: 'FİNANS', icon: '📊', color: '#0891b2',
+      items: [
+        { id: 'borsa',    icon: '📊', label: 'Borsa',          desc: 'Hisse senedi al-sat, IPO yap', highlight: true },
+        { id: 'tahvil',   icon: '📜', label: 'Tahvil',         desc: 'Sabit getirili yatırım' },
+        { id: 'futures',  icon: '📉', label: 'Vadeli İşlem',   desc: 'Kaldıraçlı pozisyon (riskli)' },
+        { id: 'hedgefon', icon: '💹', label: 'Hedge Fon',      desc: 'Profesyonel fon yönetimi (Lv 35+)' },
+      ]
+    },
+    {
+      id: 'varlik', name: 'VARLIK', icon: '🏘️', color: '#0d9488',
+      items: [
+        { id: 'emlak',     icon: '🏘️', label: 'Emlak',     desc: 'Arsa/bina al, kira topla' },
+        { id: 'sigorta',   icon: '🛡️', label: 'Sigorta',   desc: 'Tesis/ürün/araç sigortala' },
+        { id: 'franchise', icon: '🪧', label: 'Franchise', desc: 'Franchise ver/al' },
+      ]
+    },
+    {
+      id: 'global', name: 'GLOBAL', icon: '🌍', color: '#7c2d12',
+      items: [
+        { id: 'uluslararasi', icon: '🌍', label: 'Uluslararası', desc: '10 ülkeye ihracat' },
+        { id: 'karaborsa',    icon: '🕶️', label: 'Karaborsa',   desc: 'Yüksek risk/ödül (Lv 15+)' },
+        { id: 'harita',       icon: '🗺️', label: 'TR Harita',   desc: 'Bölge sahipliği' },
+      ]
+    },
+    {
+      id: 'yonetim', name: 'YÖNETİM', icon: '👔', color: '#475569',
+      items: [
+        { id: 'calisan',  icon: '👷', label: 'Çalışanlar', desc: 'Personel tut, maaş öde' },
+        { id: 'arge',     icon: '🔬', label: 'Ar-Ge',      desc: 'Teknoloji ağacı' },
+        { id: 'egitim',   icon: '🎓', label: 'Eğitim',     desc: 'Beceri kursları' },
+        { id: 'sozlesme', icon: '📝', label: 'Sözleşme',   desc: 'Resmi anlaşmalar' },
+      ]
+    },
+    {
+      id: 'rekabet', name: 'REKABET', icon: '⚔️', color: '#991b1b',
+      items: [
+        { id: 'belediye', icon: '🏛️', label: 'Belediye',     desc: 'Aday ol, oy ver (Lv 30+)' },
+        { id: 'ticsavas', icon: '⚔️', label: 'Tic. Savaşı',  desc: 'Rakip oyuncuya saldır' },
+        { id: 'duello',   icon: '🤜', label: 'Düello',       desc: '1v1 ticaret arena' },
+      ]
+    },
+    {
+      id: 'kisisel', name: 'KİŞİSEL', icon: '🎭', color: '#be185d',
+      items: [
+        { id: 'avatar',     icon: '🎭', label: 'Avatar',         desc: 'Karakter görseli' },
+        { id: 'unvan',      icon: '🎖️', label: 'Unvanlar',       desc: 'Kazanılan unvanlar' },
+        { id: 'dekorasyon', icon: '🎨', label: 'Dekorasyon',     desc: 'Dükkan görünümü' },
+      ]
+    },
+    {
+      id: 'maceralı', name: 'MACERA', icon: '🗺️', color: '#a16207',
+      items: [
+        { id: 'sefer',      icon: '🗺️', label: 'Seferler',     desc: '30-60 günlük büyük görevler', highlight: true },
+        { id: 'prestij',    icon: '⭐', label: 'Prestij',      desc: 'Lv 100\'da yeniden başla, kalıcı bonus' },
+        { id: 'koleksiyon', icon: '🃏', label: 'Koleksiyon',  desc: 'Nadir kart topla' },
+      ]
+    },
   ];
 
   let konsol = null;

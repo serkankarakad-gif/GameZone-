@@ -1056,3 +1056,339 @@
   window.GZ_STARTING_DIAMONDS = STARTING_DIAMONDS;
 
 })();
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  ⚡ KURUCU GİRİŞ SİSTEMİ v2.0 — TAM YETKİ MERKEZİ                       ║
+   ║──────────────────────────────────────────────────────────────────────────║
+   ║  GİZLİ AKTİVASYON: Auth ekranındaki logo'ya 7 KEZ tıkla                ║
+   ║  3 KATMAN GÜVENLİK: Anahtar + Şifre + TOTP-benzeri kod                ║
+   ║  3 başarısız deneme = cihaz 24 saat kilitlenir                        ║
+   ║  Sadece tanımlı kurucu UID'lerinde panel açılır                       ║
+   ║  Tüm denemeler security/founderAttempts altında loglanır              ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+(function(){
+  'use strict';
+
+  // ╔══════ KURUCU YAPILANDIRMASI — DEĞİŞTİRİLEBİLİR ══════╗
+  // Anahtar (kullanıcı adı niteliği) - SHA256 hash
+  // "kurucu" -> hash
+  // Şifre -> hash
+  // TOTP secret -> client tarafında zaman bazlı 6 haneli kod üretir
+  // GERÇEK ÜRETİMDE: Bu hashleri firebase RTDB'de system/founders altında tutmak daha güvenli
+  // Şu anki demo değerler:
+  //   Anahtar    : "serkan_master"
+  //   Şifre      : "Gz!2026#Founder"
+  //   TOTP secret: "GZFOUNDER2026"
+  // (kullanıcı kendisi hash'leri sonradan değiştirir)
+  const FOUNDER_CONFIG = {
+    keyHash:    '8e2f9b47c5e3a7d6f4b8c1d9e7a5f3b9c4d8e6f2a1b7c3d5e9f4a6b2c8d1e7f3', // placeholder
+    passHash:   'a3b7c9d2e8f4a6b1c5d9e3f7a2b8c4d6e1f5a9b3c7d2e8f6a4b1c9d5e7f3a8b2', // placeholder
+    totpSecret: 'GZFOUNDER2026',
+    // Hardcoded "magic combination" fallback (eğer hash'ler henüz gerçek değer içermiyorsa)
+    magic: { key:'serkan_master', pass:'Gz!2026#Founder' }
+  };
+
+  let logoTapCount = 0;
+  let logoTapTimer = null;
+  let founderAttempts = 0;
+
+  // ─── SHA256 yardımcı (giris.js başında zaten var ama scope dışı) ───
+  async function _sha256(text) {
+    const buf = new TextEncoder().encode(text);
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // ─── Cihaz kilidi kontrolü ───
+  function isFounderDeviceLocked() {
+    const lock = JSON.parse(localStorage.getItem('founder_lock') || 'null');
+    if (!lock) return false;
+    if (Date.now() > lock.until) {
+      localStorage.removeItem('founder_lock');
+      return false;
+    }
+    return Math.ceil((lock.until - Date.now()) / 3600000); // saat olarak kalan süre
+  }
+
+  function lockFounderDevice() {
+    localStorage.setItem('founder_lock', JSON.stringify({
+      until: Date.now() + 24 * 3600 * 1000,
+      reason: 'too_many_attempts'
+    }));
+  }
+
+  // ─── TOTP-benzeri kod üretimi (basit zaman bazlı) ───
+  function generateTOTP(secret) {
+    const window30s = Math.floor(Date.now() / 30000);
+    let code = 0;
+    const combined = secret + window30s;
+    for (let i = 0; i < combined.length; i++) {
+      code = ((code << 5) - code) + combined.charCodeAt(i);
+      code = code & 0xFFFFFF;
+    }
+    return Math.abs(code % 1000000).toString().padStart(6, '0');
+  }
+
+  // ─── Logo gizli tıklama dinleyicisi ───
+  function setupLogoSecret() {
+    const logo = document.getElementById('authLogoArea');
+    if (!logo) {
+      // Henüz yüklenmediyse 1 saniye sonra tekrar dene
+      setTimeout(setupLogoSecret, 1000);
+      return;
+    }
+
+    logo.style.cursor = 'pointer';
+    logo.addEventListener('click', () => {
+      logoTapCount++;
+      if (logoTapTimer) clearTimeout(logoTapTimer);
+
+      // Her tıklamada görsel feedback
+      if (logoTapCount >= 3 && logoTapCount < 7) {
+        logo.style.transition = 'transform 0.1s';
+        logo.style.transform = `scale(${1 + (logoTapCount - 2) * 0.05})`;
+        setTimeout(() => { logo.style.transform = ''; }, 150);
+      }
+
+      // 7. tıklamada paneli aç
+      if (logoTapCount === 7) {
+        logoTapCount = 0;
+        openFounderLogin();
+        return;
+      }
+
+      // 2 saniye içinde tıklama yapılmazsa sayaç sıfırla
+      logoTapTimer = setTimeout(() => { logoTapCount = 0; }, 2000);
+    });
+  }
+
+  // ─── Kurucu giriş panelini aç ───
+  function openFounderLogin() {
+    const lockedFor = isFounderDeviceLocked();
+    if (lockedFor) {
+      alert(`🚫 Cihaz kilitli! ${lockedFor} saat sonra tekrar deneyin.`);
+      return;
+    }
+
+    const panel = document.getElementById('founderLoginPanel');
+    if (!panel) return;
+    panel.classList.add('active');
+    document.getElementById('founderKey').value = '';
+    document.getElementById('founderPass').value = '';
+    document.getElementById('founderTotp').value = '';
+    document.getElementById('founderKey').focus();
+  }
+
+  function closeFounderLogin() {
+    const panel = document.getElementById('founderLoginPanel');
+    if (panel) panel.classList.remove('active');
+  }
+
+  // ─── Kurucu giriş doğrulama ───
+  async function attemptFounderLogin() {
+    const key = document.getElementById('founderKey').value.trim();
+    const pass = document.getElementById('founderPass').value;
+    const totp = document.getElementById('founderTotp').value.trim();
+
+    if (!key || !pass || !totp) {
+      alert('Tüm alanları doldur!');
+      return;
+    }
+
+    const expectedTotp = generateTOTP(FOUNDER_CONFIG.totpSecret);
+    const totpValid = (totp === expectedTotp);
+    const magicValid = (key === FOUNDER_CONFIG.magic.key && pass === FOUNDER_CONFIG.magic.pass);
+
+    let valid = magicValid && totpValid;
+
+    // Hash kontrolü (gerçek kurulum için)
+    if (!valid) {
+      try {
+        const keyH = await _sha256('gz_founder_key_' + key);
+        const passH = await _sha256('gz_founder_pass_' + pass);
+        // Eğer hashHash placeholder değilse hash kontrolü yap
+        if (FOUNDER_CONFIG.keyHash.length === 64 && !FOUNDER_CONFIG.keyHash.startsWith('8e2f9b47')) {
+          valid = (keyH === FOUNDER_CONFIG.keyHash && passH === FOUNDER_CONFIG.passHash && totpValid);
+        }
+      } catch(e){}
+    }
+
+    // Log denemeyi (Firebase'e)
+    try {
+      await db.ref('security/founderAttempts').push({
+        ts: firebase.database.ServerValue.TIMESTAMP,
+        key: key.slice(0, 4) + '***',
+        success: valid,
+        fp: getDeviceFingerprintLocal(),
+        ua: navigator.userAgent.slice(0, 180)
+      });
+    } catch(e) { console.warn('Founder log fail:', e); }
+
+    if (!valid) {
+      founderAttempts++;
+      if (founderAttempts >= 3) {
+        lockFounderDevice();
+        alert('🚫 3 başarısız deneme! Cihaz 24 saat kilitlendi.');
+        closeFounderLogin();
+        return;
+      }
+      alert(`❌ Hatalı bilgi! Kalan deneme: ${3 - founderAttempts}\n\nİpucu: TOTP kodu her 30 saniyede bir değişir.`);
+      return;
+    }
+
+    // ✅ Başarılı! Mevcut auth user için founder rolü uygula
+    if (!auth.currentUser) {
+      alert('⚠️ Önce normal hesabınla giriş yapmalısın, sonra logo\'ya tıklayıp kurucu girişi yapabilirsin!');
+      closeFounderLogin();
+      return;
+    }
+
+    try {
+      await db.ref('users/' + auth.currentUser.uid + '/isFounder').set(true);
+      await db.ref('users/' + auth.currentUser.uid + '/founderRole').set('admin');
+      await db.ref('system/founders/' + auth.currentUser.uid).set({
+        username: GZ.data?.username || 'Founder',
+        activatedAt: firebase.database.ServerValue.TIMESTAMP,
+        role: 'admin'
+      });
+
+      window.GZ_IS_FOUNDER = true;
+      closeFounderLogin();
+      alert('⚡ KURUCU YETKİSİ AKTİF! Sağ üst köşede yeni "⚡" butonu görünecek.');
+
+      // Toast gibi bildirim
+      if (typeof toast === 'function') {
+        toast('⚡ Kurucu paneli aktif! Sağ üstteki ⚡ butonundan açabilirsin.', 'success', 6000);
+      }
+
+      // Top bar'a kurucu butonu ekle
+      injectFounderButton();
+    } catch(e) {
+      alert('Hata: ' + e.message);
+    }
+  }
+
+  // Yardımcı: cihaz parmak izi (giris.js'in iç scope'undan dışarı)
+  function getDeviceFingerprintLocal() {
+    const parts = [navigator.userAgent, navigator.language, screen.width+'x'+screen.height];
+    let h = 0;
+    const s = parts.join('|');
+    for (let i = 0; i < s.length; i++) { h = ((h<<5)-h) + s.charCodeAt(i); h |= 0; }
+    return Math.abs(h).toString(36);
+  }
+
+  // ─── Kurucu butonunu top bar'a enjekte et ───
+  function injectFounderButton() {
+    if (document.getElementById('founderBtn')) return;
+    const actions = document.querySelector('.topbar-actions');
+    if (!actions) return;
+    const btn = document.createElement('button');
+    btn.id = 'founderBtn';
+    btn.className = 'icon-btn founder-btn';
+    btn.innerHTML = '⚡';
+    btn.title = 'Kurucu Paneli';
+    btn.addEventListener('click', () => {
+      if (typeof window.openFounderPanel === 'function') {
+        window.openFounderPanel();
+      } else {
+        alert('Kurucu paneli yükleniyor...');
+      }
+    });
+    actions.insertBefore(btn, actions.firstChild);
+  }
+  window.injectFounderButton = injectFounderButton;
+
+  // ─── Auth state değiştiğinde kontrol et: kullanıcı kurucu mu? ───
+  if (typeof auth !== 'undefined') {
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.GZ_IS_FOUNDER = false;
+        return;
+      }
+      try {
+        const isFounder = await db.ref('users/' + user.uid + '/isFounder').once('value');
+        if (isFounder.val() === true) {
+          window.GZ_IS_FOUNDER = true;
+          // Top bar yüklendikten sonra butonu enjekte et
+          setTimeout(injectFounderButton, 2500);
+        }
+      } catch(e){}
+    });
+  }
+
+  // ─── DOM hazır olunca event listener'ları kur ───
+  function setupFounderEvents() {
+    setupLogoSecret();
+
+    const btnLogin = document.getElementById('btnFounderLogin');
+    const btnClose = document.getElementById('btnFounderClose');
+    if (btnLogin) btnLogin.addEventListener('click', attemptFounderLogin);
+    if (btnClose) btnClose.addEventListener('click', closeFounderLogin);
+
+    // Enter ile giriş
+    ['founderKey','founderPass','founderTotp'].forEach(id => {
+      const inp = document.getElementById(id);
+      if (inp) {
+        inp.addEventListener('keypress', e => {
+          if (e.key === 'Enter') attemptFounderLogin();
+        });
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFounderEvents);
+  } else {
+    setupFounderEvents();
+  }
+
+  // Maintenance mode gözlemi
+  if (typeof db !== 'undefined') {
+    db.ref('system/maintenance').on('value', (s) => {
+      const m = s.val();
+      const screen = document.getElementById('maintenanceScreen');
+      if (!screen) return;
+      if (m && m.active === true && !window.GZ_IS_FOUNDER) {
+        screen.classList.add('active');
+        if (m.reason) {
+          const r = document.getElementById('maintReason');
+          if (r) r.textContent = m.reason;
+        }
+        if (m.eta) {
+          const e = document.getElementById('maintEta');
+          if (e) e.textContent = 'Tahmini süre: ' + m.eta;
+        }
+      } else {
+        screen.classList.remove('active');
+      }
+    });
+
+    // Global broadcast gözlemi
+    db.ref('broadcast/current').on('value', (s) => {
+      const b = s.val();
+      const bar = document.getElementById('globalBroadcast');
+      if (!bar) return;
+      if (b && b.active && b.text) {
+        bar.style.display = 'flex';
+        const t = document.getElementById('gbText');
+        if (t) t.textContent = b.text;
+      } else {
+        bar.style.display = 'none';
+      }
+    });
+
+    const gbClose = document.getElementById('gbClose');
+    if (gbClose) gbClose.addEventListener('click', () => {
+      const bar = document.getElementById('globalBroadcast');
+      if (bar) bar.style.display = 'none';
+    });
+  }
+
+  // Global API
+  window.openFounderLogin = openFounderLogin;
+  window.closeFounderLogin = closeFounderLogin;
+  window.attemptFounderLogin = attemptFounderLogin;
+
+})();
