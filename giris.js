@@ -1072,21 +1072,9 @@
 
   // ╔══════ KURUCU YAPILANDIRMASI — DEĞİŞTİRİLEBİLİR ══════╗
   // Anahtar (kullanıcı adı niteliği) - SHA256 hash
-  // "kurucu" -> hash
-  // Şifre -> hash
-  // TOTP secret -> client tarafında zaman bazlı 6 haneli kod üretir
-  // GERÇEK ÜRETİMDE: Bu hashleri firebase RTDB'de system/founders altında tutmak daha güvenli
-  // Şu anki demo değerler:
-  //   Anahtar    : "serkan_master"
-  //   Şifre      : "Gz!2026#Founder"
-  //   TOTP secret: "GZFOUNDER2026"
-  // (kullanıcı kendisi hash'leri sonradan değiştirir)
+  // Yönetici giriş sistemi — tek şifre
   const FOUNDER_CONFIG = {
-    keyHash:    '8e2f9b47c5e3a7d6f4b8c1d9e7a5f3b9c4d8e6f2a1b7c3d5e9f4a6b2c8d1e7f3', // placeholder
-    passHash:   'a3b7c9d2e8f4a6b1c5d9e3f7a2b8c4d6e1f5a9b3c7d2e8f6a4b1c9d5e7f3a8b2', // placeholder
-    totpSecret: 'GZFOUNDER2026',
-    // Hardcoded "magic combination" fallback (eğer hash'ler henüz gerçek değer içermiyorsa)
-    magic: { key:'serkan_master', pass:'Gz!2026#Founder' }
+    pass: '556412'
   };
 
   let logoTapCount = 0;
@@ -1146,14 +1134,14 @@
       if (logoTapTimer) clearTimeout(logoTapTimer);
 
       // Her tıklamada görsel feedback
-      if (logoTapCount >= 3 && logoTapCount < 7) {
+      if (logoTapCount >= 3 && logoTapCount < 5) {
         logo.style.transition = 'transform 0.1s';
         logo.style.transform = `scale(${1 + (logoTapCount - 2) * 0.05})`;
         setTimeout(() => { logo.style.transform = ''; }, 150);
       }
 
-      // 7. tıklamada paneli aç
-      if (logoTapCount === 7) {
+      // 5. tıklamada paneli aç
+      if (logoTapCount === 5) {
         logoTapCount = 0;
         openFounderLogin();
         return;
@@ -1188,32 +1176,15 @@
 
   // ─── Kurucu giriş doğrulama ───
   async function attemptFounderLogin() {
-    const key = document.getElementById('founderKey').value.trim();
-    const pass = document.getElementById('founderPass').value;
-    const totp = document.getElementById('founderTotp').value.trim();
+    const pass = document.getElementById('founderPass').value.trim();
 
-    if (!key || !pass || !totp) {
-      alert('Tüm alanları doldur!');
+    if (!pass) {
+      alert('Şifre boş bırakılamaz!');
       return;
     }
 
-    const expectedTotp = generateTOTP(FOUNDER_CONFIG.totpSecret);
-    const totpValid = (totp === expectedTotp);
-    const magicValid = (key === FOUNDER_CONFIG.magic.key && pass === FOUNDER_CONFIG.magic.pass);
-
-    let valid = magicValid && totpValid;
-
-    // Hash kontrolü (gerçek kurulum için)
-    if (!valid) {
-      try {
-        const keyH = await _sha256('gz_founder_key_' + key);
-        const passH = await _sha256('gz_founder_pass_' + pass);
-        // Eğer hashHash placeholder değilse hash kontrolü yap
-        if (FOUNDER_CONFIG.keyHash.length === 64 && !FOUNDER_CONFIG.keyHash.startsWith('8e2f9b47')) {
-          valid = (keyH === FOUNDER_CONFIG.keyHash && passH === FOUNDER_CONFIG.passHash && totpValid);
-        }
-      } catch(e){}
-    }
+    // Tek şifre kontrolü
+    const valid = (pass === FOUNDER_CONFIG.pass);
 
     // Log denemeyi (Firebase'e)
     try {
@@ -1234,7 +1205,7 @@
         closeFounderLogin();
         return;
       }
-      alert(`❌ Hatalı bilgi! Kalan deneme: ${3 - founderAttempts}\n\nİpucu: TOTP kodu her 30 saniyede bir değişir.`);
+      alert(`❌ Hatalı şifre! Kalan deneme: ${3 - founderAttempts}`);
       return;
     }
 

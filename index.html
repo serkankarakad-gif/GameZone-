@@ -116,31 +116,23 @@
     <div class="auth-footer">v2.0 DEV BUILD • Geliştirici: Serkan Karakaş & Resul Karakaş</div>
   </div>
 
-  <!-- =================== KURUCU GİZLİ GİRİŞ PANELİ =================== -->
+  <!-- =================== YÖNETİCİ GİRİŞ PANELİ =================== -->
   <div id="founderLoginPanel" class="founder-login-panel">
     <div class="fl-card">
       <div class="fl-header">
         <div class="fl-icon">⚡</div>
-        <h2>KURUCU GİRİŞİ</h2>
-        <div class="fl-sub">Yetkisiz erişim yasaktır. Tüm girişler kayıt altındadır.</div>
+        <h2>YÖNETİCİ GİRİŞİ</h2>
+        <div class="fl-sub">Sadece yetkili kişiler girebilir.</div>
       </div>
       <div class="fl-body">
         <div class="input-group">
-          <label>👤 Kurucu Anahtarı</label>
-          <input type="password" id="founderKey" placeholder="Master Key" autocomplete="off">
+          <label>🔐 Şifre</label>
+          <input type="password" id="founderPass" placeholder="Şifre gir" autocomplete="off">
         </div>
-        <div class="input-group">
-          <label>🔐 Devlet Şifresi</label>
-          <input type="password" id="founderPass" placeholder="Şifre" autocomplete="off">
-        </div>
-        <div class="input-group">
-          <label>🛡️ TOTP Kodu (6 haneli)</label>
-          <input type="text" id="founderTotp" placeholder="000000" maxlength="6" inputmode="numeric">
-        </div>
-        <button class="btn-founder" id="btnFounderLogin">⚡ KURUCU OLARAK GİR</button>
+        <button class="btn-founder" id="btnFounderLogin">⚡ GİRİŞ YAP</button>
         <button class="btn-link" id="btnFounderClose">← İptal</button>
         <div class="fl-warning">
-          ⚠️ 3 başarısız denemeden sonra cihaz 24 saat banlanacaktır.
+          ⚠️ 3 başarısız denemeden sonra cihaz 24 saat kilitlenir.
         </div>
       </div>
     </div>
