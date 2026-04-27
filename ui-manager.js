@@ -721,6 +721,7 @@ async function openCryptoDetail(sym){
   const k = KRIPTO.find(x=>x.sym===sym); if (!k) return;
   const p = GZ.prices[sym] || { current: k.base };
   const own = (await dbGet(`crypto/holdings/${GZ.uid}/${sym}`)) || 0;
+  GZ._curCryptoOwned = own;  // Sat butonları için cache
   const value = own * p.current;
   showModal(`${k.name} (${sym})`, `
     <div class="tac mb-12">
@@ -748,24 +749,91 @@ function cryptoOp(op, sym, ev){
   const div = $('#cryptoOp');
   if (!div) return;
   if (op === 'buy'){
+    const myMoney = GZ.data?.money || 0;
     div.innerHTML = `
       <div class="input-group mt-12">
-        <label>Tutar (₺)</label>
+        <label>Tutar (₺) — Bakiye: <b style="color:#16a34a">${cashFmt(myMoney)}</b></label>
         <input type="number" id="cryptoTl" step="0.01" placeholder="Ne kadarlık alacaksın?">
       </div>
-      <button class="btn-success" onclick="buyCrypto('${sym}',parseFloat($('#cryptoTl').value)).then(()=>{closeModal();render('kripto')})" style="width:100%">SATIN AL</button>
+      <div class="quick-amount-row">
+        <button class="btn-quick" onclick="cryptoQuickBuy(0.25)">%25</button>
+        <button class="btn-quick" onclick="cryptoQuickBuy(0.50)">%50</button>
+        <button class="btn-quick" onclick="cryptoQuickBuy(0.75)">%75</button>
+        <button class="btn-quick btn-quick-max" onclick="cryptoQuickBuy(1.0)">💰 TÜMÜ</button>
+      </div>
+      <button class="btn-success" onclick="cryptoExecBuy('${sym}')" style="width:100%;margin-top:10px">SATIN AL</button>
+      <div class="muted small tac" style="margin-top:6px">Komisyon: %0.5</div>
     `;
   } else {
+    const own = GZ._curCryptoOwned || 0;
+    const sym2 = sym;
     div.innerHTML = `
       <div class="input-group mt-12">
-        <label>Miktar (${sym})</label>
+        <label>Miktar (${sym}) — Sahip: <b style="color:#3b82f6">${own.toFixed(6)}</b></label>
         <input type="number" id="cryptoQty" step="0.0001" placeholder="Satılacak miktar">
       </div>
-      <button class="btn-danger" onclick="sellCrypto('${sym}',parseFloat($('#cryptoQty').value)).then(()=>{closeModal();render('kripto')})" style="width:100%">SAT</button>
+      <div class="quick-amount-row">
+        <button class="btn-quick" onclick="cryptoQuickSell('${sym2}',0.25)">%25</button>
+        <button class="btn-quick" onclick="cryptoQuickSell('${sym2}',0.50)">%50</button>
+        <button class="btn-quick" onclick="cryptoQuickSell('${sym2}',0.75)">%75</button>
+        <button class="btn-quick btn-quick-max btn-quick-sell" onclick="cryptoQuickSell('${sym2}',1.0)">💸 TÜMÜNÜ SAT</button>
+      </div>
+      <button class="btn-danger" onclick="cryptoExecSell('${sym2}')" style="width:100%;margin-top:10px">SAT</button>
+      <div class="muted small tac" style="margin-top:6px">Komisyon: %0.5</div>
     `;
   }
 }
 window.cryptoOp = cryptoOp;
+
+// Hızlı al butonları - bakiyenin %X'ini doldur
+window.cryptoQuickBuy = function(ratio) {
+  const myMoney = GZ.data?.money || 0;
+  if (myMoney <= 0) return toast('Bakiyen yok', 'warn');
+  const amount = Math.floor(myMoney * ratio * 100) / 100;
+  const inp = document.getElementById('cryptoTl');
+  if (inp) {
+    inp.value = amount.toFixed(2);
+    if (ratio === 1.0) toast(`💰 Tüm bakiye: ${cashFmt(amount)}`, 'info', 2000);
+  }
+};
+
+// Hızlı sat butonları - sahip olunan kriptonun %X'i
+window.cryptoQuickSell = async function(sym, ratio) {
+  const own = (await dbGet(`crypto/holdings/${GZ.uid}/${sym}`)) || 0;
+  if (own <= 0) return toast('Bu kriptodan yok', 'warn');
+  const qty = Math.floor(own * ratio * 1000000) / 1000000;
+  const inp = document.getElementById('cryptoQty');
+  if (inp) {
+    inp.value = qty.toFixed(6);
+    if (ratio === 1.0) toast(`💸 Tüm ${sym}: ${qty.toFixed(6)}`, 'info', 2000);
+  }
+};
+
+// Al butonu yürüt
+window.cryptoExecBuy = async function(sym) {
+  const inp = document.getElementById('cryptoTl');
+  if (!inp) return;
+  const amount = parseFloat(inp.value);
+  if (!amount || amount <= 0) return toast('Geçerli tutar gir', 'error');
+  const r = await buyCrypto(sym, amount);
+  if (r !== false) {
+    closeModal();
+    render('kripto');
+  }
+};
+
+// Sat butonu yürüt
+window.cryptoExecSell = async function(sym) {
+  const inp = document.getElementById('cryptoQty');
+  if (!inp) return;
+  const qty = parseFloat(inp.value);
+  if (!qty || qty <= 0) return toast('Geçerli miktar gir', 'error');
+  const r = await sellCrypto(sym, qty);
+  if (r !== false) {
+    closeModal();
+    render('kripto');
+  }
+};
 
 /* ============================================================
    MARKA
@@ -1406,21 +1474,53 @@ async function openBank(){
   `);
 }
 
-function askBankOp(op){
+async function askBankOp(op){
   const titles = {
-    deposit:'Hesaba Yatır', withdraw:'Hesaptan Çek',
-    invest:'Yatırım Yap', investWithdraw:'Yatırım Çek',
-    borrow:'Kredi Çek', repay:'Kredi Öde'
+    deposit:'💰 Hesaba Yatır', withdraw:'💸 Hesaptan Çek',
+    invest:'📈 Yatırım Yap', investWithdraw:'📉 Yatırım Çek',
+    borrow:'💳 Kredi Çek', repay:'✅ Kredi Öde'
   };
+  // Max tutarı operasyona göre belirle
+  const bank = await dbGet(`bank/${GZ.uid}`) || { balance:0, investment:0, loan:0 };
+  const myMoney = GZ.data?.money || 0;
+  const lv = GZ.data?.level || 1;
+  const maxLoan = lv * 5000;
+
+  let maxAmount = 0;
+  let maxLabel = '';
+  switch(op) {
+    case 'deposit':         maxAmount = myMoney;                    maxLabel = 'Cüzdan'; break;
+    case 'withdraw':        maxAmount = bank.balance || 0;          maxLabel = 'Hesap'; break;
+    case 'invest':          maxAmount = myMoney;                    maxLabel = 'Cüzdan'; break;
+    case 'investWithdraw':  maxAmount = bank.investment || 0;       maxLabel = 'Yatırım'; break;
+    case 'borrow':          maxAmount = maxLoan - (bank.loan||0);   maxLabel = 'Kalan limit'; break;
+    case 'repay':           maxAmount = Math.min(myMoney, bank.loan || 0); maxLabel = 'Borç/Bakiye'; break;
+  }
+  maxAmount = Math.max(0, Math.floor(maxAmount * 100) / 100);
+
   showModal(titles[op], `
     <div class="input-group">
-      <label>Tutar (₺)</label>
-      <input type="number" id="bankAmount" step="0.01" min="0.01">
+      <label>Tutar (₺) — <b style="color:var(--primary)">${maxLabel}: ${cashFmt(maxAmount)}</b></label>
+      <input type="number" id="bankAmount" step="0.01" min="0.01" placeholder="Tutar gir">
     </div>
-    <button class="btn-primary" onclick="confirmBankOp('${op}')">Onayla</button>
+    <div class="quick-amount-row">
+      <button class="btn-quick" onclick="bankQuickFill(${maxAmount},0.25)">%25</button>
+      <button class="btn-quick" onclick="bankQuickFill(${maxAmount},0.50)">%50</button>
+      <button class="btn-quick" onclick="bankQuickFill(${maxAmount},0.75)">%75</button>
+      <button class="btn-quick btn-quick-max" onclick="bankQuickFill(${maxAmount},1.0)">💰 TÜMÜ</button>
+    </div>
+    <button class="btn-primary" onclick="confirmBankOp('${op}')" style="width:100%;margin-top:10px">Onayla</button>
   `);
 }
 window.askBankOp = askBankOp;
+
+window.bankQuickFill = function(maxAmount, ratio) {
+  const inp = document.getElementById('bankAmount');
+  if (!inp) return;
+  const v = Math.floor(maxAmount * ratio * 100) / 100;
+  inp.value = v;
+  if (ratio === 1.0) toast(`💰 Maksimum: ${cashFmt(v)}`, 'info', 2000);
+};
 
 async function confirmBankOp(op){
   const amt = parseFloat($('#bankAmount').value);
@@ -1930,6 +2030,63 @@ window.toast = function(msg, type){
 /* ============================================================
    PAZAR YERİ DETAYLI SİSTEM — Birden fazla pazar seviye kilidi
    ============================================================ */
+async function renderPazar(){
+  const main = $('#appMain');
+  const lv = GZ.data.level || 1;
+  const shops = await dbGet(`businesses/${GZ.uid}/shops`) || {};
+
+  // Pazar seviyeleri
+  const pazarSeviyeleri = [
+    { lv:1,  name:'Mahalle Pazarı',  emo:'🛒', desc:'Temel ürünler: gıda, meyve, sebze' },
+    { lv:5,  name:'İlçe Pazarı',     emo:'🏪', desc:'Süt ürünleri, et, fırın' },
+    { lv:10, name:'Şehir Pazarı',    emo:'🏬', desc:'Sanayi ürünleri, tekstil' },
+    { lv:20, name:'Bölge Pazarı',    emo:'🏭', desc:'Madenler, kimyasallar' },
+    { lv:30, name:'Ulusal Pazar',    emo:'🌍', desc:'Tüm ürünler, özel ihaleler' },
+  ];
+
+  let totalRev = 0, totalSold = 0, totalShelves = 0;
+  for (const s of Object.values(shops)){
+    const shelves = s.shelves || {};
+    for (const k of Object.keys(shelves)){
+      const sh = shelves[k];
+      totalShelves++;
+      totalRev += sh.totalRevenue || 0;
+      totalSold += sh.totalSold || 0;
+    }
+  }
+
+  let html = `<div class="page-title">🛒 Pazar Sistemi</div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="lbl">Reyon</div><div class="val">${totalShelves}</div></div>
+      <div class="stat-box"><div class="lbl">Ciro</div><div class="val green" style="font-size:12px">${cashFmt(totalRev)}</div></div>
+      <div class="stat-box"><div class="lbl">Satış</div><div class="val">${fmtInt(totalSold)}</div></div>
+      <div class="stat-box"><div class="lbl">Seviye</div><div class="val">Lv ${lv}</div></div>
+    </div>
+    <div class="section-title">PAZAR KADEMELERİ</div>`;
+
+  for (const p of pazarSeviyeleri){
+    const unlocked = lv >= p.lv;
+    html += `<div class="card ${unlocked?'':'opacity:.5'}">
+      <div class="card-row">
+        <div class="card-thumb">${unlocked?p.emo:'🔒'}</div>
+        <div class="card-body">
+          <div class="card-title">${p.name} ${unlocked?'<span class="small green">✓ Açık</span>':''}</div>
+          <div class="card-sub">${p.desc}</div>
+          <div class="small muted">Gerekli seviye: Lv ${p.lv}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Oyuncu pazarına link
+  html += `<button class="btn-primary mt-12" style="width:100%" onclick="switchTab('oyunpazari')">🏬 Oyuncu Pazarına Git</button>`;
+
+  html += `<div class="card mt-12">
+    <div class="card-title">📊 Pazar Kuralları</div>
+    <p class="small muted mt-12">• Pazar her 90 saniyede otomatik döner<br>• Fiyat tabanın 3 katını geçemez<br>• Reyona stok yüklemeden satış olmaz<br>• %2 pazar komisyonu kesilir</p>
+  </div>`;
+  main.innerHTML = html;
+}
 
 
 /* ╔══════════════════════════════════════════════════════════════════════════╗
@@ -2022,28 +2179,57 @@ window.borsaTradeModal = async function(sym, action) {
   const stock = STOCKS_DATA.find(s => s.sym === sym);
   const price = await dbGet('stocks/prices/' + sym + '/current') || stock.basePrice;
   const owned = await dbGet('stocks/holdings/' + GZ.uid + '/' + sym) || { qty:0, avgPrice:0 };
+  const myMoney = GZ.data?.money || 0;
+
+  // Max alabileceği lot
+  const maxBuyQty = Math.floor(myMoney / (price * 1.002));
+  // Max satabileceği lot
+  const maxSellQty = owned.qty || 0;
+  const maxQty = action === 'buy' ? maxBuyQty : maxSellQty;
+  const maxLabel = action === 'buy' ? `Alabileceğin: ${maxBuyQty} adet` : `Sahip: ${maxSellQty} adet`;
+
   showModal(`${action==='buy'?'📈 Al':'📉 Sat'} — ${sym}`, `
     <div class="trade-info">
       <div><b>Şirket:</b> ${stock.name}</div>
       <div><b>Anlık Fiyat:</b> ₺${price.toFixed(2)}</div>
-      <div><b>Sahip Olunan:</b> ${owned.qty} adet (Ort: ₺${owned.avgPrice?.toFixed(2)||'0'})</div>
+      <div><b>Sahip Olunan:</b> ${owned.qty || 0} adet (Ort: ₺${owned.avgPrice?.toFixed(2)||'0'})</div>
+      <div><b style="color:var(--primary)">${maxLabel}</b></div>
     </div>
     <input type="number" id="trdQty" placeholder="Adet" min="1">
+    <div class="quick-amount-row">
+      <button class="btn-quick" onclick="borsaQuickFill(${maxQty},0.25)">%25</button>
+      <button class="btn-quick" onclick="borsaQuickFill(${maxQty},0.50)">%50</button>
+      <button class="btn-quick" onclick="borsaQuickFill(${maxQty},0.75)">%75</button>
+      <button class="btn-quick btn-quick-max ${action==='sell'?'btn-quick-sell':''}" onclick="borsaQuickFill(${maxQty},1.0)">${action==='sell'?'💸 TÜMÜNÜ SAT':'💰 MAX'}</button>
+    </div>
     <div id="trdSummary" class="trade-summary"></div>
-    <button class="btn-primary" onclick="borsaExecute('${sym}','${action}')">${action==='buy'?'Satın Al':'Sat'}</button>
+    <button class="btn-primary" onclick="borsaExecute('${sym}','${action}')" style="margin-top:10px">${action==='buy'?'Satın Al':'Sat'}</button>
   `);
   setTimeout(() => {
     const inp = document.getElementById('trdQty');
-    inp.addEventListener('input', () => {
+    if (!inp) return;
+    const updateSummary = () => {
       const q = parseInt(inp.value) || 0;
       const total = q * price;
       const com = total * 0.002;
-      document.getElementById('trdSummary').innerHTML = `
+      const sumEl = document.getElementById('trdSummary');
+      if (sumEl) sumEl.innerHTML = `
         Tutar: ₺${total.toFixed(2)}<br>
         Komisyon (%0.2): ₺${com.toFixed(2)}<br>
         <b>Toplam: ₺${(action==='buy'? total+com : total-com).toFixed(2)}</b>`;
-    });
+    };
+    inp.addEventListener('input', updateSummary);
+    inp._updateSummary = updateSummary;
   }, 100);
+};
+
+window.borsaQuickFill = function(maxQty, ratio) {
+  const inp = document.getElementById('trdQty');
+  if (!inp) return;
+  const v = Math.floor(maxQty * ratio);
+  inp.value = v;
+  if (inp._updateSummary) inp._updateSummary();
+  if (ratio === 1.0) toast(`📊 ${v} adet`, 'info', 2000);
 };
 
 window.borsaExecute = async function(sym, action) {

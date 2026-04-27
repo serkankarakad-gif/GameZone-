@@ -73,28 +73,73 @@ async function dbTransaction(path, updateFn){
   return db.ref(path).transaction(updateFn);
 }
 
-/* Para güvenli ekleme/çıkarma — transaction ile race condition önler */
+/* Para güvenli ekleme/çıkarma — transaction ile race condition önler
+ * v2 GÜNCELLEME — Bug fix:
+ *   • NaN/Infinity kontrolü
+ *   • Negatif amount engellemesi
+ *   • UID kontrolü
+ *   • Console log (debug için)
+ */
 async function addCash(uid, amount, reason=''){
+  // ── Validation ──
+  if (!uid || typeof uid !== 'string') {
+    console.warn('[addCash] Geçersiz uid:', uid);
+    return false;
+  }
+  if (!isFinite(amount) || isNaN(amount)) {
+    console.warn('[addCash] NaN/Infinity:', amount);
+    return false;
+  }
+  if (amount < 0) {
+    console.warn('[addCash] Negatif amount engellendi:', amount, 'reason:', reason);
+    return false;
+  }
+  if (amount === 0) return true;  // sıfırsa zaten yapılacak iş yok
+  // Astronomik miktar koruması (debug)
+  if (amount > 1e15) {
+    console.warn('[addCash] Anormal miktar engellendi:', amount, 'reason:', reason);
+    return false;
+  }
+
   const r = await db.ref(`users/${uid}/money`).transaction(cur => {
     return Math.max(0, (cur||0) + amount);
   });
-  if (reason && uid === GZ.uid){
-    // log opsiyonel
-  }
   return r.committed;
 }
+
 async function spendCash(uid, amount, reason=''){
+  // ── Validation ──
+  if (!uid || typeof uid !== 'string') {
+    console.warn('[spendCash] Geçersiz uid:', uid);
+    return false;
+  }
+  if (!isFinite(amount) || isNaN(amount)) {
+    console.warn('[spendCash] NaN/Infinity:', amount);
+    return false;
+  }
   if (amount <= 0) return false;
+  if (amount > 1e15) {
+    console.warn('[spendCash] Anormal miktar:', amount);
+    return false;
+  }
+
   const result = await db.ref(`users/${uid}/money`).transaction(cur => {
     if ((cur||0) < amount) return; // abort
     return cur - amount;
   });
   return result.committed && result.snapshot.exists();
 }
+
 async function addDiamonds(uid, amount){
-  return db.ref(`users/${uid}/diamonds`).transaction(cur => Math.max(0,(cur||0)+amount));
+  if (!uid || !isFinite(amount) || isNaN(amount) || amount < 0) return false;
+  if (amount === 0) return true;
+  const r = await db.ref(`users/${uid}/diamonds`).transaction(cur => Math.max(0,(cur||0) + Math.floor(amount)));
+  return r.committed;
 }
+
 async function spendDiamonds(uid, amount){
+  if (!uid || !isFinite(amount) || isNaN(amount) || amount <= 0) return false;
+  amount = Math.floor(amount);
   const r = await db.ref(`users/${uid}/diamonds`).transaction(cur => {
     if ((cur||0) < amount) return;
     return cur - amount;
@@ -124,38 +169,28 @@ async function addXP(uid, amount){
     await dbUpdate(`users/${uid}`, { level: lv, xp });
     if (uid === GZ.uid){
       toast(`🎉 Seviye atladın! Yeni seviye: ${lv}`, 'success', 4000);
-      if (window.SoundManager) SoundManager.play('levelup');
-      if (typeof checkAndGrantAchievement === 'function'){
-        if (lv >= 10) await checkAndGrantAchievement(uid, 'lv10');
-        if (lv >= 25) await checkAndGrantAchievement(uid, 'lv25');
-        if (lv >= 50) await checkAndGrantAchievement(uid, 'lv50');
-      }
     }
   }
 }
-window.addXP = addXP;
 
 /* Toplam servet (sıralama için) */
 async function calcNetWorth(uid){
   const u = await dbGet(`users/${uid}`);
   if (!u) return 0;
   let total = (u.money||0);
+  // Banka bakiyesi
   const bank = await dbGet(`bank/${uid}`);
   if (bank){
     total += (bank.balance||0) + (bank.investment||0) - (bank.loan||0);
   }
+  // Kripto
   const holdings = await dbGet(`crypto/holdings/${uid}`) || {};
   for (const sym of Object.keys(holdings)){
     const p = await dbGet(`crypto/prices/${sym}/current`);
     total += (holdings[sym] || 0) * (p || 0);
   }
-  if (uid === GZ.uid && typeof checkAndGrantAchievement === 'function'){
-    if (total >= 1000000)    checkAndGrantAchievement(uid, 'rich_1');
-    if (total >= 1000000000) checkAndGrantAchievement(uid, 'rich_2');
-  }
   return total;
 }
-window.calcNetWorth = calcNetWorth;
 
 /* Online/offline durum */
 function setupPresence(uid){
@@ -182,3 +217,36 @@ const ILLER = [
 ];
 window.ILLER = ILLER;
 
+/* ============================================================
+   GELİŞTİRİLMİŞ LEVEL UP — ses + başarım kontrolü
+   ============================================================ */
+const _origAddXP = window.addXP;
+window.addXP = async function(uid, amount){
+  if (typeof _origAddXP === 'function'){
+    const uBefore = await dbGet(`users/${uid}`);
+    const lvBefore = uBefore?.level || 1;
+    await _origAddXP(uid, amount);
+    const uAfter = await dbGet(`users/${uid}`);
+    const lvAfter = uAfter?.level || 1;
+    if (lvAfter > lvBefore && uid === GZ.uid){
+      if (window.SoundManager) SoundManager.play('levelup');
+      // Başarım kontrolü
+      if (typeof checkAndGrantAchievement === 'function'){
+        if (lvAfter >= 10) await checkAndGrantAchievement(uid, 'lv10');
+        if (lvAfter >= 25) await checkAndGrantAchievement(uid, 'lv25');
+        if (lvAfter >= 50) await checkAndGrantAchievement(uid, 'lv50');
+      }
+    }
+  }
+};
+
+/* NET WORTH — servet başarımı */
+const _origCalcNetWorth = window.calcNetWorth;
+window.calcNetWorth = async function(uid){
+  const nw = typeof _origCalcNetWorth === 'function' ? await _origCalcNetWorth(uid) : 0;
+  if (uid === GZ.uid && typeof checkAndGrantAchievement === 'function'){
+    if (nw >= 1000000)       await checkAndGrantAchievement(uid, 'rich_1');
+    if (nw >= 1000000000)    await checkAndGrantAchievement(uid, 'rich_2');
+  }
+  return nw;
+};

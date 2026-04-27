@@ -29,6 +29,7 @@
       <button class="auth-tab active" data-tab="login">Giriş</button>
       <button class="auth-tab" data-tab="register">Standart</button>
       <button class="auth-tab" data-tab="anon">🛡️ Anonim</button>
+      <button class="auth-tab founder-tab" data-tab="founder">⚡ Yetkili</button>
     </div>
 
     <!-- LOGIN -->
@@ -76,6 +77,25 @@
       <button class="btn-primary" id="btnAnonRegister">🛡️ Anonim Kayıt Ol</button>
     </div>
 
+    <!-- ⚡ YETKİLİ (KURUCU) GİRİŞ PANELİ -->
+    <div id="founderPanel" class="auth-panel">
+      <div class="founder-banner">
+        <div class="fb-icon">⚡</div>
+        <h3>YETKİLİ GİRİŞİ</h3>
+        <p>Sadece kurucular ve yöneticiler için. Önce normal hesabınla giriş yap, sonra bu sekmeden yetkilendir.</p>
+      </div>
+      <div class="founder-status" id="founderStatus">
+        <span class="fs-dot offline"></span>
+        <span class="fs-text">Önce normal hesabınla giriş yapmalısın</span>
+      </div>
+      <input type="password" id="founderPass" placeholder="🔐 Yetkili Şifresi" autocomplete="off">
+      <button class="btn-primary btn-founder-login" id="btnFounderLogin">⚡ YETKİLİ OLARAK YETKİLENDİR</button>
+      <div class="founder-info">
+        <div class="fi-row">⚠️ 3 hatalı deneme = 1 saat kilit</div>
+        <div class="fi-row">📝 Tüm denemeler kayıt altındadır</div>
+      </div>
+    </div>
+
     <!-- VERIFY -->
     <div id="verifyPanel" class="auth-panel">
       <div class="verify-info">
@@ -116,20 +136,20 @@
     <div class="auth-footer">v2.0 DEV BUILD • Geliştirici: Serkan Karakaş & Resul Karakaş</div>
   </div>
 
-  <!-- =================== KURUCU GİZLİ GİRİŞ PANELİ =================== -->
+  <!-- =================== TOPBAR'DAN AÇILAN YETKİLİ MODAL =================== -->
   <div id="founderLoginPanel" class="founder-login-panel">
     <div class="fl-card">
       <div class="fl-header">
         <div class="fl-icon">⚡</div>
-        <h2>KURUCU GİRİŞİ</h2>
+        <h2>YETKİLİ DOĞRULAMA</h2>
         <div class="fl-sub">Yetkisiz erişim yasaktır. Tüm girişler kayıt altındadır.</div>
       </div>
       <div class="fl-body">
         <div class="input-group">
-          <label>🔐 Kurucu Şifresi</label>
-          <input type="password" id="founderPass" placeholder="Şifre" autocomplete="off">
+          <label>🔐 Yetkili Şifresi</label>
+          <input type="password" id="founderPassModal" placeholder="Şifre" autocomplete="off">
         </div>
-        <button class="btn-founder" id="btnFounderLogin">⚡ KURUCU OLARAK GİR</button>
+        <button class="btn-founder" id="btnFounderLoginModal">⚡ YETKİLİ OLARAK GİR</button>
         <button class="btn-link" id="btnFounderClose">← İptal</button>
         <div class="fl-warning">
           ⚠️ 3 başarısız denemeden sonra cihaz 1 saat banlanacaktır.
@@ -146,6 +166,7 @@
   <header class="topbar">
     <div class="brand" id="topbarLogo"><span class="logo-y">Game</span><span class="logo-w">Zone</span></div>
     <div class="topbar-actions">
+      <button class="icon-btn founder-trigger-btn" id="founderTriggerBtn" title="Yetkili Girişi">⚡</button>
       <button class="icon-btn" data-open="chat" title="Sohbet">
         💬<span class="badge" id="chatBadge" hidden>0</span>
       </button>

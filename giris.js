@@ -1058,18 +1058,21 @@
 })();
 
 
+
 /* ╔══════════════════════════════════════════════════════════════════════════╗
    ║                                                                          ║
-   ║   ⚡⚡⚡  YÖNETİCİ / KURUCU GİRİŞ SİSTEMİ v3.0 — BASİT & GÜVENLİ ⚡⚡⚡   ║
+   ║   ⚡⚡⚡  YETKİLİ / KURUCU GİRİŞ SİSTEMİ v4.0 — KESİN ÇALIŞIR ⚡⚡⚡         ║
    ║                                                                          ║
    ║   ────────────────────────────────────────────────────────────────       ║
-   ║   • 7 KEZ Logo Tıklama → Gizli Panel Açılır                             ║
-   ║   • TEK BASİT ŞİFRE: serkan2026                                          ║
-   ║   • Brute-force koruması: 3 başarısız deneme → 1 saat kilit             ║
-   ║   • Cihaz parmak izi loglanır                                           ║
-   ║   • Önce normal hesapla giriş yapılmış olmalı                           ║
-   ║   • Tüm denemeler Firebase'e işlenir (security/founderAttempts)         ║
-   ║   • Auth state ile entegre: Kullanıcı çıkınca yetki kapanır             ║
+   ║   2 YÖNTEM ARTIK VAR:                                                    ║
+   ║                                                                          ║
+   ║   1️⃣ AUTH EKRANINDA "⚡ Yetkili" SEKMESİ                                 ║
+   ║      Giriş yapmadan önce sekmeyi seç, normal hesabınla giriş yap         ║
+   ║      ve sonra yetkili şifresi gir                                        ║
+   ║                                                                          ║
+   ║   2️⃣ TOPBAR'DA SAĞ ÜSTTE ⚡ BUTONU                                       ║
+   ║      Giriş yaptıktan sonra her zaman görünür                             ║
+   ║      Tıkla, şifreyi gir, yetki aktif!                                    ║
    ║                                                                          ║
    ║   ŞİFRE: serkan2026                                                      ║
    ║                                                                          ║
@@ -1079,504 +1082,411 @@
   'use strict';
 
   // ═══════════════════════════════════════════════════════════════════════
-  //   1️⃣  KONFIGÜRASYON — BASİT TEK ŞİFRE SİSTEMİ
+  //   KONFIGÜRASYON
   // ═══════════════════════════════════════════════════════════════════════
-  const FOUNDER_CFG = {
-    // ✨ TEK BASİT ŞİFRE - Kolay hatırlanır ama yetkisiz kişi bilemez
-    MASTER_PASSWORD: 'serkan2026',
-
-    // Brute-force koruması
-    MAX_ATTEMPTS:        3,
-    LOCK_DURATION_MS:    60 * 60 * 1000,      // 1 saat (24 saat değil)
-    LOGO_TAP_THRESHOLD:  7,
-    LOGO_TAP_TIMEOUT_MS: 2500,                // 2.5 sn içinde 7 kez
-
-    // UI
-    PANEL_ID:    'founderLoginPanel',
-    BUTTON_ID:   'founderTopbarBtn',
-    PANEL_MODAL: 'founderControlPanel',
-
-    // LocalStorage anahtarları
-    LS_LOCK:      'gz_founder_lock_v3',
-    LS_ATTEMPTS:  'gz_founder_attempts_v3',
+  const CFG = {
+    PASSWORD:          'serkan2026',
+    MAX_ATTEMPTS:      3,
+    LOCK_DURATION_MS:  60 * 60 * 1000,
+    LS_LOCK:           'gz_founder_lock_v4',
+    LS_ATTEMPTS:       'gz_founder_attempts_v4',
   };
 
   // ═══════════════════════════════════════════════════════════════════════
-  //   2️⃣  STATE
+  //   YARDIMCILAR
   // ═══════════════════════════════════════════════════════════════════════
-  const state = {
-    logoTaps:       0,
-    logoTimer:      null,
-    sessionAttempts:0,
-    initialized:    false,
-    isFounder:      false,
-  };
-
-  // ═══════════════════════════════════════════════════════════════════════
-  //   3️⃣  YARDIMCILAR
-  // ═══════════════════════════════════════════════════════════════════════
-
-  /** Toast wrapper - global toast yoksa alert kullan */
   function notify(msg, kind = 'info', ms = 3500) {
     if (typeof window.toast === 'function') {
       try { return window.toast(msg, kind, ms); } catch(e) {}
     }
-    if (kind === 'error') alert('❌ ' + msg);
+    if (kind === 'error')        alert('❌ ' + msg);
     else if (kind === 'success') alert('✅ ' + msg);
-    else alert(msg);
+    else                          alert(msg);
   }
 
-  /** SHA-256 hash üretimi */
-  async function sha256(text) {
+  function deviceFP() {
     try {
-      const buf = new TextEncoder().encode(text);
-      const hash = await crypto.subtle.digest('SHA-256', buf);
-      return Array.from(new Uint8Array(hash))
-        .map(b => b.toString(16).padStart(2, '0')).join('');
-    } catch(e) {
-      console.warn('[Founder] sha256 fail:', e);
-      return null;
-    }
-  }
-
-  /** Cihaz parmak izi - basit ve güvenilir */
-  function deviceFingerprint() {
-    try {
-      const parts = [
-        navigator.userAgent || '',
-        navigator.language || '',
-        screen.width + 'x' + screen.height,
-        screen.colorDepth || '',
-        new Date().getTimezoneOffset() + ''
-      ];
-      const s = parts.join('|');
+      const s = (navigator.userAgent||'') + '|' + (navigator.language||'') + '|' + screen.width + 'x' + screen.height;
       let h = 0;
-      for (let i = 0; i < s.length; i++) {
-        h = ((h << 5) - h) + s.charCodeAt(i);
-        h |= 0;
-      }
+      for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
       return Math.abs(h).toString(36);
     } catch(e) { return 'unknown'; }
   }
 
-  /** Cihaz kilitli mi? */
   function getLockInfo() {
     try {
-      const raw = localStorage.getItem(FOUNDER_CFG.LS_LOCK);
+      const raw = localStorage.getItem(CFG.LS_LOCK);
       if (!raw) return null;
       const lock = JSON.parse(raw);
       if (!lock || !lock.until || Date.now() > lock.until) {
-        localStorage.removeItem(FOUNDER_CFG.LS_LOCK);
-        localStorage.removeItem(FOUNDER_CFG.LS_ATTEMPTS);
+        localStorage.removeItem(CFG.LS_LOCK);
+        localStorage.removeItem(CFG.LS_ATTEMPTS);
         return null;
       }
-      return {
-        until: lock.until,
-        remainingMs: lock.until - Date.now(),
-        remainingHours: Math.ceil((lock.until - Date.now()) / 3600000)
-      };
+      return { remainingMs: lock.until - Date.now(), remainingMin: Math.ceil((lock.until - Date.now()) / 60000) };
     } catch(e) { return null; }
   }
 
-  /** Cihazı kilitle */
   function lockDevice() {
     try {
-      localStorage.setItem(FOUNDER_CFG.LS_LOCK, JSON.stringify({
-        until:  Date.now() + FOUNDER_CFG.LOCK_DURATION_MS,
-        reason: 'too_many_attempts',
-        fp:     deviceFingerprint()
-      }));
-      localStorage.removeItem(FOUNDER_CFG.LS_ATTEMPTS);
+      localStorage.setItem(CFG.LS_LOCK, JSON.stringify({ until: Date.now() + CFG.LOCK_DURATION_MS }));
+      localStorage.removeItem(CFG.LS_ATTEMPTS);
     } catch(e) {}
   }
 
-  /** Deneme sayacı */
   function incrAttempts() {
     try {
-      const cur = parseInt(localStorage.getItem(FOUNDER_CFG.LS_ATTEMPTS) || '0');
+      const cur = parseInt(localStorage.getItem(CFG.LS_ATTEMPTS) || '0');
       const nv = cur + 1;
-      localStorage.setItem(FOUNDER_CFG.LS_ATTEMPTS, String(nv));
+      localStorage.setItem(CFG.LS_ATTEMPTS, String(nv));
       return nv;
     } catch(e) { return 1; }
   }
+
   function resetAttempts() {
-    try { localStorage.removeItem(FOUNDER_CFG.LS_ATTEMPTS); } catch(e) {}
-  }
-  function getAttempts() {
-    try { return parseInt(localStorage.getItem(FOUNDER_CFG.LS_ATTEMPTS) || '0'); }
-    catch(e) { return 0; }
+    try { localStorage.removeItem(CFG.LS_ATTEMPTS); } catch(e) {}
   }
 
-  /** DB güvenli yazıcı (kurallar yetkilendirmemişse sessiz başarısız ol) */
-  async function safeDbPush(path, data) {
-    try {
-      if (typeof firebase === 'undefined' || !firebase.database) return false;
-      await firebase.database().ref(path).push(data);
-      return true;
-    } catch(e) {
-      console.warn('[Founder] DB push fail (' + path + '):', e.message);
-      return false;
-    }
-  }
   async function safeDbSet(path, data) {
     try {
       if (typeof firebase === 'undefined' || !firebase.database) return false;
       await firebase.database().ref(path).set(data);
       return true;
     } catch(e) {
-      console.warn('[Founder] DB set fail (' + path + '):', e.message);
+      console.warn('[Founder] DB set fail:', path, e.message);
       return false;
     }
   }
+
+  async function safeDbPush(path, data) {
+    try {
+      if (typeof firebase === 'undefined' || !firebase.database) return false;
+      await firebase.database().ref(path).push(data);
+      return true;
+    } catch(e) { return false; }
+  }
+
   async function safeDbGet(path) {
     try {
       if (typeof firebase === 'undefined' || !firebase.database) return null;
       const s = await firebase.database().ref(path).once('value');
       return s.val();
-    } catch(e) {
-      console.warn('[Founder] DB get fail (' + path + '):', e.message);
-      return null;
-    }
+    } catch(e) { return null; }
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  //   4️⃣  GİRİŞ DOĞRULAMA — BASİT TEK ŞİFRE
+  //   ANA YETKİLENDİRME FONKSİYONU
   // ═══════════════════════════════════════════════════════════════════════
-
-  /** Şifre doğrula */
-  async function validatePassword(pass) {
-    if (!pass) return false;
-    // 1) Direkt magic eşleşme
-    if (pass === FOUNDER_CFG.MASTER_PASSWORD) return true;
-    // 2) Server-side hash listesi (ileride değiştirilebilir kurucu şifreleri için)
-    try {
-      const founders = await safeDbGet('system/founderHashes');
-      if (founders && typeof founders === 'object') {
-        const passH = await sha256('gz_pass_' + pass);
-        for (const fid of Object.keys(founders)) {
-          const f = founders[fid];
-          if (f && f.passHash === passH) return true;
-        }
-      }
-    } catch(e) {}
-    return false;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  //   5️⃣  PANEL UI YÖNETİMİ
-  // ═══════════════════════════════════════════════════════════════════════
-
-  function getPanel() { return document.getElementById(FOUNDER_CFG.PANEL_ID); }
-
-  function openLoginPanel() {
-    // Kilit kontrolü
+  async function authorizeFounder(passwordValue) {
+    // 1) Kilit kontrolü
     const lock = getLockInfo();
     if (lock) {
-      const mins = Math.ceil(lock.remainingMs / 60000);
-      notify(`🚫 Cihaz kilitli! ${mins} dakika sonra tekrar dene.`, 'error');
-      return;
-    }
-    const panel = getPanel();
-    if (!panel) {
-      console.error('[Founder] Panel HTML bulunamadı: #' + FOUNDER_CFG.PANEL_ID);
-      notify('Panel HTML eksik! Sayfayı yenile.', 'error');
-      return;
-    }
-    panel.classList.add('active');
-    panel.style.display = 'flex';
-
-    // Form temizle
-    const p = document.getElementById('founderPass');
-    if (p) {
-      p.value = '';
-      setTimeout(() => p.focus(), 100);
+      notify(`🚫 Cihaz kilitli! ${lock.remainingMin} dakika sonra tekrar dene.`, 'error');
+      return { ok: false, reason: 'locked' };
     }
 
-    console.log('%c⚡ KURUCU GİRİŞİ AÇILDI', 'background:#fbbf24;color:#000;padding:4px 8px;font-weight:bold;border-radius:4px');
-  }
-
-  function closeLoginPanel() {
-    const panel = getPanel();
-    if (panel) {
-      panel.classList.remove('active');
-      panel.style.display = 'none';
-    }
-  }
-
-  /** Giriş denemesi */
-  async function attemptLogin() {
-    const lock = getLockInfo();
-    if (lock) {
-      const mins = Math.ceil(lock.remainingMs / 60000);
-      notify(`🚫 Cihaz kilitli! ${mins} dakika sonra tekrar dene.`, 'error');
-      closeLoginPanel();
-      return;
-    }
-
-    const passEl = document.getElementById('founderPass');
-
-    if (!passEl) {
-      notify('Form elemanı eksik! Sayfayı yenile.', 'error');
-      return;
-    }
-
-    const pass = passEl.value || '';
-
-    // Boş alan kontrolü
-    if (!pass) {
+    // 2) Boş şifre kontrolü
+    if (!passwordValue || passwordValue.length === 0) {
       notify('Şifreyi gir!', 'error');
-      return;
+      return { ok: false, reason: 'empty' };
     }
 
-    // Önce normal hesapla giriş yapılmış olmalı
+    // 3) Auth kontrolü
     const currentUser = (typeof firebase !== 'undefined' && firebase.auth)
       ? firebase.auth().currentUser : null;
 
     if (!currentUser) {
-      notify('⚠️ Önce normal hesabınla giriş yap, sonra logo\'ya 7 kez tıkla!', 'error');
-      closeLoginPanel();
-      return;
+      notify('⚠️ Önce normal hesabınla giriş yapmalısın!', 'error');
+      return { ok: false, reason: 'no_user' };
     }
 
-    // Doğrulama
-    const success = await validatePassword(pass);
-
-    // Log denemeyi (Firebase'e — kurallar izin verirse)
-    safeDbPush('security/founderAttempts', {
-      ts:        firebase.database.ServerValue.TIMESTAMP,
-      uid:       currentUser.uid,
-      success:   success,
-      fp:        deviceFingerprint(),
-      ua:        (navigator.userAgent || '').slice(0, 200)
-    });
-
-    if (!success) {
+    // 4) Şifre doğrulama
+    if (passwordValue !== CFG.PASSWORD) {
       const attempts = incrAttempts();
-      const remaining = FOUNDER_CFG.MAX_ATTEMPTS - attempts;
+      const remaining = CFG.MAX_ATTEMPTS - attempts;
 
-      if (attempts >= FOUNDER_CFG.MAX_ATTEMPTS) {
+      // Log
+      safeDbPush('security/founderAttempts', {
+        ts: firebase.database.ServerValue.TIMESTAMP,
+        uid: currentUser.uid,
+        success: false,
+        fp: deviceFP()
+      });
+
+      if (attempts >= CFG.MAX_ATTEMPTS) {
         lockDevice();
-        notify(`🚫 ${FOUNDER_CFG.MAX_ATTEMPTS} başarısız deneme! Cihaz 1 saat kilitlendi.`, 'error', 6000);
-        closeLoginPanel();
+        notify(`🚫 ${CFG.MAX_ATTEMPTS} hatalı deneme! Cihaz 1 saat kilitlendi.`, 'error', 6000);
       } else {
         notify(`❌ Hatalı şifre! Kalan deneme: ${remaining}`, 'error', 4000);
-        passEl.value = '';
-        passEl.focus();
       }
-      return;
+      return { ok: false, reason: 'wrong_password' };
     }
 
-    // ✅ BAŞARILI
+    // 5) ✅ BAŞARILI
     resetAttempts();
-    state.sessionAttempts = 0;
 
     try {
       const uid = currentUser.uid;
       const username = (window.GZ && window.GZ.data && window.GZ.data.username) ||
                        currentUser.displayName || 'Founder';
 
-      // Kullanıcıyı kurucu yap
-      let dbWriteOk = await safeDbSet('users/' + uid + '/isFounder', true);
-      if (dbWriteOk) {
-        await safeDbSet('users/' + uid + '/founderRole', 'admin');
-      }
-
-      // Founders tablosuna ekle
+      await safeDbSet('users/' + uid + '/isFounder', true);
+      await safeDbSet('users/' + uid + '/founderRole', 'admin');
       await safeDbSet('system/founders/' + uid, {
         username:    username,
         activatedAt: firebase.database.ServerValue.TIMESTAMP,
         role:        'admin',
-        fp:          deviceFingerprint()
+        fp:          deviceFP()
+      });
+
+      // Log başarılı giriş
+      safeDbPush('security/founderAttempts', {
+        ts: firebase.database.ServerValue.TIMESTAMP,
+        uid: uid,
+        success: true,
+        fp: deviceFP()
       });
 
       // Local flag
       window.GZ_IS_FOUNDER = true;
-      state.isFounder = true;
 
-      // Local cache
       try {
-        sessionStorage.setItem('gz_founder_session', JSON.stringify({
-          uid: uid,
-          activated: Date.now()
-        }));
+        sessionStorage.setItem('gz_founder_session', JSON.stringify({ uid, activated: Date.now() }));
       } catch(e) {}
 
-      closeLoginPanel();
-      notify('⚡ KURUCU YETKİSİ AKTİF! Topbar\'da ⚡ butonu görünecek.', 'success', 6000);
+      notify('⚡ YETKİLİ AKTİF! Topbar\'daki ⚡ butonu artık panelini açar.', 'success', 6000);
 
-      // Topbar butonunu enjekte et
-      injectTopbarButton();
+      // Topbar butonunu güncelle (artık aktif rol oynayacak)
+      activateTopbarButton();
+
+      return { ok: true };
 
     } catch(e) {
       console.error('[Founder] Activation error:', e);
       notify('Yetki aktive edilemedi: ' + e.message, 'error');
+      return { ok: false, reason: 'error' };
     }
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  //   6️⃣  LOGO GİZLİ TIKLAMA DETEKTÖRÜ
+  //   AUTH EKRANI: "⚡ Yetkili" SEKMESİ
   // ═══════════════════════════════════════════════════════════════════════
+  function setupAuthTabFlow() {
+    // Tab switching - mevcut auth-tab altyapısına entegre ol
+    const tabs = document.querySelectorAll('.auth-tab');
+    tabs.forEach(tab => {
+      if (tab.dataset.tabBoundFounder === '1') return;
+      tab.dataset.tabBoundFounder = '1';
 
-  function setupLogoTrigger() {
-    // İki logoyu da dinle: auth ekranındaki + topbar'daki (giriş sonrası)
-    const logos = [
-      document.getElementById('authLogoArea'),  // giriş yapmadan önce
-      document.getElementById('topbarLogo')     // giriş yaptıktan sonra
-    ].filter(Boolean);
-
-    if (logos.length === 0) {
-      // Hiçbiri henüz DOM'da değilse 500ms sonra tekrar dene (max 30 deneme = 15sn)
-      if (!setupLogoTrigger._tries) setupLogoTrigger._tries = 0;
-      setupLogoTrigger._tries++;
-      if (setupLogoTrigger._tries < 30) {
-        setTimeout(setupLogoTrigger, 500);
-      } else {
-        console.warn('[Founder] Logo elementleri bulunamadı - kurucu girişi devre dışı');
-      }
-      return;
-    }
-
-    logos.forEach(logo => {
-      // Çift kayıt önlemi
-      if (logo.dataset.founderTriggerSetup === '1') return;
-      logo.dataset.founderTriggerSetup = '1';
-
-      logo.style.cursor = 'pointer';
-      logo.title = ''; // gizli, ipucu verme
-
-      logo.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        state.logoTaps++;
-
-        // Görsel feedback (3+ tıklama sonrası)
-        if (state.logoTaps >= 3 && state.logoTaps < FOUNDER_CFG.LOGO_TAP_THRESHOLD) {
-          try {
-            logo.style.transition = 'transform 0.15s';
-            const scale = 1 + (state.logoTaps - 2) * 0.04;
-            logo.style.transform = 'scale(' + scale + ')';
-            setTimeout(() => { logo.style.transform = ''; }, 200);
-          } catch(e) {}
+      tab.addEventListener('click', () => {
+        const which = tab.dataset.tab;
+        if (which === 'founder') {
+          // Tüm panellerden active'i kaldır
+          document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+          document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+          // Founder paneli aktif et
+          const fp = document.getElementById('founderPanel');
+          if (fp) fp.classList.add('active');
+          tab.classList.add('active');
+          updateFounderStatusUI();
         }
-
-        // Eşik geçildi
-        if (state.logoTaps >= FOUNDER_CFG.LOGO_TAP_THRESHOLD) {
-          state.logoTaps = 0;
-          if (state.logoTimer) { clearTimeout(state.logoTimer); state.logoTimer = null; }
-          openLoginPanel();
-          return;
-        }
-
-        // Timeout sıfırlama
-        if (state.logoTimer) clearTimeout(state.logoTimer);
-        state.logoTimer = setTimeout(() => { state.logoTaps = 0; }, FOUNDER_CFG.LOGO_TAP_TIMEOUT_MS);
       });
     });
 
-    // Tekrar 5 saniye sonra da kontrol et — bazı logolar geç render olabilir
-    if (!setupLogoTrigger._reChecked) {
-      setupLogoTrigger._reChecked = true;
-      setTimeout(setupLogoTrigger, 5000);
+    // Auth ekranındaki "⚡ Yetkili olarak yetkilendir" butonu
+    const btnAuthFounder = document.getElementById('btnFounderLogin');
+    if (btnAuthFounder && btnAuthFounder.dataset.bound !== '1') {
+      btnAuthFounder.dataset.bound = '1';
+      btnAuthFounder.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const passEl = document.getElementById('founderPass');
+        if (!passEl) return notify('Şifre alanı bulunamadı!', 'error');
+        const result = await authorizeFounder(passEl.value || '');
+        if (result.ok) passEl.value = '';
+      });
     }
 
-    console.log('[Founder] ⚡ Logo tetikleyici hazır (' + logos.length + ' logo) - 7 kez tıkla');
+    // Enter ile gönder
+    const passEl = document.getElementById('founderPass');
+    if (passEl && passEl.dataset.bound !== '1') {
+      passEl.dataset.bound = '1';
+      passEl.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const result = await authorizeFounder(passEl.value || '');
+          if (result.ok) passEl.value = '';
+        }
+      });
+    }
+  }
+
+  function updateFounderStatusUI() {
+    const status = document.getElementById('founderStatus');
+    if (!status) return;
+    const dot  = status.querySelector('.fs-dot');
+    const text = status.querySelector('.fs-text');
+    const currentUser = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+    if (currentUser) {
+      if (dot)  dot.className = 'fs-dot online';
+      if (text) text.textContent = '✅ Hesap aktif: ' + (currentUser.displayName || currentUser.email || currentUser.uid.slice(0,8));
+    } else {
+      if (dot)  dot.className = 'fs-dot offline';
+      if (text) text.textContent = '⚠️ Önce normal hesabınla giriş yapmalısın';
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  //   7️⃣  TOPBAR ⚡ BUTONU
+  //   TOPBAR ⚡ BUTONU (her zaman görünür)
   // ═══════════════════════════════════════════════════════════════════════
-
-  function injectTopbarButton() {
-    if (document.getElementById(FOUNDER_CFG.BUTTON_ID)) return; // çift enjekte etme
-
-    // topbar-actions konteynerini bul
-    const actions = document.querySelector('.topbar-actions') ||
-                    document.querySelector('.top-actions') ||
-                    document.querySelector('.topbar .actions') ||
-                    document.querySelector('header .actions');
-    if (!actions) {
-      // 1 saniye sonra tekrar dene (topbar geç render olabilir)
-      if (!injectTopbarButton._tries) injectTopbarButton._tries = 0;
-      injectTopbarButton._tries++;
-      if (injectTopbarButton._tries < 10) {
-        setTimeout(injectTopbarButton, 1000);
-      }
+  function setupTopbarTrigger() {
+    const btn = document.getElementById('founderTriggerBtn');
+    if (!btn) {
+      // Topbar henüz yüklenmediyse 1 saniye sonra tekrar dene
+      if (!setupTopbarTrigger._tries) setupTopbarTrigger._tries = 0;
+      setupTopbarTrigger._tries++;
+      if (setupTopbarTrigger._tries < 15) setTimeout(setupTopbarTrigger, 1000);
       return;
     }
-
-    const btn = document.createElement('button');
-    btn.id = FOUNDER_CFG.BUTTON_ID;
-    btn.className = 'icon-btn founder-btn';
-    btn.type = 'button';
-    btn.innerHTML = '⚡';
-    btn.title = 'Kurucu Paneli';
-    btn.setAttribute('aria-label', 'Kurucu Paneli');
+    if (btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
 
     btn.addEventListener('click', () => {
-      if (typeof window.openFounderPanel === 'function') {
+      // Eğer zaten yetkiliyse → kontrol panelini aç
+      if (window.GZ_IS_FOUNDER && typeof window.openFounderPanel === 'function') {
         window.openFounderPanel();
-      } else {
-        notify('Kurucu paneli yükleniyor...', 'info');
+        return;
+      }
+      // Değilse → şifre modal'ını aç
+      openPasswordModal();
+    });
+
+    console.log('[Founder] ⚡ Topbar butonu hazır');
+  }
+
+  function activateTopbarButton() {
+    const btn = document.getElementById('founderTriggerBtn');
+    if (btn) {
+      btn.classList.add('active');
+      btn.title = 'Yetkili Paneli';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //   ŞİFRE MODAL'I (topbar butonundan açılır)
+  // ═══════════════════════════════════════════════════════════════════════
+  function openPasswordModal() {
+    const panel = document.getElementById('founderLoginPanel');
+    if (!panel) return notify('Modal bulunamadı', 'error');
+    panel.classList.add('active');
+    panel.style.display = 'flex';
+    const inp = document.getElementById('founderPassModal');
+    if (inp) {
+      inp.value = '';
+      setTimeout(() => inp.focus(), 100);
+    }
+  }
+
+  function closePasswordModal() {
+    const panel = document.getElementById('founderLoginPanel');
+    if (panel) {
+      panel.classList.remove('active');
+      panel.style.display = 'none';
+    }
+  }
+
+  function setupModalEvents() {
+    const btnLogin = document.getElementById('btnFounderLoginModal');
+    const btnClose = document.getElementById('btnFounderClose');
+    const passInp  = document.getElementById('founderPassModal');
+
+    if (btnLogin && btnLogin.dataset.bound !== '1') {
+      btnLogin.dataset.bound = '1';
+      btnLogin.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (!passInp) return;
+        const result = await authorizeFounder(passInp.value || '');
+        if (result.ok) {
+          passInp.value = '';
+          closePasswordModal();
+        }
+      });
+    }
+
+    if (btnClose && btnClose.dataset.bound !== '1') {
+      btnClose.dataset.bound = '1';
+      btnClose.addEventListener('click', (e) => {
+        e.preventDefault();
+        closePasswordModal();
+      });
+    }
+
+    if (passInp && passInp.dataset.bound !== '1') {
+      passInp.dataset.bound = '1';
+      passInp.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const result = await authorizeFounder(passInp.value || '');
+          if (result.ok) {
+            passInp.value = '';
+            closePasswordModal();
+          }
+        }
+      });
+    }
+
+    // ESC ile kapatma
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const panel = document.getElementById('founderLoginPanel');
+        if (panel && panel.classList.contains('active')) closePasswordModal();
       }
     });
 
-    actions.insertBefore(btn, actions.firstChild);
-    console.log('[Founder] ⚡ topbar butonu enjekte edildi');
-  }
-
-  function removeTopbarButton() {
-    const b = document.getElementById(FOUNDER_CFG.BUTTON_ID);
-    if (b) b.remove();
+    // Dış tıklama ile kapatma
+    const panel = document.getElementById('founderLoginPanel');
+    if (panel && panel.dataset.bound !== '1') {
+      panel.dataset.bound = '1';
+      panel.addEventListener('click', (e) => {
+        if (e.target === panel) closePasswordModal();
+      });
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  //   8️⃣  AUTH STATE DİNLEYİCİSİ - Kullanıcı kurucu mu?
+  //   AUTH STATE - Mevcut yetki kontrolü
   // ═══════════════════════════════════════════════════════════════════════
-
   function setupAuthListener() {
     if (typeof firebase === 'undefined' || !firebase.auth) return;
     firebase.auth().onAuthStateChanged(async (user) => {
+      updateFounderStatusUI();
       if (!user) {
         window.GZ_IS_FOUNDER = false;
-        state.isFounder = false;
-        removeTopbarButton();
+        const btn = document.getElementById('founderTriggerBtn');
+        if (btn) btn.classList.remove('active');
         return;
       }
-      // Kullanıcı veritabanında kurucu olarak işaretli mi?
       try {
         const flag = await safeDbGet('users/' + user.uid + '/isFounder');
         if (flag === true) {
           window.GZ_IS_FOUNDER = true;
-          state.isFounder = true;
-          // Topbar render'ı geç olabilir, 2.5 sn sonra enjekte et
-          setTimeout(injectTopbarButton, 2500);
-          console.log('[Founder] ✅ Bu hesap kurucu olarak doğrulandı');
-        } else {
-          window.GZ_IS_FOUNDER = false;
-          state.isFounder = false;
-          removeTopbarButton();
+          activateTopbarButton();
+          console.log('[Founder] ✅ Bu hesap zaten yetkili');
         }
-      } catch(e) {
-        console.warn('[Founder] Auth state check fail:', e);
-      }
+      } catch(e) {}
     });
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  //   9️⃣  BAKIM MODU & GLOBAL DUYURU DİNLEYİCİLERİ
+  //   BAKIM MODU & GLOBAL DUYURU DİNLEYİCİLERİ
   // ═══════════════════════════════════════════════════════════════════════
-
   function setupSystemListeners() {
     if (typeof firebase === 'undefined' || !firebase.database) return;
-
-    // Bakım modu
     try {
       firebase.database().ref('system/maintenance').on('value', (s) => {
         const m = s.val();
         const screen = document.getElementById('maintenanceScreen');
         if (!screen) return;
-
         const isMaint = m && m.active === true;
-        // Kurucu için bakımdan etkilenme
         if (isMaint && !window.GZ_IS_FOUNDER) {
           screen.classList.add('active');
           screen.style.display = 'flex';
@@ -1589,9 +1499,8 @@
           screen.style.display = 'none';
         }
       });
-    } catch(e) { console.warn('[Founder] Maint listener fail:', e); }
+    } catch(e) {}
 
-    // Global duyuru
     try {
       firebase.database().ref('broadcast/current').on('value', (s) => {
         const b = s.val();
@@ -1606,11 +1515,10 @@
           bar.style.display = 'none';
         }
       });
-    } catch(e) { console.warn('[Founder] Broadcast listener fail:', e); }
+    } catch(e) {}
 
-    // Banner kapatma butonu
     const gbClose = document.getElementById('gbClose');
-    if (gbClose && !gbClose.dataset.bound) {
+    if (gbClose && gbClose.dataset.bound !== '1') {
       gbClose.dataset.bound = '1';
       gbClose.addEventListener('click', () => {
         const bar = document.getElementById('globalBroadcast');
@@ -1620,100 +1528,46 @@
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  //   🔟  EVENT LISTENER'LARIN BAĞLANMASI
+  //   INIT
   // ═══════════════════════════════════════════════════════════════════════
-
-  function bindFormEvents() {
-    const btnLogin = document.getElementById('btnFounderLogin');
-    const btnClose = document.getElementById('btnFounderClose');
-
-    if (btnLogin && !btnLogin.dataset.bound) {
-      btnLogin.dataset.bound = '1';
-      btnLogin.addEventListener('click', (e) => {
-        e.preventDefault();
-        attemptLogin();
-      });
-    }
-
-    if (btnClose && !btnClose.dataset.bound) {
-      btnClose.dataset.bound = '1';
-      btnClose.addEventListener('click', (e) => {
-        e.preventDefault();
-        closeLoginPanel();
-      });
-    }
-
-    // Enter ile giriş (sadece şifre alanı)
-    const passInp = document.getElementById('founderPass');
-    if (passInp && !passInp.dataset.bound) {
-      passInp.dataset.bound = '1';
-      passInp.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          attemptLogin();
-        }
-      });
-    }
-
-    // ESC ile kapatma
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        const panel = getPanel();
-        if (panel && panel.classList.contains('active')) closeLoginPanel();
-      }
-    });
-
-    // Panel dışına tıklayınca kapat
-    const panel = getPanel();
-    if (panel && !panel.dataset.bound) {
-      panel.dataset.bound = '1';
-      panel.addEventListener('click', (e) => {
-        if (e.target === panel) closeLoginPanel();
-      });
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  //   🚀  INITIALIZATION
-  // ═══════════════════════════════════════════════════════════════════════
-
   function init() {
-    if (state.initialized) return;
-    state.initialized = true;
-
-    setupLogoTrigger();
-    bindFormEvents();
+    setupAuthTabFlow();
+    setupTopbarTrigger();
+    setupModalEvents();
     setupAuthListener();
     setupSystemListeners();
-
-    console.log('%c[Founder] ⚡ Sistem aktif. Logo\'ya 7 kez tıkla.', 'color:#fbbf24;font-weight:bold');
+    console.log('%c[Founder v4] ⚡ Sistem aktif. Auth ekranında "⚡ Yetkili" sekmesi VEYA topbar\'da ⚡ butonu kullanılabilir.', 'color:#fbbf24;font-weight:bold');
   }
 
-  // DOM hazır olunca başlat
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     setTimeout(init, 100);
   }
 
-  // Ekstra guard: 2 saniye sonra da tekrar dene (asynchron yükleme durumlarına karşı)
+  // Geç yüklenen elementler için ekstra retry
   setTimeout(() => {
-    if (!state.initialized) init();
-    bindFormEvents();           // form geç render olabilir
-    setupLogoTrigger();         // logo geç render olabilir
-  }, 2000);
+    setupAuthTabFlow();
+    setupTopbarTrigger();
+    setupModalEvents();
+  }, 2500);
+
+  setTimeout(() => {
+    setupAuthTabFlow();
+    setupTopbarTrigger();
+    setupModalEvents();
+  }, 5000);
 
   // ═══════════════════════════════════════════════════════════════════════
-  //   📤  PUBLIC API
+  //   PUBLIC API
   // ═══════════════════════════════════════════════════════════════════════
-  window.openFounderLogin     = openLoginPanel;
-  window.closeFounderLogin    = closeLoginPanel;
-  window.attemptFounderLogin  = attemptLogin;
-  window.GZ_injectFounderBtn  = injectTopbarButton;
-  window.GZ_isFounderLocked   = getLockInfo;
-  window.GZ_resetFounderLock  = () => {
-    localStorage.removeItem(FOUNDER_CFG.LS_LOCK);
-    localStorage.removeItem(FOUNDER_CFG.LS_ATTEMPTS);
+  window.openFounderLogin    = openPasswordModal;
+  window.closeFounderLogin   = closePasswordModal;
+  window.authorizeFounder    = authorizeFounder;
+  window.GZ_isFounderLocked  = getLockInfo;
+  window.GZ_resetFounderLock = () => {
+    localStorage.removeItem(CFG.LS_LOCK);
+    localStorage.removeItem(CFG.LS_ATTEMPTS);
     notify('🔓 Kilit kaldırıldı', 'success');
   };
 

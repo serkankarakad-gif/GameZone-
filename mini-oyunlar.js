@@ -175,34 +175,79 @@ async function bonus(gid, base) {
   return base * gameMult(d.level||1);
 }
 
-/* ─── Skor → ödül (beceri/zeka oyunları için, bahis yok) ─── */
-async function settleSkill(gid, score, threshold, basePayout) {
-  // score >= threshold → kazanç (basePayout * (score/threshold) * level bonus)
+/* ─── Skor → ödül (beceri/zeka oyunları için, bahis yok)
+ *   v2 GÜNCELLEME — Bug fix:
+ *   • Çift settle koruması (kilit sistemi)
+ *   • Skor üst tavanı (hile tespit)
+ *   • Logaritmik kazanç eğrisi (otomatik tıklama farkedilir)
+ *   • Günlük max kazanç limiti
+ */
+const _settleLocks = {};
+async function settleSkill(gid, score, threshold, basePayout, opts = {}) {
+  // ── Çift settle koruması ──
+  const lockKey = gid + '_' + GZ.uid;
+  if (_settleLocks[lockKey]) {
+    console.warn('[Mini] Çift settle engellendi:', gid);
+    return { won: false, payout: 0, error: 'duplicate' };
+  }
+  _settleLocks[lockKey] = true;
+  setTimeout(() => { delete _settleLocks[lockKey]; }, 3000);
+
+  // ── Skor üst tavan kontrolü (hile/bot tespit) ──
+  const SCORE_HARD_CAP = opts.maxScore || threshold * 5;  // teorik max ~5x threshold
+  if (score < 0) score = 0;
+  if (score > SCORE_HARD_CAP) {
+    console.warn(`[Mini] Anormal skor (${score} > ${SCORE_HARD_CAP}). Kırpıldı.`);
+    score = SCORE_HARD_CAP;
+  }
+
+  // ── Tıklama tabanlı oyunlar için ek insan-üst-limit ──
+  // (caller'dan opts.cps geçilirse - click per second), 15 üzerini bot say
+  if (opts.cps && opts.cps > 15) {
+    score = Math.min(score, threshold);  // bot tespit → sadece eşik kadar say
+    console.warn(`[Mini] Yüksek CPS (${opts.cps}) - bot şüphesi, skor kırpıldı.`);
+  }
+
   const won = score >= threshold;
   let payout = 0;
+
   if (won) {
-    const ratio = Math.min(3, score / threshold);
+    // Logaritmik eğri: 1.0 ratio'da 1x, 2.0'de 1.32x, 5.0'da 2.32x (çok daha sönük)
+    const rawRatio = score / threshold;
+    const ratio = Math.min(2.5, 1 + Math.log2(rawRatio));   // log2 eğrisi, üst tavan 2.5x
     const m = await bonus(gid, ratio * basePayout);
     payout = Math.floor(m);
   }
-  // En iyi skor güncellenirse bonus elmas
+
+  // ── Günlük max kazanç güvenliği (oyun başına) ──
   const d = await getGD(gid);
-  const newBest = score > (d.bestScore||0);
+  const todayWonKey = 'dailyWon_' + todayKey();
+  const todayWon = d[todayWonKey] || 0;
+  const DAILY_MAX_PER_GAME = (opts.dailyMaxWin || basePayout * 30);  // ~30 mükemmel oyun
+  if (todayWon + payout > DAILY_MAX_PER_GAME) {
+    payout = Math.max(0, DAILY_MAX_PER_GAME - todayWon);
+    if (payout === 0) {
+      toast(`⚠️ Bu oyundan günlük kazanç limiti doldu (₺${DAILY_MAX_PER_GAME.toLocaleString('tr-TR')})`, 'warn', 4000);
+    }
+  }
+
+  const newBest = score > (d.bestScore || 0);
   await db.ref(`mini/${GZ.uid}/${gid}`).transaction(x => {
     x = x || { level:1, xp:0, totalPlays:0, totalWins:0, totalBet:0, totalWon:0, dailyKey:todayKey(), dailyPlays:0, bestScore:0 };
-    if (score > (x.bestScore||0)) x.bestScore = score;
-    x.totalPlays = (x.totalPlays||0)+1;
-    x.totalWon = (x.totalWon||0) + payout;
-    if (won) x.totalWins = (x.totalWins||0)+1;
+    if (score > (x.bestScore || 0)) x.bestScore = score;
+    x.totalPlays = (x.totalPlays || 0) + 1;
+    x.totalWon = (x.totalWon || 0) + payout;
+    x[todayWonKey] = (x[todayWonKey] || 0) + payout;
+    if (won) x.totalWins = (x.totalWins || 0) + 1;
     x.lastPlay = now();
     x.dailyKey = x.dailyKey || todayKey();
-    x.dailyPlays = (x.dailyPlays||0)+1;
+    x.dailyPlays = (x.dailyPlays || 0) + 1;
     return x;
   });
   if (payout > 0) await addCash(GZ.uid, payout, 'mini-skill-' + gid);
   if (newBest && score > 0) toast('🏆 Yeni rekor!', 'success');
-  await addGameXP(gid, Math.min(50, score * 2));
-  await addXP(GZ.uid, Math.min(20, score));
+  await addGameXP(gid, Math.min(50, Math.floor(score * 1.5)));
+  await addXP(GZ.uid, Math.min(20, Math.floor(score / 2)));
   return { won, payout };
 }
 

@@ -1349,3 +1349,189 @@ input[type="number"]#smsCodeInput {
 .subtabs { display: flex; gap: 4px; margin: 8px 0; }
 .subtab { background: #e5e7eb; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; }
 .subtab.active { background: #1e5cb8; color: #fff; }
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║              YETKİLİ GİRİŞ v4.0 — STİLLER                                ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+/* Auth tab'ında "⚡ Yetkili" sekmesi */
+.auth-tab.founder-tab {
+  background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.15));
+  color: #fbbf24;
+  border: 1px solid rgba(251,191,36,0.3);
+  font-weight: 700;
+}
+.auth-tab.founder-tab:hover {
+  background: linear-gradient(135deg, rgba(251,191,36,0.25), rgba(245,158,11,0.25));
+}
+.auth-tab.founder-tab.active {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #000;
+  box-shadow: 0 0 20px rgba(251,191,36,0.4);
+}
+
+/* Founder paneli (auth ekranında) */
+.founder-banner {
+  background: linear-gradient(135deg, #1f2937, #111827);
+  color: #fff;
+  padding: 20px;
+  border-radius: 16px;
+  text-align: center;
+  margin-bottom: 16px;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 0 30px rgba(251,191,36,0.2);
+}
+.fb-icon {
+  font-size: 48px;
+  animation: fbPulse 2s infinite;
+}
+@keyframes fbPulse {
+  0%,100% { filter: drop-shadow(0 0 8px #fbbf24); transform: scale(1); }
+  50%     { filter: drop-shadow(0 0 24px #fbbf24); transform: scale(1.05); }
+}
+.founder-banner h3 {
+  color: #fbbf24;
+  margin: 8px 0;
+  letter-spacing: 2px;
+}
+.founder-banner p {
+  color: #d1d5db;
+  font-size: 13px;
+  margin: 0;
+}
+
+.founder-status {
+  background: #f3f4f6;
+  padding: 10px 14px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+.fs-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.fs-dot.online {
+  background: #16a34a;
+  box-shadow: 0 0 8px rgba(22,163,74,0.6);
+  animation: dotPulse 1.5s infinite;
+}
+.fs-dot.offline {
+  background: #dc2626;
+}
+@keyframes dotPulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.5; }
+}
+
+#founderPass {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border: 2px solid #fbbf24;
+  border-radius: 10px;
+  font-size: 14px;
+}
+#founderPass:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(251,191,36,0.2);
+}
+
+.btn-founder-login {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+  color: #000 !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px;
+}
+.btn-founder-login:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(251,191,36,0.4);
+}
+
+.founder-info {
+  background: #fef3c7;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #78350f;
+}
+.fi-row {
+  margin: 3px 0;
+}
+
+/* Topbar ⚡ butonu - herkes için görünür */
+.founder-trigger-btn {
+  background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.2)) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(251,191,36,0.4) !important;
+  font-size: 18px !important;
+  position: relative;
+}
+.founder-trigger-btn:hover {
+  background: linear-gradient(135deg, rgba(251,191,36,0.35), rgba(245,158,11,0.35)) !important;
+  transform: scale(1.05);
+}
+.founder-trigger-btn.active {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+  color: #000 !important;
+  animation: triggerActive 2s infinite;
+}
+@keyframes triggerActive {
+  0%,100% { box-shadow: 0 0 8px rgba(251,191,36,0.6); }
+  50%     { box-shadow: 0 0 20px rgba(251,191,36,0.9); }
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║              KRİPTO HIZLI TUTAR BUTONLARI                                ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+.quick-amount-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+.btn-quick {
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  color: #1e40af;
+  border: 1px solid #818cf8;
+  border-radius: 8px;
+  padding: 10px 4px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-quick:hover {
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(99,102,241,0.3);
+}
+.btn-quick.btn-quick-max {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #000;
+  border-color: #d97706;
+  font-size: 12px;
+}
+.btn-quick.btn-quick-max:hover {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #000;
+  box-shadow: 0 4px 12px rgba(251,191,36,0.5);
+}
+.btn-quick.btn-quick-sell {
+  background: linear-gradient(135deg, #fecaca, #fca5a5);
+  color: #991b1b;
+  border-color: #dc2626;
+}
+.btn-quick.btn-quick-sell:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(239,68,68,0.4);
+}

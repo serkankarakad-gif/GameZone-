@@ -431,28 +431,33 @@ async function processBankUser(){
 }
 
 async function bankDeposit(amount){
-  if (amount <= 0) return toast('Geçersiz tutar','error');
+  if (!amount || amount <= 0 || !isFinite(amount)) return toast('Geçersiz tutar','error');
+  amount = Math.floor(amount * 100) / 100;
   const ok = await spendCash(GZ.uid, amount, 'bank-deposit');
   if (!ok) return toast('Yetersiz bakiye', 'error');
   await db.ref(`bank/${GZ.uid}/balance`).transaction(c => (c||0)+amount);
-  toast(`+${cashFmt(amount)} hesaba yatırıldı`, 'success');
+  toast(`✅ +${cashFmt(amount)} hesaba yatırıldı`, 'success');
+  return true;
 }
 window.bankDeposit = bankDeposit;
 
 async function bankWithdraw(amount){
-  if (amount <= 0) return toast('Geçersiz tutar','error');
+  if (!amount || amount <= 0 || !isFinite(amount)) return toast('Geçersiz tutar','error');
+  amount = Math.floor(amount * 100) / 100;
   const r = await db.ref(`bank/${GZ.uid}/balance`).transaction(c => {
     if ((c||0) < amount) return;
     return c - amount;
   });
   if (!r.committed) return toast('Yetersiz hesap bakiyesi','error');
   await addCash(GZ.uid, amount, 'bank-withdraw');
-  toast(`+${cashFmt(amount)} hesaptan çekildi`, 'success');
+  toast(`✅ +${cashFmt(amount)} hesaptan çekildi`, 'success');
+  return true;
 }
 window.bankWithdraw = bankWithdraw;
 
 async function bankInvest(amount){
-  if (amount <= 0) return toast('Geçersiz tutar','error');
+  if (!amount || amount <= 0 || !isFinite(amount)) return toast('Geçersiz tutar','error');
+  amount = Math.floor(amount * 100) / 100;
   const ok = await spendCash(GZ.uid, amount, 'invest');
   if (!ok) return toast('Yetersiz bakiye', 'error');
   await db.ref(`bank/${GZ.uid}`).transaction(b => {
@@ -461,40 +466,65 @@ async function bankInvest(amount){
     b.investmentDate = now();
     return b;
   });
-  toast(`+${cashFmt(amount)} yatırım yapıldı`, 'success');
+  toast(`✅ +${cashFmt(amount)} yatırım yapıldı (%0.3 günlük faiz)`, 'success');
+  return true;
 }
 window.bankInvest = bankInvest;
 
 async function bankInvestWithdraw(amount){
-  if (amount <= 0) return toast('Geçersiz tutar','error');
+  if (!amount || amount <= 0 || !isFinite(amount)) return toast('Geçersiz tutar','error');
+  amount = Math.floor(amount * 100) / 100;
   const r = await db.ref(`bank/${GZ.uid}/investment`).transaction(c => {
     if ((c||0) < amount) return;
     return +(c - amount).toFixed(2);
   });
   if (!r.committed) return toast('Yetersiz yatırım', 'error');
   await addCash(GZ.uid, amount, 'invest-withdraw');
-  toast(`+${cashFmt(amount)} yatırım çekildi`, 'success');
+  toast(`✅ +${cashFmt(amount)} yatırım çekildi`, 'success');
+  return true;
 }
 window.bankInvestWithdraw = bankInvestWithdraw;
 
 async function bankBorrow(amount){
-  if (amount <= 0) return toast('Geçersiz tutar','error');
+  if (!amount || amount <= 0 || !isFinite(amount)) return toast('Geçersiz tutar','error');
+  amount = Math.floor(amount);
   const lv = (GZ.data.level||1);
   const max = lv * 5000;
   const cur = (await dbGet(`bank/${GZ.uid}/loan`))||0;
-  if (cur + amount > max) return toast(`Kredi limitiniz: ${cashFmt(max)}`, 'warn');
+  if (cur + amount > max) return toast(`Kredi limitiniz: ${cashFmt(max)} (Mevcut: ${cashFmt(cur)})`, 'warn');
   await db.ref(`bank/${GZ.uid}/loan`).transaction(c => (c||0)+amount);
   await addCash(GZ.uid, amount, 'borrow');
   toast(`+${cashFmt(amount)} kredi çekildi`, 'success');
+  return true;
 }
 window.bankBorrow = bankBorrow;
 
 async function bankRepay(amount){
-  if (amount <= 0) return toast('Geçersiz tutar','error');
+  if (!amount || amount <= 0 || !isFinite(amount)) return toast('Geçersiz tutar','error');
+  amount = Math.floor(amount);
+
+  // Kredi var mı?
+  const cur = (await dbGet(`bank/${GZ.uid}/loan`)) || 0;
+  if (cur <= 0) return toast('Krediniz yok!', 'warn');
+
+  // Fazla ödemeyi engelle
+  if (amount > cur) {
+    amount = cur;
+    toast(`Kredi tutarı ₺${cur} - sadece bu kadarı ödendi`, 'info', 4000);
+  }
+
+  // Bakiye kontrolü
+  const myMoney = GZ.data?.money || 0;
+  if (amount > myMoney) {
+    return toast(`Yetersiz bakiye! Mevcut: ${cashFmt(myMoney)}`, 'error');
+  }
+
   const ok = await spendCash(GZ.uid, amount, 'repay');
   if (!ok) return toast('Yetersiz bakiye', 'error');
+
   await db.ref(`bank/${GZ.uid}/loan`).transaction(c => Math.max(0,(c||0)-amount));
-  toast(`-${cashFmt(amount)} kredi ödendi`, 'success');
+  toast(`✅ -${cashFmt(amount)} kredi ödendi`, 'success');
+  return true;
 }
 window.bankRepay = bankRepay;
 
@@ -853,31 +883,97 @@ async function transferStock(item, qty, fromCity, toCity){
 window.transferStock = transferStock;
 
 /* ============================================================
-   KRİPTO ALIM-SATIM
+   KRİPTO ALIM-SATIM (v2 - bug fix + güvenli)
    ============================================================ */
 async function buyCrypto(sym, tlAmount){
-  if (tlAmount <= 0) return toast('Geçersiz tutar','error');
+  if (!tlAmount || tlAmount <= 0 || !isFinite(tlAmount)) {
+    toast('Geçersiz tutar','error');
+    return false;
+  }
   const price = GZ.prices[sym]?.current;
-  if (!price) return toast('Fiyat alınamadı','error');
+  if (!price || price <= 0) {
+    toast('Fiyat alınamadı','error');
+    return false;
+  }
+  // Min alım kontrolü
+  if (tlAmount < 1) {
+    toast('Min alım: ₺1','error');
+    return false;
+  }
+  // Bakiye kontrolü
+  const myMoney = GZ.data?.money || 0;
+  if (tlAmount > myMoney) {
+    toast(`Yetersiz bakiye! Mevcut: ${cashFmt(myMoney)}`,'error');
+    return false;
+  }
+
   const ok = await spendCash(GZ.uid, tlAmount, 'crypto-buy');
-  if (!ok) return toast('Yetersiz bakiye','error');
-  const fee = tlAmount * 0.005;
+  if (!ok) {
+    toast('Yetersiz bakiye','error');
+    return false;
+  }
+  const fee = tlAmount * 0.005;  // %0.5 komisyon
   const qty = (tlAmount - fee) / price;
-  await db.ref(`crypto/holdings/${GZ.uid}/${sym}`).transaction(c => (c||0)+qty);
-  toast(`+${qty.toFixed(4)} ${sym}`, 'success');
+
+  await db.ref(`crypto/holdings/${GZ.uid}/${sym}`).transaction(c => (c||0) + qty);
+
+  toast(`✅ Aldın: ${qty.toFixed(6)} ${sym} (Komisyon: ${cashFmt(fee)})`, 'success', 4000);
+
+  // Günlük görev güncellemesi
+  if (tlAmount >= 1000 && typeof updateDailyTask === 'function') {
+    await updateDailyTask('crypto_1', 1);
+  }
+
+  return true;
 }
 window.buyCrypto = buyCrypto;
 
 async function sellCrypto(sym, qty){
-  if (qty <= 0) return toast('Geçersiz miktar','error');
+  if (!qty || qty <= 0 || !isFinite(qty)) {
+    toast('Geçersiz miktar','error');
+    return false;
+  }
   const price = GZ.prices[sym]?.current;
-  if (!price) return toast('Fiyat alınamadı','error');
-  const cur = (await dbGet(`crypto/holdings/${GZ.uid}/${sym}`)) || 0;
-  if (cur < qty) return toast('Yetersiz miktar','error');
-  await db.ref(`crypto/holdings/${GZ.uid}/${sym}`).set(cur - qty);
-  const tl = qty * price * 0.995;
-  await addCash(GZ.uid, tl, 'crypto-sell');
-  toast(`+${cashFmt(tl)}`, 'success');
+  if (!price || price <= 0) {
+    toast('Fiyat alınamadı','error');
+    return false;
+  }
+
+  // Atomik kontrol + güncelleme (race condition fix)
+  let success = false;
+  let actualQty = 0;
+  await db.ref(`crypto/holdings/${GZ.uid}/${sym}`).transaction(cur => {
+    cur = cur || 0;
+    if (cur < qty) {
+      // Yetersiz - işlemi iptal et
+      return cur;
+    }
+    success = true;
+    actualQty = qty;
+    const remaining = cur - qty;
+    // Çok küçük artıkları sıfırla (floating-point hatası önlemi)
+    return remaining < 0.000001 ? 0 : remaining;
+  });
+
+  if (!success) {
+    toast('Yetersiz miktar','error');
+    return false;
+  }
+
+  const grossTl = actualQty * price;
+  const fee = grossTl * 0.005;  // %0.5 komisyon
+  const netTl = grossTl - fee;
+
+  await addCash(GZ.uid, netTl, 'crypto-sell');
+
+  toast(`✅ Sattın: ${actualQty.toFixed(6)} ${sym} → +${cashFmt(netTl)} (Komisyon: ${cashFmt(fee)})`, 'success', 4000);
+
+  // Günlük görev
+  if (netTl >= 1000 && typeof updateDailyTask === 'function') {
+    await updateDailyTask('crypto_1', 1);
+  }
+
+  return true;
 }
 window.sellCrypto = sellCrypto;
 

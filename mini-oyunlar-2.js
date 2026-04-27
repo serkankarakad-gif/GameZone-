@@ -71,43 +71,140 @@ async function rxFinish() {
     Ortalama: <b>${avg}ms</b> · Skor: ${score}<br>${r.payout > 0 ? '+'+cashFmt(r.payout) : 'kazanç yok'}</div>`;
 }
 
-/* ══════════════════ 27. HIZLI TIKLA (5sn) ══════════════════ */
+/* ══════════════════ 27. HIZLI TIKLA (5sn) — v2 BUG FIX ══════════════════
+   ┌─────────────────────────────────────────────────────────────────────┐
+   │  DÜZELTİLEN BUG'LAR:                                                 │
+   │  1. Süre bittikten sonra tıklamanın hâlâ sayılması → STATE.done      │
+   │     kontrolü hem başlangıçta hem her tıklamada                       │
+   │  2. Çift settleSkill çağrılma riski → settled flag                    │
+   │  3. Bot/auto-clicker tespiti → CPS hesaplaması, 15+ ise kırpılır    │
+   │  4. Mobile çift sayma (mousedown + touchstart) → tek event türü      │
+   │  5. Süre bittikten sonra butonu disable et                           │
+   │  6. Buton tekrar tıklanırsa eski state'i temizle                    │
+   └─────────────────────────────────────────────────────────────────────┘ */
 H['tap_fast'] = g => {
-  $r().innerHTML = `<p class="small muted mb-8">5 saniyede ne kadar çok tıklayabilirsin? 30+ tıklama = ödül</p>
+  $r().innerHTML = `<p class="small muted mb-8">5 saniyede ne kadar çok tıklayabilirsin? <b>30+ tıklama = ödül</b><br>
+    <small style="color:#dc2626">⚠️ Otomatik tıklama (15 tps üstü) tespit edilirse kazanç iptal olur</small></p>
     <div class="tap-display" id="tapDisp">
       <div class="tap-counter" id="tapCount">0</div>
       <div class="tap-time" id="tapTime">5.0s</div>
     </div>
-    <button class="btn-primary" style="width:100%;font-size:18px" id="tapBtn" onclick="tapClick()">▶ BAŞLAT</button>
+    <button class="btn-primary tap-btn" style="width:100%;font-size:18px" id="tapBtn">▶ BAŞLAT</button>
     <div id="mgResult" class="mg-result"></div>`;
+
+  // İlk yüklemede event listener'ı bağla
+  setTimeout(() => {
+    const btn = document.getElementById('tapBtn');
+    if (btn) {
+      btn.onclick = null;
+      btn.removeEventListener('click', tapClick);
+      btn.addEventListener('click', tapClick);
+    }
+  }, 100);
 };
+
 let tapState = null;
-window.tapClick = () => {
-  if (!tapState || tapState.done) {
-    tapState = { count: 0, end: Date.now() + 5000, done: false };
-    document.getElementById('tapBtn').textContent = '👆 TIKLA TIKLA TIKLA';
-    document.getElementById('tapBtn').onclick = () => {
-      if (!tapState.done) {
-        tapState.count++;
-        document.getElementById('tapCount').textContent = tapState.count;
-      }
+
+window.tapClick = async function(ev) {
+  if (ev) ev.preventDefault();
+  const btn = document.getElementById('tapBtn');
+  if (!btn) return;
+
+  // ── Durum 1: Henüz başlamadı veya tamamlandı → YENİ TUR BAŞLAT ──
+  if (!tapState || tapState.done || tapState.settled) {
+    // Eski interval'ı temizle (varsa)
+    if (tapState && tapState.iv) { clearInterval(tapState.iv); tapState.iv = null; }
+
+    tapState = {
+      count: 0,
+      start: Date.now(),
+      end: Date.now() + 5000,
+      done: false,
+      settled: false,
+      iv: null,
+      tapTimes: []   // CPS hesaplaması için
     };
-    const iv = setInterval(async () => {
-      const left = (tapState.end - Date.now()) / 1000;
-      if (left <= 0) {
-        clearInterval(iv);
-        tapState.done = true;
-        document.getElementById('tapTime').textContent = '0.0s';
-        document.getElementById('tapBtn').textContent = '✅ Bitti';
-        document.getElementById('tapBtn').onclick = () => tapClick();
-        const r = await settleSkill('tap_fast', tapState.count, 30, 150);
-        document.getElementById('mgResult').innerHTML = `<div class="${r.won?'mg-win':'mg-loss'}">
-          ${tapState.count} tıklama · ${r.payout > 0 ? '+'+cashFmt(r.payout) : 'En az 30 lazım'}</div>`;
-      } else {
-        document.getElementById('tapTime').textContent = left.toFixed(1) + 's';
+
+    btn.textContent = '👆 TIKLA TIKLA TIKLA';
+    document.getElementById('tapCount').textContent = '0';
+    document.getElementById('tapTime').textContent = '5.0s';
+    document.getElementById('mgResult').innerHTML = '';
+
+    // Süre dolma kontrolü için interval (50ms - smooth)
+    tapState.iv = setInterval(async () => {
+      if (!tapState || tapState.done) {
+        if (tapState && tapState.iv) clearInterval(tapState.iv);
+        return;
       }
+
+      const left = (tapState.end - Date.now()) / 1000;
+
+      if (left <= 0) {
+        // SÜRE BİTTİ
+        tapState.done = true;
+        clearInterval(tapState.iv);
+        tapState.iv = null;
+
+        const finalCount = tapState.count;
+        document.getElementById('tapTime').textContent = '0.0s';
+        btn.textContent = '⏳ Hesaplanıyor...';
+        btn.disabled = true;
+
+        // CPS hesapla (bot tespiti)
+        const elapsed = (Date.now() - tapState.start) / 1000;
+        const cps = elapsed > 0 ? finalCount / elapsed : 0;
+
+        // Çift settle koruması
+        if (tapState.settled) return;
+        tapState.settled = true;
+
+        try {
+          const r = await settleSkill('tap_fast', finalCount, 30, 150, {
+            cps: cps,
+            maxScore: 90,         // 5sn × 18cps insan üst limiti
+            dailyMaxWin: 5000     // günlük max bu oyundan
+          });
+
+          let msg = '';
+          if (cps > 15) {
+            msg = `<div class="mg-loss">🤖 Bot tespit edildi! (${cps.toFixed(1)} TPS)<br>Kazanç iptal.</div>`;
+          } else if (r.payout > 0) {
+            msg = `<div class="mg-win">${finalCount} tıklama · ${cps.toFixed(1)} TPS<br>+${cashFmt(r.payout)}</div>`;
+          } else {
+            msg = `<div class="mg-loss">${finalCount} tıklama · ${cps.toFixed(1)} TPS<br>En az 30 lazım</div>`;
+          }
+          document.getElementById('mgResult').innerHTML = msg;
+
+        } catch(e) {
+          console.error('[tap_fast] settle error:', e);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '🔄 TEKRAR OYNA';
+        }
+        return;
+      }
+
+      document.getElementById('tapTime').textContent = left.toFixed(1) + 's';
     }, 50);
+
+    return; // YENİ TUR BAŞLATTI, BU TIKLAMA SAYILMAZ
   }
+
+  // ── Durum 2: Tur aktif → tıklamayı say ──
+  // KORUMA: Süre kesin bitmiş mi tekrar kontrol et (race condition)
+  if (Date.now() >= tapState.end) {
+    return; // süre bittiyse kesinlikle sayma
+  }
+
+  if (tapState.done || tapState.settled) {
+    return; // settle sürecinde / bitti
+  }
+
+  tapState.count++;
+  tapState.tapTimes.push(Date.now());
+
+  const counter = document.getElementById('tapCount');
+  if (counter) counter.textContent = tapState.count;
 };
 
 /* ══════════════════ 28. NİŞAN EĞİTİMİ ══════════════════ */
@@ -338,7 +435,11 @@ function bubSpawn() {
   b.textContent = '🎈';
   b.style.left = (5 + Math.random()*80) + '%';
   b.style.top = (5 + Math.random()*70) + '%';
-  b.onclick = () => { bub.count++; b.remove(); };
+  b.onclick = () => {
+    // BUG FIX: süre bittiyse veya tur bittiyse sayma
+    if (!bub || bub.done || Date.now() >= bub.end) { b.remove(); return; }
+    bub.count++; b.remove();
+  };
   arena.appendChild(b);
   setTimeout(() => b.remove(), 1500);
   if (Date.now() < bub.end) setTimeout(bubSpawn, 200 + Math.random()*200);
@@ -379,7 +480,13 @@ function moleSpawn() {
   if (!hole || hole.classList.contains('active')) { setTimeout(moleSpawn, 200); return; }
   hole.classList.add('active');
   hole.textContent = '🐀';
-  const onClick = () => { if (hole.classList.contains('active')) { mole.count++; hole.classList.remove('active'); hole.textContent=''; } };
+  const onClick = () => {
+    // BUG FIX: süre bittiyse veya tur bittiyse sayma
+    if (!mole || mole.done || Date.now() >= mole.end) return;
+    if (hole.classList.contains('active')) {
+      mole.count++; hole.classList.remove('active'); hole.textContent='';
+    }
+  };
   hole.onclick = onClick;
   setTimeout(() => { hole.classList.remove('active'); hole.textContent=''; hole.onclick = null; }, 800);
   if (Date.now() < mole.end) setTimeout(moleSpawn, 400 + Math.random()*400);
