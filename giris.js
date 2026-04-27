@@ -1418,54 +1418,67 @@
   // ═══════════════════════════════════════════════════════════════════════
 
   function setupLogoTrigger() {
-    const logo = document.getElementById('authLogoArea');
-    if (!logo) {
-      // Henüz DOM'da değilse 500ms sonra tekrar dene (max 20 deneme = 10sn)
+    // İki logoyu da dinle: auth ekranındaki + topbar'daki (giriş sonrası)
+    const logos = [
+      document.getElementById('authLogoArea'),  // giriş yapmadan önce
+      document.getElementById('topbarLogo')     // giriş yaptıktan sonra
+    ].filter(Boolean);
+
+    if (logos.length === 0) {
+      // Hiçbiri henüz DOM'da değilse 500ms sonra tekrar dene (max 30 deneme = 15sn)
       if (!setupLogoTrigger._tries) setupLogoTrigger._tries = 0;
       setupLogoTrigger._tries++;
-      if (setupLogoTrigger._tries < 20) {
+      if (setupLogoTrigger._tries < 30) {
         setTimeout(setupLogoTrigger, 500);
       } else {
-        console.warn('[Founder] authLogoArea bulunamadı - kurucu girişi devre dışı');
+        console.warn('[Founder] Logo elementleri bulunamadı - kurucu girişi devre dışı');
       }
       return;
     }
 
-    // Çift kayıt önlemi
-    if (logo.dataset.founderTriggerSetup === '1') return;
-    logo.dataset.founderTriggerSetup = '1';
+    logos.forEach(logo => {
+      // Çift kayıt önlemi
+      if (logo.dataset.founderTriggerSetup === '1') return;
+      logo.dataset.founderTriggerSetup = '1';
 
-    logo.style.cursor = 'pointer';
-    logo.title = ''; // gizli, ipucu verme
+      logo.style.cursor = 'pointer';
+      logo.title = ''; // gizli, ipucu verme
 
-    logo.addEventListener('click', (ev) => {
-      ev.preventDefault();
-      state.logoTaps++;
+      logo.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        state.logoTaps++;
 
-      // Görsel feedback (3+ tıklama sonrası)
-      if (state.logoTaps >= 3 && state.logoTaps < FOUNDER_CFG.LOGO_TAP_THRESHOLD) {
-        try {
-          logo.style.transition = 'transform 0.15s';
-          const scale = 1 + (state.logoTaps - 2) * 0.04;
-          logo.style.transform = 'scale(' + scale + ')';
-          setTimeout(() => { logo.style.transform = ''; }, 200);
-        } catch(e) {}
-      }
+        // Görsel feedback (3+ tıklama sonrası)
+        if (state.logoTaps >= 3 && state.logoTaps < FOUNDER_CFG.LOGO_TAP_THRESHOLD) {
+          try {
+            logo.style.transition = 'transform 0.15s';
+            const scale = 1 + (state.logoTaps - 2) * 0.04;
+            logo.style.transform = 'scale(' + scale + ')';
+            setTimeout(() => { logo.style.transform = ''; }, 200);
+          } catch(e) {}
+        }
 
-      // Eşik geçildi
-      if (state.logoTaps >= FOUNDER_CFG.LOGO_TAP_THRESHOLD) {
-        state.logoTaps = 0;
-        if (state.logoTimer) { clearTimeout(state.logoTimer); state.logoTimer = null; }
-        openLoginPanel();
-        return;
-      }
+        // Eşik geçildi
+        if (state.logoTaps >= FOUNDER_CFG.LOGO_TAP_THRESHOLD) {
+          state.logoTaps = 0;
+          if (state.logoTimer) { clearTimeout(state.logoTimer); state.logoTimer = null; }
+          openLoginPanel();
+          return;
+        }
 
-      // Timeout sıfırlama
-      if (state.logoTimer) clearTimeout(state.logoTimer);
-      state.logoTimer = setTimeout(() => { state.logoTaps = 0; }, FOUNDER_CFG.LOGO_TAP_TIMEOUT_MS);
+        // Timeout sıfırlama
+        if (state.logoTimer) clearTimeout(state.logoTimer);
+        state.logoTimer = setTimeout(() => { state.logoTaps = 0; }, FOUNDER_CFG.LOGO_TAP_TIMEOUT_MS);
+      });
     });
 
-    console.log('[Founder] Logo tetikleyici hazır - 7 kez tıkla');
+    // Tekrar 5 saniye sonra da kontrol et — bazı logolar geç render olabilir
+    if (!setupLogoTrigger._reChecked) {
+      setupLogoTrigger._reChecked = true;
+      setTimeout(setupLogoTrigger, 5000);
+    }
+
+    console.log('[Founder] ⚡ Logo tetikleyici hazır (' + logos.length + ' logo) - 7 kez tıkla');
   }
 
   // ═══════════════════════════════════════════════════════════════════════
