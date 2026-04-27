@@ -82,17 +82,30 @@
       <div class="founder-banner">
         <div class="fb-icon">⚡</div>
         <h3>YETKİLİ GİRİŞİ</h3>
-        <p>Sadece kurucular ve yöneticiler için. Önce normal hesabınla giriş yap, sonra bu sekmeden yetkilendir.</p>
+        <p>Hesap bilgilerinle birlikte yetkili şifreni gir, tek seferde yetkili giriş yap!</p>
       </div>
-      <div class="founder-status" id="founderStatus">
-        <span class="fs-dot offline"></span>
-        <span class="fs-text">Önce normal hesabınla giriş yapmalısın</span>
+
+      <div class="input-group">
+        <label>📧 E-posta veya Kullanıcı Adı</label>
+        <input type="text" id="founderEmail" placeholder="ornek@mail.com veya kullanıcıadı" autocomplete="username">
       </div>
-      <input type="password" id="founderPass" placeholder="🔐 Yetkili Şifresi" autocomplete="off">
-      <button class="btn-primary btn-founder-login" id="btnFounderLogin">⚡ YETKİLİ OLARAK YETKİLENDİR</button>
+
+      <div class="input-group">
+        <label>🔑 Hesap Şifren</label>
+        <input type="password" id="founderAccPass" placeholder="Normal hesap şifren" autocomplete="current-password">
+      </div>
+
+      <div class="input-group">
+        <label>⚡ Yetkili Şifresi</label>
+        <input type="password" id="founderPass" placeholder="Yetkili şifresi" autocomplete="off">
+      </div>
+
+      <button class="btn-primary btn-founder-login" id="btnFounderLogin">⚡ YETKİLİ OLARAK GİRİŞ YAP</button>
+
       <div class="founder-info">
         <div class="fi-row">⚠️ 3 hatalı deneme = 1 saat kilit</div>
         <div class="fi-row">📝 Tüm denemeler kayıt altındadır</div>
+        <div class="fi-row">✨ Hesabın yoksa önce "Standart" sekmesinden kayıt ol</div>
       </div>
     </div>
 

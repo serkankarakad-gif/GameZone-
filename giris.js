@@ -225,7 +225,8 @@
     $$('.auth-panel').forEach(p => p.classList.remove('active'));
     const map = {
       login: 'loginPanel', register: 'registerPanel',
-      anon: 'anonPanel', verify: 'verifyPanel', forgot: 'forgotPanel'
+      anon: 'anonPanel', verify: 'verifyPanel', forgot: 'forgotPanel',
+      founder: 'founderPanel'  // ← KRİTİK FIX: Yetkili sekmesi mapping
     };
     const el = document.getElementById(map[name]);
     if (el) el.classList.add('active');
@@ -1175,9 +1176,11 @@
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  //   ANA YETKİLENDİRME FONKSİYONU
+  //   ANA YETKİLENDİRME FONKSİYONU (2 modda çalışır)
+  //   Mod 1: Zaten giriş yapmış → sadece şifre yeterli
+  //   Mod 2: Giriş yapmamış → email + accPass + founderPass al, direkt yetkili giriş yap
   // ═══════════════════════════════════════════════════════════════════════
-  async function authorizeFounder(passwordValue) {
+  async function authorizeFounder(passwordValue, opts = {}) {
     // 1) Kilit kontrolü
     const lock = getLockInfo();
     if (lock) {
@@ -1187,28 +1190,20 @@
 
     // 2) Boş şifre kontrolü
     if (!passwordValue || passwordValue.length === 0) {
-      notify('Şifreyi gir!', 'error');
+      notify('Yetkili şifresini gir!', 'error');
       return { ok: false, reason: 'empty' };
     }
 
-    // 3) Auth kontrolü
-    const currentUser = (typeof firebase !== 'undefined' && firebase.auth)
-      ? firebase.auth().currentUser : null;
-
-    if (!currentUser) {
-      notify('⚠️ Önce normal hesabınla giriş yapmalısın!', 'error');
-      return { ok: false, reason: 'no_user' };
-    }
-
-    // 4) Şifre doğrulama
+    // 3) Şifre doğrulama (önce, sonra giriş yap)
     if (passwordValue !== CFG.PASSWORD) {
       const attempts = incrAttempts();
       const remaining = CFG.MAX_ATTEMPTS - attempts;
 
       // Log
+      const _user = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
       safeDbPush('security/founderAttempts', {
         ts: firebase.database.ServerValue.TIMESTAMP,
-        uid: currentUser.uid,
+        uid: _user ? _user.uid : 'no_user',
         success: false,
         fp: deviceFP()
       });
@@ -1217,12 +1212,61 @@
         lockDevice();
         notify(`🚫 ${CFG.MAX_ATTEMPTS} hatalı deneme! Cihaz 1 saat kilitlendi.`, 'error', 6000);
       } else {
-        notify(`❌ Hatalı şifre! Kalan deneme: ${remaining}`, 'error', 4000);
+        notify(`❌ Hatalı yetkili şifresi! Kalan deneme: ${remaining}`, 'error', 4000);
       }
       return { ok: false, reason: 'wrong_password' };
     }
 
-    // 5) ✅ BAŞARILI
+    // ─── ŞİFRE DOĞRU ───
+
+    // 4) Mevcut auth durumu kontrol
+    let currentUser = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+
+    // Eğer kullanıcı henüz giriş yapmamışsa: otomatik giriş yap
+    if (!currentUser) {
+      // opts'tan email/pass geldi mi?
+      if (!opts.email || !opts.accPass) {
+        notify('Hesap bilgilerini gir (email + hesap şifresi)!', 'error');
+        return { ok: false, reason: 'need_login' };
+      }
+
+      try {
+        notify('Hesaba giriş yapılıyor...', 'info', 2000);
+
+        // Email mi yoksa kullanıcı adı mı?
+        let emailToUse = opts.email.trim();
+        if (!emailToUse.includes('@')) {
+          // Kullanıcı adı verilmiş, e-postasını bul
+          const usernameSnap = await safeDbGet('usernames/' + emailToUse.toLowerCase());
+          if (!usernameSnap) {
+            notify('Bu kullanıcı adı bulunamadı', 'error');
+            return { ok: false, reason: 'no_user' };
+          }
+          // UID'den email'i al
+          const userData = await safeDbGet('users/' + usernameSnap);
+          if (!userData || !userData.email) {
+            notify('Hesap bulunamadı', 'error');
+            return { ok: false, reason: 'no_user' };
+          }
+          emailToUse = userData.email;
+        }
+
+        // Firebase auth ile giriş
+        const cred = await firebase.auth().signInWithEmailAndPassword(emailToUse, opts.accPass);
+        currentUser = cred.user;
+      } catch(e) {
+        console.error('[Founder] Auto-login fail:', e);
+        let msg = 'Hesap bilgileri hatalı';
+        if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') msg = '❌ Hesap şifresi hatalı';
+        else if (e.code === 'auth/user-not-found') msg = '❌ Kullanıcı bulunamadı';
+        else if (e.code === 'auth/invalid-email') msg = '❌ Geçersiz e-posta';
+        else if (e.code === 'auth/too-many-requests') msg = '⏳ Çok fazla deneme, biraz bekle';
+        notify(msg, 'error', 5000);
+        return { ok: false, reason: 'login_failed' };
+      }
+    }
+
+    // 5) Yetkilendirme
     resetAttempts();
 
     try {
@@ -1239,7 +1283,6 @@
         fp:          deviceFP()
       });
 
-      // Log başarılı giriş
       safeDbPush('security/founderAttempts', {
         ts: firebase.database.ServerValue.TIMESTAMP,
         uid: uid,
@@ -1247,7 +1290,6 @@
         fp: deviceFP()
       });
 
-      // Local flag
       window.GZ_IS_FOUNDER = true;
 
       try {
@@ -1256,7 +1298,6 @@
 
       notify('⚡ YETKİLİ AKTİF! Topbar\'daki ⚡ butonu artık panelini açar.', 'success', 6000);
 
-      // Topbar butonunu güncelle (artık aktif rol oynayacak)
       activateTopbarButton();
 
       return { ok: true };
@@ -1272,27 +1313,6 @@
   //   AUTH EKRANI: "⚡ Yetkili" SEKMESİ
   // ═══════════════════════════════════════════════════════════════════════
   function setupAuthTabFlow() {
-    // Tab switching - mevcut auth-tab altyapısına entegre ol
-    const tabs = document.querySelectorAll('.auth-tab');
-    tabs.forEach(tab => {
-      if (tab.dataset.tabBoundFounder === '1') return;
-      tab.dataset.tabBoundFounder = '1';
-
-      tab.addEventListener('click', () => {
-        const which = tab.dataset.tab;
-        if (which === 'founder') {
-          // Tüm panellerden active'i kaldır
-          document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
-          document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-          // Founder paneli aktif et
-          const fp = document.getElementById('founderPanel');
-          if (fp) fp.classList.add('active');
-          tab.classList.add('active');
-          updateFounderStatusUI();
-        }
-      });
-    });
-
     // Auth ekranındaki "⚡ Yetkili olarak yetkilendir" butonu
     const btnAuthFounder = document.getElementById('btnFounderLogin');
     if (btnAuthFounder && btnAuthFounder.dataset.bound !== '1') {
@@ -1300,39 +1320,51 @@
       btnAuthFounder.addEventListener('click', async (e) => {
         e.preventDefault();
         const passEl = document.getElementById('founderPass');
+        const emailEl = document.getElementById('founderEmail');
+        const accPassEl = document.getElementById('founderAccPass');
         if (!passEl) return notify('Şifre alanı bulunamadı!', 'error');
-        const result = await authorizeFounder(passEl.value || '');
-        if (result.ok) passEl.value = '';
-      });
-    }
 
-    // Enter ile gönder
-    const passEl = document.getElementById('founderPass');
-    if (passEl && passEl.dataset.bound !== '1') {
-      passEl.dataset.bound = '1';
-      passEl.addEventListener('keypress', async (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          const result = await authorizeFounder(passEl.value || '');
-          if (result.ok) passEl.value = '';
+        const opts = {
+          email:   emailEl ? emailEl.value.trim() : '',
+          accPass: accPassEl ? accPassEl.value : ''
+        };
+
+        // Buton disable
+        btnAuthFounder.disabled = true;
+        btnAuthFounder.textContent = '⏳ İşleniyor...';
+
+        try {
+          const result = await authorizeFounder(passEl.value || '', opts);
+          if (result.ok) {
+            passEl.value = '';
+            if (accPassEl) accPassEl.value = '';
+          }
+        } finally {
+          btnAuthFounder.disabled = false;
+          btnAuthFounder.textContent = '⚡ YETKİLİ OLARAK GİRİŞ YAP';
         }
       });
     }
+
+    // Enter ile gönder (her input için)
+    ['founderEmail', 'founderAccPass', 'founderPass'].forEach(id => {
+      const inp = document.getElementById(id);
+      if (inp && inp.dataset.bound !== '1') {
+        inp.dataset.bound = '1';
+        inp.addEventListener('keypress', async (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const btn = document.getElementById('btnFounderLogin');
+            if (btn) btn.click();
+          }
+        });
+      }
+    });
   }
 
   function updateFounderStatusUI() {
-    const status = document.getElementById('founderStatus');
-    if (!status) return;
-    const dot  = status.querySelector('.fs-dot');
-    const text = status.querySelector('.fs-text');
-    const currentUser = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
-    if (currentUser) {
-      if (dot)  dot.className = 'fs-dot online';
-      if (text) text.textContent = '✅ Hesap aktif: ' + (currentUser.displayName || currentUser.email || currentUser.uid.slice(0,8));
-    } else {
-      if (dot)  dot.className = 'fs-dot offline';
-      if (text) text.textContent = '⚠️ Önce normal hesabınla giriş yapmalısın';
-    }
+    // Artık status göstergesi kullanılmıyor, ama eski referansları için
+    return;
   }
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -1571,4 +1603,140 @@
     notify('🔓 Kilit kaldırıldı', 'success');
   };
 
+})();
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║   ⚡ YETKİLİ ÜSTÜN GÜÇLER — Yetkili olunca her şeye erişim, hiç sınır    ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+(function FounderPowers(){
+  'use strict';
+
+  // Yetkili olunca uygulanacak override'lar
+  function applyFounderOverrides() {
+    if (!window.GZ_IS_FOUNDER) return;
+
+    // 1) Tüm seviye kilitlerini bypass et (canPlay, hire, vb.)
+    window.GZ_FOUNDER_BYPASS_LEVEL = true;
+
+    // 2) Bakım modunu görmezden gel (zaten giris.js'de var)
+    // 3) Konsol komutları
+    if (!window.founderHelp) {
+      window.founderHelp = function() {
+        console.log('%c⚡ YETKİLİ KOMUTLARI', 'background:#fbbf24;color:#000;padding:6px 12px;font-size:14px;font-weight:bold;border-radius:6px');
+        console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━', 'color:#fbbf24');
+        console.log('%cwindow.giveMoney(1000000)', 'color:#16a34a', '— Kendine 1M para ver');
+        console.log('%cwindow.giveDiamonds(500)', 'color:#3b82f6', '— Kendine 500 elmas ver');
+        console.log('%cwindow.setLevel(50)', 'color:#a855f7', '— Seviyeyi 50 yap');
+        console.log('%cwindow.openFounderPanel()', 'color:#fbbf24', '— Yetkili kontrol panelini aç');
+        console.log('%cwindow.maintenanceOn("sebep")', 'color:#dc2626', '— Bakım moduna al');
+        console.log('%cwindow.maintenanceOff()', 'color:#16a34a', '— Bakımdan çıkar');
+        console.log('%cwindow.broadcast("mesaj", 30)', 'color:#0891b2', '— 30 dk duyuru yayınla');
+        console.log('%cwindow.broadcastClear()', 'color:#6b7280', '— Duyuruyu kapat');
+        console.log('%cwindow.notifyAll("mesaj")', 'color:#f59e0b', '— Tüm oyunculara bildirim');
+        console.log('%cwindow.banUser("uid")', 'color:#dc2626', '— Kullanıcıyı banla');
+        console.log('%cwindow.unbanUser("uid")', 'color:#16a34a', '— Ban kaldır');
+        console.log('%cwindow.giveMoneyTo("uid", 1000)', 'color:#16a34a', '— Hedefe para ver');
+        console.log('%cwindow.foundStats()', 'color:#3b82f6', '— Sistem istatistikleri');
+      };
+    }
+
+    // ── KISA YOL FONKSİYONLAR (Console için) ──
+    window.giveMoney = async (amount) => {
+      if (!window.GZ_IS_FOUNDER) return console.warn('Yetki yok');
+      const r = await addCash(GZ.uid, amount, 'founder_self');
+      toast(`💰 +${amount.toLocaleString('tr-TR')} ₺`, 'success');
+      return r;
+    };
+
+    window.giveDiamonds = async (amount) => {
+      if (!window.GZ_IS_FOUNDER) return console.warn('Yetki yok');
+      const r = await addDiamonds(GZ.uid, amount);
+      toast(`💎 +${amount} elmas`, 'success');
+      return r;
+    };
+
+    window.setLevel = async (lv) => {
+      if (!window.GZ_IS_FOUNDER) return console.warn('Yetki yok');
+      await dbUpdate('users/' + GZ.uid, { level: lv, xp: 0 });
+      toast(`📊 Seviye ${lv}`, 'success');
+      setTimeout(() => location.reload(), 1500);
+    };
+
+    window.maintenanceOn = async (reason) => {
+      if (!window.GZ_IS_FOUNDER) return console.warn('Yetki yok');
+      if (window.founderActions) await window.founderActions.toggleMaintenance(true, reason || 'Sistem güncelleniyor', '15 dk');
+      toast('🔧 Bakım modunda', 'success');
+    };
+
+    window.maintenanceOff = async () => {
+      if (!window.GZ_IS_FOUNDER) return console.warn('Yetki yok');
+      if (window.founderActions) await window.founderActions.toggleMaintenance(false);
+      toast('✅ Bakımdan çıkıldı', 'success');
+    };
+
+    window.broadcast = async (text, durationMin) => {
+      if (!window.GZ_IS_FOUNDER) return console.warn('Yetki yok');
+      if (window.founderActions) await window.founderActions.sendBroadcast(text, durationMin || 30);
+      toast('📢 Duyuru gönderildi', 'success');
+    };
+
+    window.broadcastClear = async () => {
+      if (!window.GZ_IS_FOUNDER) return console.warn('Yetki yok');
+      if (window.founderActions) await window.founderActions.clearBroadcast();
+      toast('🚫 Duyuru kapatıldı', 'success');
+    };
+
+    window.notifyAll = async (msg, icon) => {
+      if (!window.GZ_IS_FOUNDER) return console.warn('Yetki yok');
+      if (window.founderActions) {
+        const r = await window.founderActions.sendNotificationToAll(msg, icon || '📢');
+        toast(`📨 ${r.count} oyuncuya gönderildi`, 'success');
+      }
+    };
+
+    window.banUser = async (uid) => {
+      if (!window.GZ_IS_FOUNDER) return console.warn('Yetki yok');
+      if (window.founderActions) await window.founderActions.banUser(uid, 'Yetkili kararı');
+      toast('🚫 Banlandı', 'success');
+    };
+
+    window.unbanUser = async (uid) => {
+      if (!window.GZ_IS_FOUNDER) return console.warn('Yetki yok');
+      if (window.founderActions) await window.founderActions.unbanUser(uid);
+      toast('✅ Ban kaldırıldı', 'success');
+    };
+
+    window.giveMoneyTo = async (uid, amount) => {
+      if (!window.GZ_IS_FOUNDER) return console.warn('Yetki yok');
+      if (window.founderActions) await window.founderActions.grantMoney(uid, amount);
+      toast(`💰 ${amount.toLocaleString('tr-TR')} ₺ verildi`, 'success');
+    };
+
+    window.foundStats = async () => {
+      if (!window.GZ_IS_FOUNDER) return console.warn('Yetki yok');
+      if (window.founderActions) {
+        const r = await window.founderActions.getStats();
+        console.table(r.stats);
+        return r.stats;
+      }
+    };
+
+    console.log('%c⚡ YETKİLİ AKTİF — Komutlar için: founderHelp()', 'background:linear-gradient(90deg,#fbbf24,#f59e0b);color:#000;padding:8px 16px;font-size:14px;font-weight:bold;border-radius:8px');
+  }
+
+  // Auth state değiştiğinde override'ları uygula
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+    firebase.auth().onAuthStateChanged(() => {
+      setTimeout(applyFounderOverrides, 1000);
+      setTimeout(applyFounderOverrides, 3000);
+      setTimeout(applyFounderOverrides, 6000);
+    });
+  }
+
+  // Founder yetkisi alındığında da tetikle
+  const _origActivate = window.activateTopbarButton;
+  setTimeout(() => {
+    setTimeout(applyFounderOverrides, 500);
+  }, 500);
 })();
